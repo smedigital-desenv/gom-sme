@@ -7324,7 +7324,8 @@ async function _executarChamadaGAS_(nomeFuncao, args) {
 
     case 'listarConfiguracoes':
     case 'obterConfiguracoes':
-      return GomAPI._get_('listarConfiguracoes');
+    case 'gomListarConfiguracoesWebV1Json':
+      return GomAPI._getText_('listarConfiguracoes');
 
     // Escritas
     case 'atualizarChamadoWorkflow':
