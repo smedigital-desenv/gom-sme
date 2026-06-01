@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  
+</head>
+<body>
+<script>
+/**
+ * GOM — gom-api.js
+ * 
+ * Substitui o google.script.run por chamadas fetch() ao GAS como API.
+ * Mantém a mesma interface que o sistema atual usa,
+ * então nenhum outro arquivo de script precisa mudar.
+ * 
+ * Cole no início do Index.html (antes dos outros scripts)
+ * ou inclua como <script src="gom-api.js"></script>
+ * 
+ * CONFIGURAÇÃO: defina a URL do seu Web App GAS aqui.
+ */
+
+// ── URL do Web App GAS (atualizar após fazer o deploy) ───────────────────────
+const GOM_API_URL = 'https://script.google.com/macros/s/SEU_DEPLOYMENT_ID_AQUI/exec';
+
+// ── Cliente de API ────────────────────────────────────────────────────────────
+const GomAPI = (() => {
+  'use strict';
+
+  async function _get_(acao, params) {
+    const url = new URL(GOM_API_URL);
+    url.searchParams.set('acao', acao);
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+    }
+    const res = await fetch(url.toString(), { method: 'GET' });
+    if (!res.ok) throw new Error('Erro ' + res.status + ' em ' + acao);
+    const texto = await res.text();
+    try { return JSON.parse(texto); } catch(e) { return texto; }
+  }
+
+  async function _post_(acao, payload) {
+    const res = await fetch(GOM_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ acao, payload })
+    });
+    if (!res.ok) throw new Error('Erro ' + res.status + ' em ' + acao);
+    const texto = await res.text();
+    try { return JSON.parse(texto); } catch(e) { return texto; }
+  }
+
+  return { _get_, _post_ };
+})();
+
+// ── Substituto do google.script.run ──────────────────────────────────────────
+// Mantém a mesma interface: .withSuccessHandler(fn).withFailureHandler(fn).nomeDaFuncao(args)
+// Assim NENHUM outro arquivo precisa mudar — a troca é transparente.
+
+const google = {
+  script: {
+    run: new Proxy({}, {
+      get(_, nomeFuncao) {
+        // Retorna um builder que acumula handlers e depois executa
+        return new GomScriptRunner(nomeFuncao);
+      }
+    })
+  }
+};
+
+class GomScriptRunner {
+  constructor(nomeFuncao) {
+    this._funcao = nomeFuncao;
+    this._onSuccess = null;
+    this._onFailure = null;
+  }
+
+  withSuccessHandler(fn) { this._onSuccess = fn; return this; }
+  withFailureHandler(fn) { this._onFailure = fn; return this; }
+  withUserObject() { return this; } // compatibilidade, ignorado
+
+  // Chamada final — redireciona para a API REST
+  // Exemplo: google.script.run.withSuccessHandler(cb).gomListarChamadosWebV3Json()
+  // vira:    GomAPI._get_('listarChamados').then(cb)
+  [Symbol.hasInstance]() { return false; }
+}
+
+// Proxy nas chamadas finais: qualquer método chamado no GomScriptRunner
+// (ex: .gomListarChamadosWebV3Json()) executa a requisição correta.
+GomScriptRunner.prototype = new Proxy({}, {
+  get(_, prop) {
+    return function(...args) {
+      const runner = this;
+      _executarChamadaGAS_(prop, args)
+        .then(resultado => {
+          if (typeof runner._onSuccess === 'function') runner._onSuccess(resultado);
+        })
+        .catch(erro => {
+          if (typeof runner._onFailure === 'function') runner._onFailure(erro);
+          else console.error('[GOM API] Erro não tratado em', prop, erro);
+        });
+    };
+  }
+});
+
+// ── Mapeamento: nome da função GAS → chamada API ──────────────────────────────
+async function _executarChamadaGAS_(nomeFuncao, args) {
+  const payload = args && args[0] !== undefined ? args[0] : {};
+
+  switch (nomeFuncao) {
+
+    // ── Leituras (GET) ────────────────────────────────────────────────────────
+    case 'gomListarChamadosWebV3Json':
+      return GomAPI._get_('listarChamados');
+
+    case 'getDadosIniciais':
+      return GomAPI._get_('getDadosIniciais');
+
+    case 'gomListarCampoWebV3Json':
+      return GomAPI._get_('listarCampo');
+
+    case 'gomListarObrasWebV3Json':
+      return GomAPI._get_('listarObras');
+
+    case 'gomObterUsuarioAtualV1Json':
+      return GomAPI._get_('getUsuario');
+
+    case 'gomConsultarProtocoloEscolaV1Json':
+      return GomAPI._get_('consultarProtocolo', payload);
+
+    case 'listarConfiguracoes':
+    case 'obterConfiguracoes':
+      return GomAPI._get_('listarConfiguracoes');
+
+    // ── Escritas (POST) ───────────────────────────────────────────────────────
+    case 'atualizarChamadoWorkflow':
+      return GomAPI._post_('atualizarChamado', payload);
+
+    case 'gomAtualizarChamadosLoteV1':
+      // payload já vem como JSON string — parsear para passar como objeto
+      const listaLote = typeof payload === 'string' ? JSON.parse(payload) : payload;
+      return GomAPI._post_('atualizarLote', listaLote);
+
+    case 'salvarNovaSolicitacao':
+      return GomAPI._post_('criarChamado', payload);
+
+    case 'salvarSolicitacaoEscola':
+      return GomAPI._post_('criarChamadoEscola', payload);
+
+    case 'salvarEquipeDiaEmpresa':
+      return GomAPI._post_('salvarEquipeDia', payload);
+
+    case 'salvarEquipesDiaEmpresaLote':
+      return GomAPI._post_('salvarLoteEquipeDia', payload);
+
+    case 'salvarRespostaOrcamentoEmpresa':
+      return GomAPI._post_('enviarOrcamento', payload);
+
+    case 'salvarNovaEquipe':
+      return GomAPI._post_('salvarEquipe', { nome: args[0], tipoEquipe: args[1] });
+
+    case 'atualizarObra':
+    case 'salvarObraModal':
+      return GomAPI._post_('atualizarObra', payload);
+
+    case 'salvarConfiguracoesTela':
+    case 'salvarConfiguracao':
+      return GomAPI._post_('salvarConfiguracoes', payload);
+
+    case 'gomRegistrarComplementoEscolaV1Json':
+      return GomAPI._post_('registrarComplemento', payload);
+
+    default:
+      throw new Error('Função GAS não mapeada na API: ' + nomeFuncao);
+  }
+}
+
+</script>
+  <div id="loader" class="loader-overlay"><div class="loader-card"><div class="spinner-border text-primary"></div><div class="mt-3 fw-bold">Carregando sistema...</div></div></div>
+
+  <header class="nav-header nav-desktop">
+    <div class="brand">
+      <i class="bi bi-gear-wide-connected text-info"></i>
+      <span>GOM | SME</span>
+      <div id="perfilUsuarioBadge" class="perfil-usuario-badge"></div>
+    </div>
+
+    <nav class="nav-actions nav-actions-primary" aria-label="Menu principal">
+      <button id="btn-dashboard" class="btn-nav active" data-page="dashboard" onclick="loadPage('dashboard')"><i class="bi bi-speedometer2"></i><span>Dashboard</span></button>
+      <button id="btn-triagem" class="btn-nav" data-page="triagem" onclick="loadPage('triagem')"><i class="bi bi-funnel"></i><span>Triagem</span></button>
+      <button id="btn-fila" class="btn-nav" data-page="fila" onclick="loadPage('fila')"><i class="bi bi-list-check"></i><span>Fila</span></button>
+      <button id="btn-aprovacao" class="btn-nav" data-page="aprovacao" onclick="loadPage('aprovacao')"><i class="bi bi-clipboard2-check"></i><span>Aprovação</span></button>
+      <button id="btn-empresa" class="btn-nav" data-page="empresa" onclick="loadPage('empresa')"><i class="bi bi-building-check"></i><span>Empresa</span></button>
+      <button id="btn-campo" class="btn-nav" data-page="campo" onclick="loadPage('campo')"><i class="bi bi-geo-alt"></i><span>Campo</span></button>
+      <button id="btn-alertas" class="btn-nav" data-page="alertas" onclick="loadPage('alertas')"><i class="bi bi-exclamation-triangle"></i><span>Alertas</span></button>
+    </nav>
+
+    <div class="nav-more dropdown">
+      <button class="btn-nav btn-nav-more dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="bi bi-grid-3x3-gap"></i><span>Mais</span>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end nav-more-menu">
+        <li><button id="btn-obras" class="dropdown-item nav-more-item" data-page="obras" onclick="loadPage('obras')"><i class="bi bi-buildings"></i><span>Obras</span></button></li>
+        <li><button id="btn-historico" class="dropdown-item nav-more-item" data-page="historico" onclick="loadPage('historico')"><i class="bi bi-archive"></i><span>Memorial</span></button></li>
+        <li><button id="btn-relatorios" class="dropdown-item nav-more-item" data-page="relatorios" onclick="loadPage('relatorios')"><i class="bi bi-bar-chart-line"></i><span>Relatórios</span></button></li>
+        <li><button id="btn-cadastro" class="dropdown-item nav-more-item" data-page="cadastro" onclick="loadPage('cadastro')"><i class="bi bi-plus-circle"></i><span>Cadastro</span></button></li>
+        <li><button id="btn-acompanhar" class="dropdown-item nav-more-item" data-page="acompanhar" onclick="loadPage('acompanhar')"><i class="bi bi-search-heart"></i><span>Acompanhar</span></button></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><button id="btn-configuracoes" class="dropdown-item nav-more-item" data-page="configuracoes" onclick="loadPage('configuracoes')"><i class="bi bi-sliders"></i><span>Configurações</span></button></li>
+      </ul>
+    </div>
+  </header>
+
+  <header class="mobile-topbar">
+    <div class="mobile-brand">
+      <i class="bi bi-gear-wide-connected"></i>
+      <div>
+        <strong>GOM | SME</strong>
+        <small id="mobileCurrentPage">Dashboard</small>
+        <small id="mobilePerfilUsuarioBadge" class="mobile-perfil-badge">Carregando perfil...</small>
+      </div>
+    </div>
+    <button class="mobile-topbar-btn" type="button" onclick="abrirMobileMais()">
+      <i class="bi bi-grid-3x3-gap"></i>
+    </button>
+  </header>
+
+  <div class="mobile-more-backdrop" id="mobileMoreBackdrop" onclick="fecharMobileMais(event)">
+    <div class="mobile-more-panel" role="dialog" aria-modal="true" aria-label="Mais opções">
+      <div class="mobile-more-head">
+        <div>
+          <strong>Mais opções</strong>
+          <small>Escolha uma área do sistema</small>
+        </div>
+        <button type="button" onclick="fecharMobileMais()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="mobile-more-grid">
+        <button class="mobile-more-item" data-page="fila" onclick="loadPage('fila')"><i class="bi bi-list-check"></i><span>Fila</span></button>
+        <button class="mobile-more-item" data-page="aprovacao" onclick="loadPage('aprovacao')"><i class="bi bi-clipboard2-check"></i><span>Aprovação</span></button>
+        <button class="mobile-more-item" data-page="alertas" onclick="loadPage('alertas')"><i class="bi bi-exclamation-triangle"></i><span>Alertas</span></button>
+        <button class="mobile-more-item" data-page="obras" onclick="loadPage('obras')"><i class="bi bi-buildings"></i><span>Obras</span></button>
+        <button class="mobile-more-item" data-page="historico" onclick="loadPage('historico')"><i class="bi bi-archive"></i><span>Memorial</span></button>
+        <button class="mobile-more-item" data-page="relatorios" onclick="loadPage('relatorios')"><i class="bi bi-bar-chart-line"></i><span>Relatórios</span></button>
+        <button class="mobile-more-item" data-page="cadastro" onclick="loadPage('cadastro')"><i class="bi bi-plus-circle"></i><span>Cadastro</span></button>
+        <button class="mobile-more-item" data-page="acompanhar" onclick="loadPage('acompanhar')"><i class="bi bi-search-heart"></i><span>Acompanhar</span></button>
+        <button class="mobile-more-item" data-page="configuracoes" onclick="loadPage('configuracoes')"><i class="bi bi-sliders"></i><span>Configurações</span></button>
+      </div>
+    </div>
+  </div>
+
+  <nav class="mobile-bottom-nav" aria-label="Menu mobile">
+    <button class="mobile-nav-item active" data-page="dashboard" onclick="loadPage('dashboard')"><i class="bi bi-speedometer2"></i><span>Dashboard</span></button>
+    <button class="mobile-nav-item" data-page="triagem" onclick="loadPage('triagem')"><i class="bi bi-funnel"></i><span>Triagem</span></button>
+    <button class="mobile-nav-item" data-page="empresa" onclick="loadPage('empresa')"><i class="bi bi-building-check"></i><span>Empresa</span></button>
+    <button class="mobile-nav-item" data-page="campo" onclick="loadPage('campo')"><i class="bi bi-geo-alt"></i><span>Campo</span></button>
+    <button class="mobile-nav-item mobile-nav-more" data-page="mais" onclick="abrirMobileMais()"><i class="bi bi-grid-3x3-gap"></i><span>Mais</span></button>
+  </nav>
+
+  <main class="container-fluid px-4 pb-5">
+    <div id="main-content"></div>
+  </main>
+
+  
+
+  <template id="tpl-dashboard"></template>
+  <template id="tpl-triagem"></template>
+  <template id="tpl-fila"></template>
+  <template id="tpl-aprovacao"></template>
+  <template id="tpl-empresa"></template>
+  <template id="tpl-campo"></template>
+  <template id="tpl-alertas"></template>
+  <template id="tpl-obras"></template>
+  <template id="tpl-historico"></template>
+  <template id="tpl-relatorios"></template>
+  <template id="tpl-cadastro"></template>
+  <template id="tpl-acompanhar"></template>
+  <template id="tpl-configuracoes"></template>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script></script>
+  <script></script>
+  <script></script>
+  <script></script>
+  <script></script>
+  <script></script>
+  <script></script>
+  <script></script>
+  <script></script>
+  <script></script>
+  <script></script>
+  <script></script>
+  <script></script>
+  <script></script>
+  <script></script>
+  <script></script>
+  <script></script>
+</body>
+</html>
