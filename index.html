@@ -10,137 +10,233 @@
 <script>
 /**
  * GOM — gom-api.js
- * 
- * Substitui o google.script.run por chamadas fetch() ao GAS como API.
- * Mantém a mesma interface que o sistema atual usa,
- * então nenhum outro arquivo de script precisa mudar.
- * 
- * Cole no início do Index.html (antes dos outros scripts)
- * ou inclua como <script src="gom-api.js"></script>
- * 
- * CONFIGURAÇÃO: defina a URL do seu Web App GAS aqui.
+ *
+ * Substitui google.script.run por chamadas fetch() ao GAS como API REST.
+ * Mantém a interface:
+ *
+ * google.script.run
+ *   .withSuccessHandler(fn)
+ *   .withFailureHandler(fn)
+ *   .nomeDaFuncao(args)
+ *
+ * Este arquivo deve ser carregado ANTES dos demais Scripts_*.html.
  */
 
-// ── URL do Web App GAS (atualizar após fazer o deploy) ───────────────────────
-const GOM_API_URL = 'https://script.google.com/macros/s/SEU_DEPLOYMENT_ID_AQUI/exec';
+const GOM_API_URL = 'https://script.google.com/a/macros/educacao.pmrp.sp.gov.br/s/AKfycbzGf9lnIDmlcBdEVT9EzJ5ykQZwqFniWGOCnr6AovtXrUGx7eFPfyVzwQdaurb_T4XR/exec';
 
-// ── Cliente de API ────────────────────────────────────────────────────────────
 const GomAPI = (() => {
   'use strict';
 
-  async function _get_(acao, params) {
+  function tentarJson(texto) {
+    try {
+      return JSON.parse(texto);
+    } catch (e) {
+      return texto;
+    }
+  }
+
+  function validarRespostaApi(acao, resposta) {
+    if (
+      resposta &&
+      typeof resposta === 'object' &&
+      resposta.ok === false &&
+      (resposta.erro || resposta.error)
+    ) {
+      throw new Error(resposta.erro || resposta.error || ('Erro em ' + acao));
+    }
+    return resposta;
+  }
+
+  async function _getText_(acao, params) {
     const url = new URL(GOM_API_URL);
     url.searchParams.set('acao', acao);
-    if (params) {
-      Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+
+    if (params && typeof params === 'object') {
+      Object.entries(params).forEach(([k, v]) => {
+        if (v !== undefined && v !== null) {
+          url.searchParams.set(k, String(v));
+        }
+      });
     }
-    const res = await fetch(url.toString(), { method: 'GET' });
-    if (!res.ok) throw new Error('Erro ' + res.status + ' em ' + acao);
-    const texto = await res.text();
-    try { return JSON.parse(texto); } catch(e) { return texto; }
+
+    const res = await fetch(url.toString(), {
+      method: 'GET',
+      redirect: 'follow'
+    });
+
+    if (!res.ok) {
+      throw new Error('Erro HTTP ' + res.status + ' em ' + acao);
+    }
+
+    return await res.text();
+  }
+
+  async function _get_(acao, params) {
+    const texto = await _getText_(acao, params);
+    return validarRespostaApi(acao, tentarJson(texto));
   }
 
   async function _post_(acao, payload) {
     const res = await fetch(GOM_API_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ acao, payload })
+
+      /*
+       * Importante:
+       * Usamos text/plain para evitar preflight CORS no navegador.
+       * O Apps Script continua recebendo o JSON normalmente em e.postData.contents.
+       */
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+
+      body: JSON.stringify({
+        acao,
+        payload: payload || {}
+      }),
+
+      redirect: 'follow'
     });
-    if (!res.ok) throw new Error('Erro ' + res.status + ' em ' + acao);
+
+    if (!res.ok) {
+      throw new Error('Erro HTTP ' + res.status + ' em ' + acao);
+    }
+
     const texto = await res.text();
-    try { return JSON.parse(texto); } catch(e) { return texto; }
+    return validarRespostaApi(acao, tentarJson(texto));
   }
 
-  return { _get_, _post_ };
+  return {
+    _get_,
+    _getText_,
+    _post_
+  };
 })();
 
-// ── Substituto do google.script.run ──────────────────────────────────────────
-// Mantém a mesma interface: .withSuccessHandler(fn).withFailureHandler(fn).nomeDaFuncao(args)
-// Assim NENHUM outro arquivo precisa mudar — a troca é transparente.
+/**
+ * Cria um runner compatível com google.script.run.
+ *
+ * Exemplo suportado:
+ * google.script.run
+ *   .withSuccessHandler(cb)
+ *   .withFailureHandler(err)
+ *   .gomListarChamadosWebV3Json()
+ */
+function criarGomScriptRunner(onSuccess, onFailure, userObject) {
+  const estado = {
+    onSuccess: typeof onSuccess === 'function' ? onSuccess : null,
+    onFailure: typeof onFailure === 'function' ? onFailure : null,
+    userObject: userObject || null
+  };
 
-const google = {
-  script: {
-    run: new Proxy({}, {
-      get(_, nomeFuncao) {
-        // Retorna um builder que acumula handlers e depois executa
-        return new GomScriptRunner(nomeFuncao);
+  const runner = {
+    withSuccessHandler(fn) {
+      return criarGomScriptRunner(fn, estado.onFailure, estado.userObject);
+    },
+
+    withFailureHandler(fn) {
+      return criarGomScriptRunner(estado.onSuccess, fn, estado.userObject);
+    },
+
+    withUserObject(obj) {
+      return criarGomScriptRunner(estado.onSuccess, estado.onFailure, obj);
+    }
+  };
+
+  return new Proxy(runner, {
+    get(target, prop) {
+      if (prop in target) {
+        return target[prop].bind(target);
       }
-    })
-  }
-};
 
-class GomScriptRunner {
-  constructor(nomeFuncao) {
-    this._funcao = nomeFuncao;
-    this._onSuccess = null;
-    this._onFailure = null;
-  }
+      // Evita o runner ser tratado como Promise/thenable.
+      if (prop === 'then') {
+        return undefined;
+      }
 
-  withSuccessHandler(fn) { this._onSuccess = fn; return this; }
-  withFailureHandler(fn) { this._onFailure = fn; return this; }
-  withUserObject() { return this; } // compatibilidade, ignorado
-
-  // Chamada final — redireciona para a API REST
-  // Exemplo: google.script.run.withSuccessHandler(cb).gomListarChamadosWebV3Json()
-  // vira:    GomAPI._get_('listarChamados').then(cb)
-  [Symbol.hasInstance]() { return false; }
+      return function(...args) {
+        _executarChamadaGAS_(String(prop), args)
+          .then(resultado => {
+            if (estado.onSuccess) {
+              estado.onSuccess(resultado, estado.userObject);
+            }
+          })
+          .catch(erro => {
+            if (estado.onFailure) {
+              estado.onFailure(erro, estado.userObject);
+            } else {
+              console.error('[GOM API] Erro não tratado em', prop, erro);
+            }
+          });
+      };
+    }
+  });
 }
 
-// Proxy nas chamadas finais: qualquer método chamado no GomScriptRunner
-// (ex: .gomListarChamadosWebV3Json()) executa a requisição correta.
-GomScriptRunner.prototype = new Proxy({}, {
-  get(_, prop) {
-    return function(...args) {
-      const runner = this;
-      _executarChamadaGAS_(prop, args)
-        .then(resultado => {
-          if (typeof runner._onSuccess === 'function') runner._onSuccess(resultado);
-        })
-        .catch(erro => {
-          if (typeof runner._onFailure === 'function') runner._onFailure(erro);
-          else console.error('[GOM API] Erro não tratado em', prop, erro);
-        });
-    };
-  }
-});
+// Expõe google.script.run fake no GitHub Pages.
+window.google = window.google || {};
+window.google.script = window.google.script || {};
+window.google.script.run = criarGomScriptRunner();
 
-// ── Mapeamento: nome da função GAS → chamada API ──────────────────────────────
+/**
+ * Mapeamento:
+ * nome da função usada no frontend → ação REST do Code_API.gs
+ */
 async function _executarChamadaGAS_(nomeFuncao, args) {
   const payload = args && args[0] !== undefined ? args[0] : {};
 
   switch (nomeFuncao) {
+    // ─────────────────────────────────────────────
+    // Leituras
+    // ─────────────────────────────────────────────
 
-    // ── Leituras (GET) ────────────────────────────────────────────────────────
     case 'gomListarChamadosWebV3Json':
-      return GomAPI._get_('listarChamados');
+      // A função original do GAS retornava string JSON.
+      // Mantemos isso para não quebrar scripts que fazem JSON.parse().
+      return GomAPI._getText_('listarChamados');
 
     case 'getDadosIniciais':
       return GomAPI._get_('getDadosIniciais');
 
     case 'gomListarCampoWebV3Json':
-      return GomAPI._get_('listarCampo');
+      return GomAPI._getText_('listarCampo');
 
     case 'gomListarObrasWebV3Json':
-      return GomAPI._get_('listarObras');
+      return GomAPI._getText_('listarObras');
 
-    case 'gomObterUsuarioAtualV1Json':
-      return GomAPI._get_('getUsuario');
+    case 'gomObterUsuarioAtualV1Json': {
+      const texto = await GomAPI._getText_('getUsuario');
+
+      /*
+       * Proteção contra resposta duplamente serializada:
+       * se o Code_API devolver uma string JSON dentro de outra string JSON,
+       * removemos uma camada.
+       */
+      try {
+        const parsed = JSON.parse(texto);
+        return typeof parsed === 'string' ? parsed : texto;
+      } catch (e) {
+        return texto;
+      }
+    }
 
     case 'gomConsultarProtocoloEscolaV1Json':
-      return GomAPI._get_('consultarProtocolo', payload);
+      return GomAPI._getText_('consultarProtocolo', payload);
 
     case 'listarConfiguracoes':
     case 'obterConfiguracoes':
       return GomAPI._get_('listarConfiguracoes');
 
-    // ── Escritas (POST) ───────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────
+    // Escritas
+    // ─────────────────────────────────────────────
+
     case 'atualizarChamadoWorkflow':
       return GomAPI._post_('atualizarChamado', payload);
 
-    case 'gomAtualizarChamadosLoteV1':
-      // payload já vem como JSON string — parsear para passar como objeto
+    case 'gomAtualizarChamadosLoteV1': {
       const listaLote = typeof payload === 'string' ? JSON.parse(payload) : payload;
       return GomAPI._post_('atualizarLote', listaLote);
+    }
 
     case 'salvarNovaSolicitacao':
       return GomAPI._post_('criarChamado', payload);
@@ -152,13 +248,17 @@ async function _executarChamadaGAS_(nomeFuncao, args) {
       return GomAPI._post_('salvarEquipeDia', payload);
 
     case 'salvarEquipesDiaEmpresaLote':
+    case 'salvarLoteEquipeDia':
       return GomAPI._post_('salvarLoteEquipeDia', payload);
 
     case 'salvarRespostaOrcamentoEmpresa':
       return GomAPI._post_('enviarOrcamento', payload);
 
     case 'salvarNovaEquipe':
-      return GomAPI._post_('salvarEquipe', { nome: args[0], tipoEquipe: args[1] });
+      return GomAPI._post_('salvarEquipe', {
+        nome: args[0],
+        tipoEquipe: args[1] || 'secretaria'
+      });
 
     case 'atualizarObra':
     case 'salvarObraModal':
@@ -175,7 +275,6 @@ async function _executarChamadaGAS_(nomeFuncao, args) {
       throw new Error('Função GAS não mapeada na API: ' + nomeFuncao);
   }
 }
-
 </script>
   <div id="loader" class="loader-overlay"><div class="loader-card"><div class="spinner-border text-primary"></div><div class="mt-3 fw-bold">Carregando sistema...</div></div></div>
 
