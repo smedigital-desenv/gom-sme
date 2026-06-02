@@ -5998,7 +5998,7 @@ body {
 
 
   <!-- Templates de tela -->
-  <template id="tpl-dashboard"><div class="dashboard-page">
+  <script type="text/html" id="tpl-dashboard"><div class="dashboard-page">
   <div class="dashboard-hero mb-3">
     <div>
       <span class="dashboard-eyebrow"><i class="bi bi-speedometer2 me-1"></i>Painel geral</span>
@@ -6078,8 +6078,8 @@ body {
   </div>
 
   <div id="painelDados" class="dashboard-hidden-panel"></div>
-</div></template>
-  <template id="tpl-triagem"><h4 class="text-primary fw-bold mb-1"><i class="bi bi-funnel me-2"></i>Triagem Operacional GOM</h4>
+</div></script>
+  <script type="text/html" id="tpl-triagem"><h4 class="text-primary fw-bold mb-1"><i class="bi bi-funnel me-2"></i>Triagem Operacional GOM</h4>
 <p class="text-muted small mb-3">Chamados sem interação inicial aguardando definição da equipe interna.</p>
 <div id="kpiGrid" class="kpi-grid"></div>
 <div class="fila-help"><i class="bi bi-info-circle-fill"></i><span>Na triagem inicial, os encaminhamentos permitidos são: emergencial, orçamento, aguardando visita ou devolvido para a escola.</span></div>
@@ -6088,8 +6088,8 @@ body {
   <span class="badge bg-primary px-3 py-2" id="contador">0 Resultados</span>
 </div>
 <div id="painelDados" class="grid-cards"></div>
-</template>
-  <template id="tpl-fila"><h4 class="text-primary fw-bold mb-1"><i class="bi bi-hourglass-split me-2"></i>Fila de Visita</h4>
+</script>
+  <script type="text/html" id="tpl-fila"><h4 class="text-primary fw-bold mb-1"><i class="bi bi-hourglass-split me-2"></i>Fila de Visita</h4>
 <p class="text-muted small mb-3">Chamados aguardando visita técnica, organizados pela data e horário de encaminhamento.</p>
 <div id="kpiGrid" class="kpi-grid"></div>
 <div class="fila-help"><i class="bi bi-info-circle-fill"></i><span>Da fila de visita, o chamado pode ser devolvido para a escola, encaminhado como emergencial ou enviado para orçamento.</span></div>
@@ -6098,8 +6098,8 @@ body {
   <span class="badge bg-primary px-3 py-2" id="contador">0 na fila</span>
 </div>
 <div id="painelDados" class="grid-cards fila-grid"></div>
-</template>
-  <template id="tpl-aprovacao"><h4 class="text-primary fw-bold mb-1"><i class="bi bi-clipboard2-check me-2"></i>Aprovação de Orçamentos</h4>
+</script>
+  <script type="text/html" id="tpl-aprovacao"><h4 class="text-primary fw-bold mb-1"><i class="bi bi-clipboard2-check me-2"></i>Aprovação de Orçamentos</h4>
 <p class="text-muted small mb-3">Orçamentos devolvidos pela empresa aguardando decisão interna. Ao aprovar, informe obrigatoriamente o número da OS; a previsão pode vir da empresa no orçamento e pode ser ajustada aqui.</p>
 
 <div id="kpiGrid" class="kpi-grid"></div>
@@ -6118,8 +6118,8 @@ body {
 </div>
 
 <div id="painelDados" class="aprovacao-lista"></div>
-</template>
-  <template id="tpl-empresa"><div class="d-flex justify-content-between align-items-center mb-4">
+</script>
+  <script type="text/html" id="tpl-empresa"><div class="d-flex justify-content-between align-items-center mb-4">
   <div>
     <h4 class="text-primary fw-bold mb-1"><i class="bi bi-buildings me-2"></i>Painel da Empresa</h4>
     <p class="text-muted small mb-0">Orçamentos, execução diária das equipes e acompanhamento gerencial das OS.</p>
@@ -6145,8 +6145,8 @@ body {
   </div>
   <div id="painelDados"></div>
 </div>
-</template>
-  <template id="tpl-campo"><div class="campo-page-head d-flex justify-content-between align-items-start gap-3 mb-3">
+</script>
+  <script type="text/html" id="tpl-campo"><div class="campo-page-head d-flex justify-content-between align-items-start gap-3 mb-3">
   <div>
     <h4 class="text-primary fw-bold mb-1"><i class="bi bi-geo-alt me-2"></i>Campo - Acompanhamento</h4>
     <p class="text-muted small mb-0">Visualização das equipes em atendimento, pendências de preenchimento da empresa e histórico operacional das unidades em campo.</p>
@@ -6190,8 +6190,8 @@ body {
 </div>
 
 <div id="painelDados" class="campo-area"></div>
-</template>
-  <template id="tpl-alertas"><h4 class="text-primary fw-bold mb-1"><i class="bi bi-exclamation-diamond me-2"></i>Pendências e Alertas</h4>
+</script>
+  <script type="text/html" id="tpl-alertas"><h4 class="text-primary fw-bold mb-1"><i class="bi bi-exclamation-diamond me-2"></i>Pendências e Alertas</h4>
 <p class="text-muted small mb-3">Radar operacional do sistema: mostra o que está parado, incompleto ou precisa de ação da GOM ou da empresa.</p>
 
 <div class="alertas-help mb-3">
@@ -6232,8 +6232,8 @@ body {
 
 <div id="alertasFiltros" class="alertas-filtros mb-3"></div>
 <div id="painelDados" class="alertas-lista"></div>
-</template>
-  <template id="tpl-obras"><div class="page-title">
+</script>
+  <script type="text/html" id="tpl-obras"><div class="page-title">
   <div>
     <h4><i class="bi bi-buildings-fill me-2"></i>Obras e Ampliações</h4>
     <p>Acompanhamento de ampliações, construções e intervenções estruturais nas unidades.</p>
@@ -6264,8 +6264,8 @@ body {
     </div>
   </div></div>
 </div>
-</template>
-  <template id="tpl-historico"><div class="page-title memorial-title">
+</script>
+  <script type="text/html" id="tpl-historico"><div class="page-title memorial-title">
   <div>
     <h4><i class="bi bi-archive-fill me-2"></i>Memorial de Atendimentos</h4>
     <p>Prontuário dos chamados encerrados, com filtros por escola, OS, mês, tipo, status final, anexos e tempo total.</p>
@@ -6305,8 +6305,8 @@ body {
 </div>
 
 <div id="painelDados" class="memorial-container"></div>
-</template>
-  <template id="tpl-relatorios"><div class="page-title relatorios-title">
+</script>
+  <script type="text/html" id="tpl-relatorios"><div class="page-title relatorios-title">
   <div>
     <h4><i class="bi bi-bar-chart-line-fill me-2"></i>Relatórios e Gráficos</h4>
     <p>Painel gerencial com gráficos, indicadores e exportação para análise da operação.</p>
@@ -6471,8 +6471,8 @@ body {
     </section>
   </div>
 </section>
-</template>
-  <template id="tpl-cadastro"><div class="page-title">
+</script>
+  <script type="text/html" id="tpl-cadastro"><div class="page-title">
   <div>
     <h4><i class="bi bi-journal-plus me-2"></i>Cadastro de Solicitações</h4>
     <p>Use a visualização da escola para solicitações externas e o cadastro interno para registros da equipe GOM.</p>
@@ -6535,8 +6535,8 @@ body {
     </form>
   </div>
 </div>
-</template>
-  <template id="tpl-acompanhar"><div class="page-title acompanhar-title">
+</script>
+  <script type="text/html" id="tpl-acompanhar"><div class="page-title acompanhar-title">
   <div>
     <h4><i class="bi bi-search-heart me-2"></i>Acompanhar Solicitação</h4>
     <p>Consulta pública do andamento dos protocolos pela escola, por unidade, protocolo ou e-mail cadastrado.</p>
@@ -6603,8 +6603,8 @@ body {
 </div>
 
 <div id="acompanharResultado" class="acompanhar-resultado"></div>
-</template>
-  <template id="tpl-configuracoes"><div class="page-title configuracoes-head d-flex justify-content-between align-items-start gap-3 mb-3">
+</script>
+  <script type="text/html" id="tpl-configuracoes"><div class="page-title configuracoes-head d-flex justify-content-between align-items-start gap-3 mb-3">
   <div>
     <h4 class="text-primary fw-bold mb-1"><i class="bi bi-sliders me-2"></i>Configurações do Sistema</h4>
     <p class="text-muted small mb-0">Controle parâmetros operacionais sem alterar código: empresa, prazos, alertas, anexos, status e dados institucionais.</p>
@@ -6655,7 +6655,7 @@ body {
     <button class="btn btn-primary fw-bold btn-sm" onclick="salvarConfiguracoesTela(this)"><i class="bi bi-check2-circle me-1"></i>Salvar alterações</button>
   </div>
 </div>
-</template>
+</script>
 
   <!-- Dependências externas -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -7924,9 +7924,8 @@ function iniciarSistema() {
           renderizar: true,
           forcar: true,
           callback: () => {
-            // Após dados chegarem, força re-render da tela atual (resolve race condition)
-            if (typeof renderizarTela === 'function') renderizarTela();
-            if (telaAtual === 'dashboard' && typeof renderDashboard === 'function') renderDashboard();
+            // Pré-carrega Obras em segundo plano, depois da primeira tela estar pronta.
+            // Assim, ao clicar em OBRAS, a tela já abre praticamente instantânea.
             if (podeAcessarPagina('obras')) setTimeout(precarregarObrasEmSegundoPlano, 500);
           }
         });
@@ -8317,13 +8316,7 @@ function loadPage(pageName, inicial=false) {
   const main = document.getElementById('main-content');
   if (!tpl || !main) return;
 
-  // <template> usa .content internamente — cloneNode garante compatibilidade total
-  if (tpl.content) {
-    main.innerHTML = '';
-    main.appendChild(tpl.content.cloneNode(true));
-  } else {
-    main.innerHTML = tpl.innerHTML;
-  }
+  main.innerHTML = tpl.innerHTML;
 
 
   if (pageName === 'dashboard') {
