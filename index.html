@@ -1,13 +1,10 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html>
 <head>
-  <meta charset="UTF-8">
   <base target="_top">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>GOM | SME</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-<style>
+  <style>
 :root { 
       --primary: #002b5e; --neon-blue: #00e5ff; --bg: #f4f7f9;
       --atendimento: #00e5ff; 
@@ -5862,25 +5859,373 @@ body {
   }
 }
 
+
+/* ==========================================================
+   v18.5 - Triagem e Fila iguais à Execução Diária + edição inline
+   ========================================================== */
+.gom-lista-operacional {
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 34px;
+}
+
+.gom-lista-operacional .gom-lista-operacional-head,
+.gom-lista-operacional .gom-lista-operacional-row {
+  display: grid !important;
+  grid-template-columns: minmax(380px, 1.45fr) minmax(330px, 1fr) minmax(250px, .78fr) minmax(360px, 1.02fr) !important;
+  gap: 16px !important;
+  align-items: stretch !important;
+  min-width: 1320px !important;
+}
+
+.gom-lista-operacional .gom-lista-operacional-head {
+  align-items: center !important;
+  padding: 12px 16px !important;
+  border-radius: 16px !important;
+  background: linear-gradient(90deg, #003b73 0%, #075f82 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 8px 20px rgba(0, 43, 94, .14) !important;
+}
+
+.gom-lista-operacional .gom-lista-operacional-head > div {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  font-size: .66rem !important;
+  font-weight: 950 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .07em !important;
+  text-shadow: 0 1px 1px rgba(0,0,0,.18) !important;
+  white-space: nowrap !important;
+}
+
+.gom-lista-operacional .gom-lista-operacional-row {
+  background: rgba(255,255,255,.96) !important;
+  border: 1px solid rgba(148, 163, 184, .24) !important;
+  border-left: 6px solid var(--card-accent) !important;
+  border-radius: 18px !important;
+  padding: 14px 16px !important;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, .07) !important;
+  min-height: 0 !important;
+  cursor: default !important;
+  overflow: visible !important;
+}
+
+.gom-lista-operacional .gom-lista-operacional-row:hover {
+  box-shadow: 0 14px 30px rgba(15,23,42,.10) !important;
+  border-color: rgba(0,43,94,.16) !important;
+}
+
+.gom-lista-operacional .gom-lista-operacional-row::before,
+.gom-lista-operacional .gom-lista-operacional-row::after {
+  display: none !important;
+}
+
+.gom-lista-operacional .empresa-os-unidade,
+.gom-lista-operacional .empresa-os-info,
+.gom-lista-operacional .empresa-os-agendamento-wrap,
+.gom-lista-operacional .empresa-os-observacao-wrap,
+.gom-lista-operacional .gom-edicao-inline-form {
+  min-width: 0 !important;
+}
+
+.gom-lista-operacional .empresa-os-info,
+.gom-lista-operacional .empresa-os-agendamento-wrap,
+.gom-lista-operacional .gom-edicao-inline-form {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 7px !important;
+  height: 100% !important;
+}
+
+.gom-lista-operacional .empresa-os-info,
+.gom-lista-operacional .empresa-os-agendamento-wrap,
+.gom-lista-operacional .gom-edicao-inline-form {
+  background: #f8fafc;
+  border: 1px solid rgba(226,232,240,.94);
+  border-radius: 14px;
+  padding: 10px;
+}
+
+.gom-lista-operacional .empresa-os-desc {
+  margin-top: 6px !important;
+  color: #475569 !important;
+  font-size: .80rem !important;
+  line-height: 1.32 !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+
+.gom-lista-operacional .gom-lista-observacao {
+  margin-top: 8px !important;
+  padding-top: 7px !important;
+  border-top: 1px dashed rgba(148, 163, 184, .32) !important;
+}
+
+.gom-lista-operacional .empresa-unidade-link.gom-link-unidade {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  color: var(--primary) !important;
+  font-size: .96rem !important;
+  font-weight: 950 !important;
+  line-height: 1.18 !important;
+  text-align: left;
+  cursor: pointer;
+  display: inline-block !important;
+  max-width: calc(100% - 72px) !important;
+  vertical-align: bottom !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.gom-lista-operacional .empresa-unidade-link.gom-link-unidade:hover,
+.gom-lista-operacional .empresa-unidade-link.gom-link-unidade:focus {
+  color: #0054d1 !important;
+  text-decoration: underline;
+}
+
+.gom-lista-operacional .badge-status,
+.gom-lista-operacional .badge-soft,
+.gom-lista-operacional .empresa-os-alert {
+  width: fit-content !important;
+  max-width: 100% !important;
+}
+
+.gom-lista-operacional .gom-status-select,
+.gom-lista-operacional .gom-edicao-inline-form textarea,
+.gom-lista-operacional .gom-agendamento-wrap input {
+  border-radius: 10px !important;
+}
+
+.gom-lista-operacional .gom-agendamento-wrap.gom-agendamento-disabled {
+  opacity: .68;
+}
+
+.gom-lista-operacional .gom-agendamento-wrap.gom-agendamento-disabled input {
+  background: #f1f5f9;
+  color: #94a3b8;
+}
+
+.gom-field-hint {
+  color: #64748b;
+  font-size: .68rem;
+  font-weight: 760;
+  line-height: 1.25;
+}
+
+.gom-inline-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: stretch;
+  margin-top: auto;
+}
+
+.gom-inline-actions .btn {
+  min-height: 38px;
+  border-radius: 11px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  white-space: nowrap !important;
+}
+
+.gom-lista-operacional .empresa-os-save {
+  width: 100%;
+  min-height: 38px;
+}
+
+.gom-linha-alterada {
+  background: linear-gradient(90deg, rgba(245,158,11,.10), rgba(255,255,255,.98)) !important;
+  border-color: rgba(245,158,11,.30) !important;
+  box-shadow: 0 12px 30px rgba(245,158,11,.10) !important;
+}
+
+.gom-linha-alterada .empresa-os-unidade::after {
+  content: 'Alterado';
+  display: inline-flex;
+  margin-top: 8px;
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  font-size: .64rem;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+@media (max-width: 1360px) {
+  .gom-lista-operacional .gom-lista-operacional-head,
+  .gom-lista-operacional .gom-lista-operacional-row {
+    grid-template-columns: minmax(340px, 1.3fr) minmax(300px, 1fr) minmax(230px, .78fr) minmax(330px, 1fr) !important;
+    min-width: 1200px !important;
+  }
+}
+
+@media (max-width: 1200px) {
+  .gom-lista-operacional {
+    overflow-x: visible !important;
+  }
+  .gom-lista-operacional .gom-lista-operacional-head {
+    display: none !important;
+  }
+  .gom-lista-operacional .gom-lista-operacional-row {
+    min-width: 0 !important;
+    grid-template-columns: 1fr 1fr !important;
+    align-items: stretch !important;
+  }
+  .gom-lista-operacional .gom-lista-operacional-row > div::before,
+  .gom-lista-operacional .gom-lista-operacional-row > form::before {
+    content: attr(data-label);
+    display: block;
+    color: #64748b;
+    font-size: .62rem;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    margin-bottom: 5px;
+  }
+  .gom-inline-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .gom-lista-operacional .gom-lista-operacional-row {
+    grid-template-columns: 1fr !important;
+  }
+  .gom-lista-operacional .empresa-unidade-link.gom-link-unidade {
+    max-width: 100% !important;
+    white-space: normal !important;
+  }
+  .gom-inline-actions .btn,
+  .gom-lista-operacional .empresa-os-save {
+    width: 100% !important;
+  }
+}
+
+
+/* ==========================================================
+   GOM v6.1 — Grid Triagem/Fila 3 colunas (sem agendamento individual)
+   ========================================================== */
+.gom-tf-lista-v6 .gom-tf-head-v6,
+.gom-tf-lista-v6 .empresa-os-list-row-v2 {
+  grid-template-columns: minmax(300px, 1.4fr) minmax(280px, 1.2fr) minmax(260px, 1fr) !important;
+}
+@media (max-width: 1100px) {
+  .gom-tf-lista-v6 .gom-tf-head-v6 { display: none !important; }
+  .gom-tf-lista-v6 .empresa-os-list-row-v2 { grid-template-columns: 1fr !important; }
+}
+
+/* Meta-informações em linha única (Tipo, Origem, Abertura, Anexos) */
+.gom-tf-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin: 6px 0 8px;
+  font-size: .78rem;
+  font-weight: 700;
+  color: #475569;
+}
+.gom-tf-meta-row span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.gom-tf-meta-row strong { color: #1e293b; }
+
+/* Campo de data global no cabeçalho */
+.gom-tela-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.gom-data-global-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: rgba(0,43,94,.04);
+  border: 1px solid rgba(0,43,94,.12);
+  border-radius: 12px;
+  padding: 6px 12px;
+}
+.gom-data-global-label {
+  color: var(--primary);
+  font-size: .78rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+.gom-data-global-input {
+  width: 150px !important;
+  font-weight: 700 !important;
+  font-size: .82rem !important;
+  border-color: rgba(0,43,94,.20) !important;
+}
+@media (max-width: 900px) {
+  .gom-data-global-wrap { width: 100%; }
+  .gom-data-global-input { width: 100% !important; }
+}
+
+
+/* Nome da escola na triagem/fila — texto simples, sem aparência de botão */
+.gom-tf-unidade-nome {
+  font-size: .96rem;
+  font-weight: 950;
+  color: var(--primary);
+  cursor: default;
+}
+.gom-tf-lista-v6 .empresa-expand summary {
+  cursor: pointer;
+  list-style: none;
+}
+.gom-tf-lista-v6 .empresa-expand summary::-webkit-details-marker { display: none; }
+
+
+/* ==========================================================
+   GOM — Orçamento da Empresa em lista (4 colunas) + data global tema empresa
+   ========================================================== */
+.empresa-lista-orcamento-v2 .empresa-lista-head-orcamento,
+.empresa-lista-orcamento-v2 .empresa-os-list-row-v2 {
+  grid-template-columns: minmax(280px, 1.4fr) minmax(180px, .9fr) minmax(180px, .8fr) minmax(220px, 1fr) !important;
+}
+@media (max-width: 1100px) {
+  .empresa-lista-orcamento-v2 .empresa-lista-head-orcamento { display: none !important; }
+  .empresa-lista-orcamento-v2 .empresa-os-list-row-v2 { grid-template-columns: 1fr !important; }
+}
+
+/* Campo de data global com tema da Empresa (info/teal) */
+.gom-data-global-empresa {
+  background: rgba(13,202,240,.08);
+  border-color: rgba(13,202,240,.25);
+}
+.gom-data-global-empresa .gom-data-global-label { color: #0b7c91; }
+.gom-data-global-empresa .gom-data-global-input { border-color: rgba(13,202,240,.35) !important; }
+
 </style>
 </head>
 <body>
+  <div id="loader" class="loader-overlay"><div class="loader-card"><div class="spinner-border text-primary"></div><div class="mt-3 fw-bold">Carregando sistema...</div></div></div>
 
-  <!-- Loader -->
-  <div id="loader" class="loader-overlay">
-    <div class="loader-card">
-      <div class="spinner-border text-primary"></div>
-      <div class="mt-3 fw-bold">Carregando sistema...</div>
-    </div>
-  </div>
-
-  <!-- Header desktop -->
   <header class="nav-header nav-desktop">
     <div class="brand">
       <i class="bi bi-gear-wide-connected text-info"></i>
       <span>GOM | SME</span>
       <div id="perfilUsuarioBadge" class="perfil-usuario-badge"></div>
     </div>
+
     <nav class="nav-actions nav-actions-primary" aria-label="Menu principal">
       <button id="btn-dashboard" class="btn-nav active" data-page="dashboard" onclick="loadPage('dashboard')"><i class="bi bi-speedometer2"></i><span>Dashboard</span></button>
       <button id="btn-triagem" class="btn-nav" data-page="triagem" onclick="loadPage('triagem')"><i class="bi bi-funnel"></i><span>Triagem</span></button>
@@ -5890,6 +6235,7 @@ body {
       <button id="btn-campo" class="btn-nav" data-page="campo" onclick="loadPage('campo')"><i class="bi bi-geo-alt"></i><span>Campo</span></button>
       <button id="btn-alertas" class="btn-nav" data-page="alertas" onclick="loadPage('alertas')"><i class="bi bi-exclamation-triangle"></i><span>Alertas</span></button>
     </nav>
+
     <div class="nav-more dropdown">
       <button class="btn-nav btn-nav-more dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
         <i class="bi bi-grid-3x3-gap"></i><span>Mais</span>
@@ -5906,7 +6252,6 @@ body {
     </div>
   </header>
 
-  <!-- Header mobile -->
   <header class="mobile-topbar">
     <div class="mobile-brand">
       <i class="bi bi-gear-wide-connected"></i>
@@ -5921,11 +6266,13 @@ body {
     </button>
   </header>
 
-  <!-- Painel mobile mais -->
   <div class="mobile-more-backdrop" id="mobileMoreBackdrop" onclick="fecharMobileMais(event)">
     <div class="mobile-more-panel" role="dialog" aria-modal="true" aria-label="Mais opções">
       <div class="mobile-more-head">
-        <div><strong>Mais opções</strong><small>Escolha uma área do sistema</small></div>
+        <div>
+          <strong>Mais opções</strong>
+          <small>Escolha uma área do sistema</small>
+        </div>
         <button type="button" onclick="fecharMobileMais()"><i class="bi bi-x-lg"></i></button>
       </div>
       <div class="mobile-more-grid">
@@ -5942,7 +6289,6 @@ body {
     </div>
   </div>
 
-  <!-- Nav mobile bottom -->
   <nav class="mobile-bottom-nav" aria-label="Menu mobile">
     <button class="mobile-nav-item active" data-page="dashboard" onclick="loadPage('dashboard')"><i class="bi bi-speedometer2"></i><span>Dashboard</span></button>
     <button class="mobile-nav-item" data-page="triagem" onclick="loadPage('triagem')"><i class="bi bi-funnel"></i><span>Triagem</span></button>
@@ -5951,13 +6297,11 @@ body {
     <button class="mobile-nav-item mobile-nav-more" data-page="mais" onclick="abrirMobileMais()"><i class="bi bi-grid-3x3-gap"></i><span>Mais</span></button>
   </nav>
 
-  <!-- Conteúdo principal -->
   <main class="container-fluid px-4 pb-5">
     <div id="main-content"></div>
   </main>
 
-  <!-- Modal chamado -->
-<div class="modal fade" id="modalAnalise" tabindex="-1" aria-hidden="true">
+  <div class="modal fade" id="modalAnalise" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content border-0 shadow-lg">
       <div class="modal-header bg-primary text-white">
@@ -5990,16 +6334,25 @@ body {
           <div class="col-md-7"><label class="modal-label text-primary" id="mdlObsLabel">Nova observação</label><input class="form-control" id="mdlNovaObservacao" placeholder="Registrar observação do trâmite..."></div>
           <div class="col-md-6 modal-extra-aprovacao"><label class="modal-label text-primary" id="mdlNumeroOsLabel">Nº da OS</label><input class="form-control" id="mdlNumeroOs" placeholder="Obrigatório ao aprovar orçamento"></div>
           <div class="col-md-6 modal-extra-aprovacao"><label class="modal-label text-primary">Previsão de conclusão</label><input class="form-control" type="date" id="mdlDataPrevistaConclusao"></div>
-          <div class="col-12 text-end"><button id="mdlBtnAtualizar" class="btn btn-primary fw-bold px-4" onclick="salvarStatusDoModal(this)">ATUALIZAR</button></div>
+          <div class="col-md-6 modal-extra-fila" style="display:none;"><label class="modal-label text-primary"><i class="bi bi-calendar-check me-1"></i>Agendamento da visita</label><input class="form-control" type="date" id="mdlDataAgendamentoVisita" placeholder="Data prevista para a visita técnica"></div>
+          <div class="col-12">
+            <div class="modal-anexo-upload-box">
+              <label class="modal-label text-primary" for="mdlAnexosAtualizacao"><i class="bi bi-paperclip me-1"></i>Adicionar anexos ao chamado</label>
+              <input class="form-control" type="file" id="mdlAnexosAtualizacao" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx">
+              <small>Opcional: envie fotos, PDFs ou documentos para complementar esta atualização. Limite: até 5 arquivos de 8 MB cada.</small>
+            </div>
+          </div>
+          <div class="col-12 text-end d-flex justify-content-end gap-2">
+            <button id="mdlBtnSalvarObs" class="btn btn-outline-primary fw-bold px-3" onclick="salvarApenasObservacao(this)" title="Salva a observação sem alterar o status do chamado"><i class="bi bi-chat-left-text me-1"></i>Salvar observação</button>
+            <button id="mdlBtnAtualizar" class="btn btn-primary fw-bold px-4" onclick="salvarStatusDoModal(this)">ATUALIZAR STATUS</button>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-  <!-- Templates de tela -->
-  <template id="tpl-dashboard">
-<div class="dashboard-page">
+  <template id="tpl-dashboard"><div class="dashboard-page">
   <div class="dashboard-hero mb-3">
     <div>
       <span class="dashboard-eyebrow"><i class="bi bi-speedometer2 me-1"></i>Painel geral</span>
@@ -6079,34 +6432,50 @@ body {
   </div>
 
   <div id="painelDados" class="dashboard-hidden-panel"></div>
-</div>  </template>
-
-  <template id="tpl-triagem">
-<h4 class="text-primary fw-bold mb-1"><i class="bi bi-funnel me-2"></i>Triagem Operacional GOM</h4>
+</div></template>
+  <template id="tpl-triagem"><h4 class="text-primary fw-bold mb-1"><i class="bi bi-funnel me-2"></i>Triagem Operacional GOM</h4>
 <p class="text-muted small mb-3">Chamados sem interação inicial aguardando definição da equipe interna.</p>
 <div id="kpiGrid" class="kpi-grid"></div>
 <div class="fila-help"><i class="bi bi-info-circle-fill"></i><span>Na triagem inicial, os encaminhamentos permitidos são: emergencial, orçamento, aguardando visita ou devolvido para a escola.</span></div>
-<div class="p-3 bg-white rounded shadow-sm d-flex justify-content-between align-items-center">
-  <div class="input-group w-50"><span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span><input type="text" id="pesquisa" class="form-control border-start-0" placeholder="Filtrar chamados na triagem..." onkeyup="renderizarTela()"></div>
-  <span class="badge bg-primary px-3 py-2" id="contador">0 Resultados</span>
+<div class="gom-tela-toolbar p-3 bg-white rounded shadow-sm border-start border-4 border-primary mb-3">
+  <div class="d-flex align-items-center gap-3 flex-wrap flex-grow-1">
+    <div class="input-group" style="max-width:480px;min-width:200px;">
+      <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
+      <input type="text" id="pesquisa" class="form-control border-start-0" placeholder="Filtrar chamados na triagem..." onkeyup="renderizarTela()">
+    </div>
+    <div class="gom-data-global-wrap" id="gomDataGlobalWrap_triagem">
+      <label class="gom-data-global-label"><i class="bi bi-calendar-check me-1"></i>Encaminhar todos para:</label>
+      <input type="date" class="form-control form-control-sm gom-data-global-input" id="gomTfDataGlobal_triagem">
+      <button type="button" class="btn btn-outline-primary btn-sm fw-bold" onclick="gomTfAplicarDataGlobal_('triagem')" title="Aplica esta data de encaminhamento em todos os chamados visíveis">
+        <i class="bi bi-calendar-fill me-1"></i>Aplicar a todos
+      </button>
+    </div>
+  </div>
+  <span class="badge bg-primary px-3 py-2 ms-auto" id="contador">0 Resultados</span>
 </div>
-<div id="painelDados" class="grid-cards"></div>
-  </template>
-
-  <template id="tpl-fila">
-<h4 class="text-primary fw-bold mb-1"><i class="bi bi-hourglass-split me-2"></i>Fila de Visita</h4>
+<div id="painelDados" class="operacional-lista-shell"></div></template>
+  <template id="tpl-fila"><h4 class="text-primary fw-bold mb-1"><i class="bi bi-hourglass-split me-2"></i>Fila de Visita</h4>
 <p class="text-muted small mb-3">Chamados aguardando visita técnica, organizados pela data e horário de encaminhamento.</p>
 <div id="kpiGrid" class="kpi-grid"></div>
 <div class="fila-help"><i class="bi bi-info-circle-fill"></i><span>Da fila de visita, o chamado pode ser devolvido para a escola, encaminhado como emergencial ou enviado para orçamento.</span></div>
-<div class="p-3 bg-white rounded shadow-sm d-flex justify-content-between align-items-center border-start border-4 border-primary mb-3">
-  <div class="input-group w-50"><span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span><input type="text" id="pesquisa" class="form-control border-start-0" placeholder="Buscar unidade, ID, solicitação ou observação..." onkeyup="renderizarTela()"></div>
-  <span class="badge bg-primary px-3 py-2" id="contador">0 na fila</span>
+<div class="gom-tela-toolbar p-3 bg-white rounded shadow-sm border-start border-4 border-primary mb-3">
+  <div class="d-flex align-items-center gap-3 flex-wrap flex-grow-1">
+    <div class="input-group" style="max-width:480px;min-width:200px;">
+      <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
+      <input type="text" id="pesquisa" class="form-control border-start-0" placeholder="Buscar unidade, ID, solicitação ou observação..." onkeyup="renderizarTela()">
+    </div>
+    <div class="gom-data-global-wrap" id="gomDataGlobalWrap_fila">
+      <label class="gom-data-global-label"><i class="bi bi-calendar-check me-1"></i>Agendar visita para todos:</label>
+      <input type="date" class="form-control form-control-sm gom-data-global-input" id="gomTfDataGlobal_fila">
+      <button type="button" class="btn btn-outline-primary btn-sm fw-bold" onclick="gomTfAplicarDataGlobal_('fila')" title="Aplica esta data de agendamento em todos os chamados visíveis na fila">
+        <i class="bi bi-calendar-fill me-1"></i>Aplicar a todos
+      </button>
+    </div>
+  </div>
+  <span class="badge bg-primary px-3 py-2 ms-auto" id="contador">0 na fila</span>
 </div>
-<div id="painelDados" class="grid-cards fila-grid"></div>
-  </template>
-
-  <template id="tpl-aprovacao">
-<h4 class="text-primary fw-bold mb-1"><i class="bi bi-clipboard2-check me-2"></i>Aprovação de Orçamentos</h4>
+<div id="painelDados" class="operacional-lista-shell"></div></template>
+  <template id="tpl-aprovacao"><h4 class="text-primary fw-bold mb-1"><i class="bi bi-clipboard2-check me-2"></i>Aprovação de Orçamentos</h4>
 <p class="text-muted small mb-3">Orçamentos devolvidos pela empresa aguardando decisão interna. Ao aprovar, informe obrigatoriamente o número da OS; a previsão pode vir da empresa no orçamento e pode ser ajustada aqui.</p>
 
 <div id="kpiGrid" class="kpi-grid"></div>
@@ -6125,10 +6494,8 @@ body {
 </div>
 
 <div id="painelDados" class="aprovacao-lista"></div>
-  </template>
-
-  <template id="tpl-empresa">
-<div class="d-flex justify-content-between align-items-center mb-4">
+</template>
+  <template id="tpl-empresa"><div class="d-flex justify-content-between align-items-center mb-4">
   <div>
     <h4 class="text-primary fw-bold mb-1"><i class="bi bi-buildings me-2"></i>Painel da Empresa</h4>
     <p class="text-muted small mb-0">Orçamentos, execução diária das equipes e acompanhamento gerencial das OS.</p>
@@ -6148,16 +6515,25 @@ body {
     <i class="bi bi-info-circle-fill"></i>
     <span>Em <strong>Execução diária</strong>, a empresa informa a equipe do dia. Em <strong>Orçamentos</strong>, devolve valor, observações e anexos. Em <strong>Gerencial OS</strong>, acompanha histórico e finaliza a OS.</span>
   </div>
-  <div class="p-3 bg-white rounded shadow-sm d-flex justify-content-between align-items-center border-start border-4 border-info mb-3">
-    <div class="input-group w-50"><span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span><input type="text" id="pesquisa" class="form-control border-start-0" placeholder="Buscar unidade, problema, OS, orçamento ou observação..." onkeyup="renderizarTela()"></div>
-    <span class="badge bg-primary px-3 py-2" id="contador">0 Resultados</span>
+  <div class="gom-tela-toolbar p-3 bg-white rounded shadow-sm border-start border-4 border-info mb-3">
+    <div class="d-flex align-items-center gap-3 flex-wrap flex-grow-1">
+      <div class="input-group" style="max-width:440px;min-width:200px;">
+        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
+        <input type="text" id="pesquisa" class="form-control border-start-0" placeholder="Buscar unidade, problema, OS, orçamento ou observação..." onkeyup="renderizarTela()">
+      </div>
+      <div class="gom-data-global-wrap gom-data-global-empresa" id="gomDataGlobalWrap_empresa" style="display:none;">
+        <label class="gom-data-global-label"><i class="bi bi-calendar-check me-1"></i><span id="gomDataGlobalLabel_empresa">Data de atendimento para todos:</span></label>
+        <input type="date" class="form-control form-control-sm gom-data-global-input" id="gomEmpresaDataGlobal">
+        <button type="button" class="btn btn-info text-white btn-sm fw-bold" onclick="gomEmpresaAplicarDataGlobal()" title="Aplica esta data em todos os registros da lista">
+          <i class="bi bi-calendar-fill me-1"></i>Aplicar a todos
+        </button>
+      </div>
+    </div>
+    <span class="badge bg-primary px-3 py-2 ms-auto" id="contador">0 Resultados</span>
   </div>
   <div id="painelDados"></div>
-</div>
-  </template>
-
-  <template id="tpl-campo">
-<div class="campo-page-head d-flex justify-content-between align-items-start gap-3 mb-3">
+</div></template>
+  <template id="tpl-campo"><div class="campo-page-head d-flex justify-content-between align-items-start gap-3 mb-3">
   <div>
     <h4 class="text-primary fw-bold mb-1"><i class="bi bi-geo-alt me-2"></i>Campo - Acompanhamento</h4>
     <p class="text-muted small mb-0">Visualização das equipes em atendimento, pendências de preenchimento da empresa e histórico operacional das unidades em campo.</p>
@@ -6201,10 +6577,8 @@ body {
 </div>
 
 <div id="painelDados" class="campo-area"></div>
-  </template>
-
-  <template id="tpl-alertas">
-<h4 class="text-primary fw-bold mb-1"><i class="bi bi-exclamation-diamond me-2"></i>Pendências e Alertas</h4>
+</template>
+  <template id="tpl-alertas"><h4 class="text-primary fw-bold mb-1"><i class="bi bi-exclamation-diamond me-2"></i>Pendências e Alertas</h4>
 <p class="text-muted small mb-3">Radar operacional do sistema: mostra o que está parado, incompleto ou precisa de ação da GOM ou da empresa.</p>
 
 <div class="alertas-help mb-3">
@@ -6245,10 +6619,8 @@ body {
 
 <div id="alertasFiltros" class="alertas-filtros mb-3"></div>
 <div id="painelDados" class="alertas-lista"></div>
-  </template>
-
-  <template id="tpl-obras">
-<div class="page-title">
+</template>
+  <template id="tpl-obras"><div class="page-title">
   <div>
     <h4><i class="bi bi-buildings-fill me-2"></i>Obras e Ampliações</h4>
     <p>Acompanhamento de ampliações, construções e intervenções estruturais nas unidades.</p>
@@ -6279,10 +6651,8 @@ body {
     </div>
   </div></div>
 </div>
-  </template>
-
-  <template id="tpl-historico">
-<div class="page-title memorial-title">
+</template>
+  <template id="tpl-historico"><div class="page-title memorial-title">
   <div>
     <h4><i class="bi bi-archive-fill me-2"></i>Memorial de Atendimentos</h4>
     <p>Prontuário dos chamados encerrados, com filtros por escola, OS, mês, tipo, status final, anexos e tempo total.</p>
@@ -6322,10 +6692,8 @@ body {
 </div>
 
 <div id="painelDados" class="memorial-container"></div>
-  </template>
-
-  <template id="tpl-relatorios">
-<div class="page-title relatorios-title">
+</template>
+  <template id="tpl-relatorios"><div class="page-title relatorios-title">
   <div>
     <h4><i class="bi bi-bar-chart-line-fill me-2"></i>Relatórios e Gráficos</h4>
     <p>Painel gerencial com gráficos, indicadores e exportação para análise da operação.</p>
@@ -6489,11 +6857,8 @@ body {
       <div id="relatorioObrasStatus" class="relatorio-bars"></div>
     </section>
   </div>
-</section>
-  </template>
-
-  <template id="tpl-cadastro">
-<div class="page-title">
+</section></template>
+  <template id="tpl-cadastro"><div class="page-title">
   <div>
     <h4><i class="bi bi-journal-plus me-2"></i>Cadastro de Solicitações</h4>
     <p>Use a visualização da escola para solicitações externas e o cadastro interno para registros da equipe GOM.</p>
@@ -6556,10 +6921,8 @@ body {
     </form>
   </div>
 </div>
-  </template>
-
-  <template id="tpl-acompanhar">
-<div class="page-title acompanhar-title">
+</template>
+  <template id="tpl-acompanhar"><div class="page-title acompanhar-title">
   <div>
     <h4><i class="bi bi-search-heart me-2"></i>Acompanhar Solicitação</h4>
     <p>Consulta pública do andamento dos protocolos pela escola, por unidade, protocolo ou e-mail cadastrado.</p>
@@ -6625,11 +6988,8 @@ body {
   </section>
 </div>
 
-<div id="acompanharResultado" class="acompanhar-resultado"></div>
-  </template>
-
-  <template id="tpl-configuracoes">
-<div class="page-title configuracoes-head d-flex justify-content-between align-items-start gap-3 mb-3">
+<div id="acompanharResultado" class="acompanhar-resultado"></div></template>
+  <template id="tpl-configuracoes"><div class="page-title configuracoes-head d-flex justify-content-between align-items-start gap-3 mb-3">
   <div>
     <h4 class="text-primary fw-bold mb-1"><i class="bi bi-sliders me-2"></i>Configurações do Sistema</h4>
     <p class="text-muted small mb-0">Controle parâmetros operacionais sem alterar código: empresa, prazos, alertas, anexos, status e dados institucionais.</p>
@@ -6680,154 +7040,264 @@ body {
     <button class="btn btn-primary fw-bold btn-sm" onclick="salvarConfiguracoesTela(this)"><i class="bi bi-check2-circle me-1"></i>Salvar alterações</button>
   </div>
 </div>
-  </template>
+</template>
 
-
-  <!-- Dependências externas -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- GOM API — substituto do google.script.run; precisa vir antes dos scripts da aplicação -->
+<script>
+/**
+ * GOM — gom-api.js corrigido para GitHub Pages
+ *
+ * Substitui google.script.run por fetch() para o Web App GAS,
+ * preservando a interface usada pelos Scripts_*.html.
+ *
+ * Este arquivo precisa ser carregado ANTES dos scripts da aplicação.
+ */
 
-  <!-- GOM API — substituto do google.script.run -->
-  <script>
-const GOM_API_URL = 'https://script.google.com/a/macros/educacao.pmrp.sp.gov.br/s/AKfycbzGf9lnIDmlcBdEVT9EzJ5ykQZwqFniWGOCnr6AovtXrUGx7eFPfyVzwQdaurb_T4XR/exec';
-
-const GomAPI = (() => {
+(function instalarGomApiShim(){
   'use strict';
-  async function _get_(acao, params) {
-    const url = new URL(GOM_API_URL);
-    url.searchParams.set('acao', acao);
-    if (params) Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-    const res = await fetch(url.toString(), { method: 'GET', mode: 'cors', credentials: 'omit', redirect: 'follow' });
-    if (!res.ok) throw new Error('Erro ' + res.status + ' em ' + acao);
-    const texto = await res.text();
-    try { return JSON.parse(texto); } catch(e) { return texto; }
-  }
-  async function _post_(acao, payload) {
-    const res = await fetch(GOM_API_URL, {
-      method: 'POST', mode: 'cors', credentials: 'omit', redirect: 'follow',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ acao, payload })
-    });
-    if (!res.ok) throw new Error('Erro ' + res.status + ' em ' + acao);
-    const texto = await res.text();
-    try { return JSON.parse(texto); } catch(e) { return texto; }
-  }
-  return { _get_, _post_ };
-})();
 
-function _criarRunnerProxy_() {
-  const state = { _onSuccess: null, _onFailure: null };
-  const proxy = new Proxy(state, {
-    get(target, prop) {
-      if (prop === 'withSuccessHandler') return function(fn) { target._onSuccess = fn; return proxy; };
-      if (prop === 'withFailureHandler') return function(fn) { target._onFailure = fn; return proxy; };
-      if (prop === 'withUserObject') return function() { return proxy; };
-      return function(...args) {
-        _executarChamadaGAS_(String(prop), args)
-          .then(function(r) { if (typeof target._onSuccess === 'function') target._onSuccess(r); })
-          .catch(function(e) {
-            if (typeof target._onFailure === 'function') target._onFailure(e);
-            else console.error('[GOM API] Erro não tratado em ' + String(prop) + ':', e);
-          });
-      };
+  window.GOM_BUILD = window.GOM_BUILD || '2026-06-02 · apps-script-parity + api-mapeada';
+  console.log('%c[GOM] BUILD ' + window.GOM_BUILD, 'background:#002b5e;color:#00e5ff;padding:3px 8px;border-radius:6px;font-weight:bold;');
+
+  const GOM_API_URL = 'https://script.google.com/a/macros/educacao.pmrp.sp.gov.br/s/AKfycbzGf9lnIDmlcBdEVT9EzJ5ykQZwqFniWGOCnr6AovtXrUGx7eFPfyVzwQdaurb_T4XR/exec';
+
+  function tentarJson(texto) {
+    try { return JSON.parse(texto); }
+    catch (e) { return texto; }
+  }
+
+  function validarRespostaApi(acao, resposta) {
+    if (resposta && typeof resposta === 'object' && resposta.ok === false && (resposta.erro || resposta.error)) {
+      throw new Error(resposta.erro || resposta.error || ('Erro em ' + acao));
+    }
+    return resposta;
+  }
+
+  const GomAPI = {
+    async _getText_(acao, params) {
+      const url = new URL(GOM_API_URL);
+      url.searchParams.set('acao', acao);
+
+      if (params && typeof params === 'object') {
+        Object.entries(params).forEach(([k, v]) => {
+          if (v !== undefined && v !== null) url.searchParams.set(k, String(v));
+        });
+      }
+
+      const res = await fetch(url.toString(), {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'omit',
+        redirect: 'follow'
+      });
+
+      if (!res.ok) throw new Error('Erro HTTP ' + res.status + ' em ' + acao);
+      return await res.text();
+    },
+
+    async _get_(acao, params) {
+      const texto = await this._getText_(acao, params);
+      return validarRespostaApi(acao, tentarJson(texto));
+    },
+
+    async _post_(acao, payload) {
+      const res = await fetch(GOM_API_URL, {
+        method: 'POST',
+        mode: 'cors',
+        credentials: 'omit',
+        redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ acao: acao, payload: payload || {} })
+      });
+
+      if (!res.ok) throw new Error('Erro HTTP ' + res.status + ' em ' + acao);
+      const texto = await res.text();
+      return validarRespostaApi(acao, tentarJson(texto));
+    }
+  };
+
+  window.GomAPI = GomAPI;
+
+  function _criarRunnerProxy_() {
+    const state = { _onSuccess: null, _onFailure: null, _userObject: null };
+
+    const proxy = new Proxy(state, {
+      get(target, prop) {
+        if (prop === 'then') return undefined;
+
+        if (prop === 'withSuccessHandler') {
+          return function(fn) {
+            target._onSuccess = typeof fn === 'function' ? fn : null;
+            return proxy;
+          };
+        }
+
+        if (prop === 'withFailureHandler') {
+          return function(fn) {
+            target._onFailure = typeof fn === 'function' ? fn : null;
+            return proxy;
+          };
+        }
+
+        if (prop === 'withUserObject') {
+          return function(obj) {
+            target._userObject = obj || null;
+            return proxy;
+          };
+        }
+
+        return function(...args) {
+          _executarChamadaGAS_(String(prop), args)
+            .then(function(resultado) {
+              if (typeof target._onSuccess === 'function') {
+                target._onSuccess(resultado, target._userObject);
+              }
+            })
+            .catch(function(erro) {
+              if (typeof target._onFailure === 'function') {
+                target._onFailure(erro, target._userObject);
+              } else {
+                console.error('[GOM API] Erro não tratado em ' + String(prop) + ':', erro);
+              }
+            });
+        };
+      }
+    });
+
+    return proxy;
+  }
+
+  window.google = window.google || {};
+  window.google.script = window.google.script || {};
+  window.google.script.run = new Proxy({}, {
+    get(_, prop) {
+      const runner = _criarRunnerProxy_();
+      return runner[prop];
     }
   });
-  return proxy;
-}
 
-const google = {
-  script: {
-    run: new Proxy({}, {
-      get(_, prop) { const runner = _criarRunnerProxy_(); return runner[prop]; }
-    })
+  async function _executarChamadaGAS_(nomeFuncao, args) {
+    const payload = args && args[0] !== undefined ? args[0] : {};
+
+    switch (nomeFuncao) {
+      // Leituras
+      case 'gomListarChamadosWebV3Json':
+        return GomAPI._get_('listarChamados');
+
+      case 'getDadosIniciais':
+        return GomAPI._get_('dadosIniciais').then(function(r) { return r && r.dados ? r.dados : r; });
+
+      case 'gomListarCampoWebV3Json':
+        return GomAPI._get_('listarCampo');
+
+      case 'gomListarObrasWebV3Json':
+        return GomAPI._get_('listarObras');
+
+      case 'gomObterUsuarioAtualV1Json':
+        return GomAPI._get_('usuarioAtual');
+
+      case 'gomConsultarProtocoloEscolaV1Json':
+        return GomAPI._get_('consultarProtocoloEscola', payload);
+
+      case 'gomListarConfiguracoesWebV1Json':
+      case 'listarConfiguracoes':
+      case 'obterConfiguracoes':
+        return GomAPI._get_('listarConfiguracoes');
+
+      case 'gomListarTimelineChamadoV1Json':
+      case 'listarTimelineChamado': {
+        const id = typeof payload === 'object' ? (payload.id || args[0] || '') : String(payload || '');
+        return GomAPI._get_('timelineChamado', { id: id });
+      }
+
+      case 'gomGerarPreviewCobrancaEmpresaV1Json':
+        return GomAPI._get_('previewCobrancaEmpresa');
+
+      // Escritas — chamados
+      case 'atualizarChamadoWorkflow':
+        return GomAPI._post_('atualizarChamado', payload);
+
+      case 'gomAtualizarChamadosLoteV1': {
+        const listaLote = typeof payload === 'string' ? JSON.parse(payload) : payload;
+        return GomAPI._post_('atualizarLote', listaLote);
+      }
+
+      case 'salvarNovaSolicitacao':
+        return GomAPI._post_('salvarNovaSolicitacao', payload);
+
+      case 'salvarSolicitacaoEscola':
+        return GomAPI._post_('salvarSolicitacaoEscola', payload);
+
+      case 'salvarDecisaoAprovacao':
+        return GomAPI._post_('salvarDecisaoAprovacao', payload);
+
+      // Escritas — empresa
+      case 'salvarEquipeDiaEmpresa':
+        return GomAPI._post_('salvarEquipeDiaEmpresa', payload);
+
+      case 'salvarEquipesDiaEmpresaLote':
+      case 'salvarLoteEquipeDia':
+        return GomAPI._post_('salvarEquipesDiaEmpresaLote', payload);
+
+      case 'salvarRespostaOrcamentoEmpresa':
+        return GomAPI._post_('salvarRespostaOrcamentoEmpresa', payload);
+
+      case 'salvarServicoRealizadoEmpresa':
+        return GomAPI._post_('salvarServicoRealizadoEmpresa', payload);
+
+      case 'aprovarOrcamentoEmpresa':
+        return GomAPI._post_('aprovarOrcamentoEmpresa', payload);
+
+      case 'atualizarPrevisaoOsEmpresa':
+        return GomAPI._post_('atualizarPrevisaoOsEmpresa', payload);
+
+      case 'finalizarOsEmpresa':
+        return GomAPI._post_('finalizarOsEmpresa', payload);
+
+      // Equipes
+      case 'salvarNovaEquipe':
+        return GomAPI._post_('salvarNovaEquipe', {
+          nome: args && args[0] !== undefined ? args[0] : (payload.nome || ''),
+          tipo: args && args[1] !== undefined ? args[1] : (payload.tipo || 'secretaria')
+        });
+
+      // Obras
+      case 'atualizarObra':
+      case 'salvarObraModal':
+        return GomAPI._post_('atualizarObra', payload);
+
+      // Configurações
+      case 'gomSalvarConfiguracoesWebV1Json':
+      case 'salvarConfiguracoesTela':
+      case 'salvarConfiguracao':
+        return GomAPI._post_('salvarConfiguracoes', payload);
+
+      // Escola pública / memorial / cobranças
+      case 'gomRegistrarComplementoEscolaV1Json':
+        return GomAPI._post_('registrarComplementoEscola', payload);
+
+      case 'gomGerarMemorialXlsxV1Json':
+        return GomAPI._post_('gerarMemorialXlsx', payload);
+
+      case 'enviarCobrancaEmpresa':
+      case 'gomEnviarCobrancaPendenciasEmpresaV1Json':
+        return GomAPI._post_('enviarCobrancaEmpresa', {});
+
+      case 'gomCriarTriggerCobrancaPendenciasEmpresaV1Json':
+        return GomAPI._post_('criarTriggerCobrancaEmpresa', {});
+
+      default:
+        throw new Error('Função GAS não mapeada na API: ' + nomeFuncao);
+    }
   }
-};
 
-async function _executarChamadaGAS_(nomeFuncao, args) {
-  const payload = args && args[0] !== undefined ? args[0] : {};
-  switch (nomeFuncao) {
-    case 'gomListarChamadosWebV3Json':
-      return GomAPI._get_('listarChamados');
-    case 'getDadosIniciais':
-      return GomAPI._get_('dadosIniciais').then(r => r && r.dados ? r.dados : r);
-    case 'gomListarCampoWebV3Json':
-      return GomAPI._get_('listarCampo');
-    case 'gomListarObrasWebV3Json':
-      return GomAPI._get_('listarObras');
-    case 'gomObterUsuarioAtualV1Json':
-      return GomAPI._get_('usuarioAtual');
-    case 'gomConsultarProtocoloEscolaV1Json':
-      return GomAPI._get_('consultarProtocoloEscola', payload);
-    /* ── CONFIGURAÇÕES ── */
-    case 'gomListarConfiguracoesWebV1Json':
-    case 'listarConfiguracoes':
-    case 'obterConfiguracoes':
-      return GomAPI._get_('listarConfiguracoes');
-    case 'gomSalvarConfiguracoesWebV1Json':
-    case 'salvarConfiguracao':
-      return GomAPI._post_('salvarConfiguracoes', payload);
-    /* ── TIMELINE ── */
-    case 'gomListarTimelineChamadoV1Json':
-    case 'listarTimelineChamado': {
-      const id = typeof payload === 'object' ? (payload.id || '') : String(payload || '');
-      return GomAPI._get_('timelineChamado', { id });
-    }
-    /* ── ESCRITAS ── */
-    case 'atualizarChamadoWorkflow':
-      return GomAPI._post_('atualizarChamado', payload);
-    case 'gomAtualizarChamadosLoteV1': {
-      const listaLote = typeof payload === 'string' ? JSON.parse(payload) : payload;
-      return GomAPI._post_('atualizarLote', listaLote);
-    }
-    case 'salvarNovaSolicitacao':
-      return GomAPI._post_('criarChamado', payload);
-    case 'salvarSolicitacaoEscola':
-      return GomAPI._post_('criarChamadoEscola', payload);
-    case 'salvarEquipeDiaEmpresa':
-    case 'salvarLoteEquipeDia':
-      return GomAPI._post_('salvarEquipeDia', payload);
-    case 'salvarRespostaOrcamentoEmpresa':
-      return GomAPI._post_('salvarRespostaOrcamento', payload);
-    case 'salvarServicoRealizadoEmpresa':
-      return GomAPI._post_('salvarServicoRealizado', payload);
-    case 'aprovarOrcamentoEmpresa':
-      return GomAPI._post_('enviarOrcamento', payload);
-    case 'salvarDecisaoAprovacao':
-      return GomAPI._post_('salvarDecisaoAprovacao', payload);
-    case 'atualizarPrevisaoOsEmpresa':
-      return GomAPI._post_('atualizarPrevisaoOs', payload);
-    case 'finalizarOsEmpresa':
-      return GomAPI._post_('finalizarOs', payload);
-    case 'salvarNovaEquipe': {
-      const nomeEquipe = args[0];
-      const tipoEquipe = args[1] || 'secretaria';
-      return GomAPI._post_('salvarEquipe', { nome: nomeEquipe, tipo: tipoEquipe });
-    }
-    case 'atualizarObra':
-    case 'salvarObraModal':
-      return GomAPI._post_('atualizarObra', payload);
-    case 'gomRegistrarComplementoEscolaV1Json':
-      return GomAPI._post_('registrarComplemento', payload);
-    case 'gomGerarMemorialXlsxV1Json':
-      return GomAPI._post_('gerarMemorialXlsx', payload);
-    /* ── COBRANÇAS ── */
-    case 'gomGerarPreviewCobrancaEmpresaV1Json':
-      return GomAPI._get_('previewCobrancaEmpresa');
-    case 'enviarCobrancaEmpresa':
-    case 'gomEnviarCobrancaPendenciasEmpresaV1Json':
-      return GomAPI._post_('enviarCobrancaEmpresa', {});
-    case 'gomCriarTriggerCobrancaPendenciasEmpresaV1Json':
-      return GomAPI._post_('criarTriggerCobrancaEmpresa', {});
-    default:
-      throw new Error('Função GAS não mapeada na API: ' + nomeFuncao);
-  }
-}
-  </script>
+  window._executarChamadaGAS_ = _executarChamadaGAS_;
+})();
+</script>
 
-  <!-- Scripts_Config.html -->
-  <script>
-
-// Hotfix v8.2: formata valores para input[type=date].
+  <script>// Hotfix v8.2: formata valores para input[type=date].
 // Fica em Scripts_Config porque este arquivo é carregado antes dos demais.
 window.formatarInputDate = window.formatarInputDate || function(valor) {
   if (valor === null || valor === undefined || valor === '') return '';
@@ -6908,6 +7378,7 @@ var normalizarTextoBase = window.normalizarTextoBase;
 // Estado global seguro.
 var listaEscolasGlobal = window.listaEscolasGlobal = Array.isArray(window.listaEscolasGlobal) ? window.listaEscolasGlobal : [];
 var listaEquipesGlobal = window.listaEquipesGlobal = Array.isArray(window.listaEquipesGlobal) ? window.listaEquipesGlobal : [];
+var listaEquipesEmpresaGlobal = window.listaEquipesEmpresaGlobal = Array.isArray(window.listaEquipesEmpresaGlobal) ? window.listaEquipesEmpresaGlobal : []; // Equipes da Empresa
 var listaChamadosGlobal = window.listaChamadosGlobal = Array.isArray(window.listaChamadosGlobal) ? window.listaChamadosGlobal : [];
 var listaObrasGlobal = window.listaObrasGlobal = Array.isArray(window.listaObrasGlobal) ? window.listaObrasGlobal : [];
 var dadosCampoGlobal = window.dadosCampoGlobal = window.dadosCampoGlobal || { chamados: [], historico: [], kpis: {} };
@@ -7007,12 +7478,8 @@ var CORES_STATUS = window.CORES_STATUS = {
 };
 
 var STATUS_OBRAS = window.STATUS_OBRAS = ['Aguardando','Em projeto','Em licitação','Em execução','Suspensa','Concluída','Arquivada'];
-var PRIORIDADES_OBRAS = window.PRIORIDADES_OBRAS = ['P0','P1','P2','P3'];
-  </script>
-
-  <!-- Scripts_Utils.html -->
-  <script>
-function escapeHtml(valor) {
+var PRIORIDADES_OBRAS = window.PRIORIDADES_OBRAS = ['P0','P1','P2','P3'];</script>
+  <script>function escapeHtml(valor) {
   return String(valor == null ? '' : valor)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -7342,6 +7809,174 @@ function extrairLinksAnexos(valor) {
   return encontrados;
 }
 
+function getDriveIdAnexo_(url) {
+  const texto = String(url || '').trim();
+  if (!texto) return '';
+  const padroes = [
+    /\/d\/([a-zA-Z0-9_-]{15,})/,
+    /[?&]id=([a-zA-Z0-9_-]{15,})/,
+    /open\?id=([a-zA-Z0-9_-]{15,})/,
+    /file\/d\/([a-zA-Z0-9_-]{15,})/
+  ];
+  for (const re of padroes) {
+    const m = texto.match(re);
+    if (m && m[1]) return m[1];
+  }
+  return '';
+}
+
+function getExtensaoAnexo_(anexo) {
+  const nome = String(anexo && (anexo.nome || anexo.name) || '').toLowerCase();
+  const url = String(anexo && anexo.url || '').split('?')[0].toLowerCase();
+  const texto = (nome + ' ' + url).trim();
+  const match = texto.match(/\.([a-z0-9]{2,5})(?:$|\s|[?#&])/);
+  return match ? match[1] : '';
+}
+
+function isImagemAnexo(anexo) {
+  const mime = String(anexo && (anexo.mimeType || anexo.type) || '').toLowerCase();
+  if (mime.indexOf('image/') === 0) return true;
+  const ext = getExtensaoAnexo_(anexo);
+  return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].indexOf(ext) >= 0;
+}
+
+function getIconeAnexoCard_(anexo) {
+  const ext = getExtensaoAnexo_(anexo);
+  if (ext === 'pdf') return 'bi-filetype-pdf';
+  if (['doc', 'docx'].indexOf(ext) >= 0) return 'bi-filetype-docx';
+  if (['xls', 'xlsx', 'csv'].indexOf(ext) >= 0) return 'bi-filetype-xlsx';
+  if (['ppt', 'pptx'].indexOf(ext) >= 0) return 'bi-filetype-pptx';
+  if (['zip', 'rar', '7z'].indexOf(ext) >= 0) return 'bi-file-zip';
+  if (isImagemAnexo(anexo)) return 'bi-image';
+  return 'bi-paperclip';
+}
+
+function getPreviewUrlAnexo(anexo, tamanho) {
+  const url = String(anexo && anexo.url || '').trim();
+  if (!url) return '';
+  const driveId = getDriveIdAnexo_(url);
+  if (driveId) return 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(driveId) + '&sz=w' + String(tamanho || 420);
+  return isImagemAnexo(anexo) ? url : '';
+}
+
+function coletarAnexosChamado(item) {
+  const grupos = [
+    { titulo: 'Solicitação', valor: item && (item.anexosSolicitacao || item.anexos) },
+    { titulo: 'Orçamento', valor: item && item.anexosOrcamento },
+    { titulo: 'Serviço', valor: item && item.anexosServico }
+  ];
+  const vistos = {};
+  const saida = [];
+
+  grupos.forEach(function(grupo) {
+    extrairLinksAnexos(grupo.valor).forEach(function(anexo, idx) {
+      const url = String(anexo.url || '').trim();
+      if (!url || vistos[url]) return;
+      vistos[url] = true;
+      saida.push({
+        nome: anexo.nome || anexo.name || (grupo.titulo + ' ' + (idx + 1)),
+        url: url,
+        grupo: grupo.titulo,
+        mimeType: anexo.mimeType || anexo.type || '',
+        id: anexo.id || ''
+      });
+    });
+  });
+
+  return saida;
+}
+
+function renderMiniaturasAnexosChamado(item, limite) {
+  const anexos = coletarAnexosChamado(item);
+  if (!anexos.length) return '';
+
+  limite = Number(limite || 4);
+  const visiveis = anexos.slice(0, limite);
+  const restantes = anexos.length - visiveis.length;
+
+  const thumbs = visiveis.map(function(anexo, idx) {
+    const imagem = isImagemAnexo(anexo);
+    const preview = getPreviewUrlAnexo(anexo, 420);
+    const nome = anexo.nome || ('Anexo ' + (idx + 1));
+    const grupo = anexo.grupo || 'Anexo';
+    const title = grupo + ': ' + nome + (imagem ? ' — clique para ampliar' : ' — clique para abrir');
+
+    if (imagem && preview) {
+      return '<button type="button" class="card-anexo-thumb is-image" title="' + escapeHtml(title) + '" aria-label="' + escapeHtml(title) + '" data-url="' + escapeHtml(anexo.url) + '" data-preview="' + escapeHtml(getPreviewUrlAnexo(anexo, 1200) || preview) + '" data-nome="' + escapeHtml(nome) + '" data-grupo="' + escapeHtml(grupo) + '" data-imagem="SIM" onclick="abrirPreviewAnexoCard(event,this)">' +
+        '<img class="card-anexo-thumb-img" src="' + escapeHtml(preview) + '" alt="' + escapeHtml(nome) + '" loading="lazy" onerror="this.closest(\'.card-anexo-thumb\').classList.add(\'sem-preview\')">' +
+        '<span class="card-anexo-thumb-fallback"><i class="bi bi-image"></i></span>' +
+        '<span class="card-anexo-thumb-badge">' + escapeHtml(grupo) + '</span>' +
+      '</button>';
+    }
+
+    return '<button type="button" class="card-anexo-thumb is-file" title="' + escapeHtml(title) + '" aria-label="' + escapeHtml(title) + '" data-url="' + escapeHtml(anexo.url) + '" data-nome="' + escapeHtml(nome) + '" data-grupo="' + escapeHtml(grupo) + '" data-imagem="NAO" onclick="abrirPreviewAnexoCard(event,this)">' +
+      '<span class="card-anexo-file-icon"><i class="bi ' + getIconeAnexoCard_(anexo) + '"></i></span>' +
+      '<span class="card-anexo-file-label">' + escapeHtml(resumirNomeAnexoCard_(nome)) + '</span>' +
+    '</button>';
+  }).join('');
+
+  return '<div class="card-anexos-preview" onclick="event.stopPropagation()">' +
+    '<div class="card-anexos-preview-head"><span><i class="bi bi-paperclip me-1"></i>Anexos</span><strong>' + anexos.length + '</strong></div>' +
+    '<div class="card-anexos-thumbs">' + thumbs + (restantes > 0 ? '<button type="button" class="card-anexo-thumb card-anexo-thumb-more" title="Abrir detalhes do chamado" onclick="event.stopPropagation(); abrirModalAnalise(\'' + escapeJsAttr(item && item.id) + '\')"><span>+' + restantes + '</span><small>mais</small></button>' : '') + '</div>' +
+  '</div>';
+}
+
+function resumirNomeAnexoCard_(nome) {
+  nome = String(nome || 'Arquivo').trim();
+  if (nome.length <= 12) return nome;
+  const ext = nome.match(/\.([a-z0-9]{2,5})$/i);
+  return ext ? ext[1].toUpperCase() : 'Arquivo';
+}
+
+function abrirPreviewAnexoCard(event, elemento) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  const el = elemento || (event && event.currentTarget);
+  if (!el) return false;
+  const url = el.dataset.url || '';
+  const preview = el.dataset.preview || url;
+  const nome = el.dataset.nome || 'Anexo';
+  const grupo = el.dataset.grupo || 'Anexo';
+  const imagem = el.dataset.imagem === 'SIM';
+
+  if (!url) return false;
+  if (!imagem) {
+    window.open(url, '_blank', 'noopener');
+    return false;
+  }
+
+  const modalId = 'modalPreviewAnexoCard';
+  const existente = document.getElementById(modalId);
+  if (existente) existente.remove();
+
+  const html = '<div class="modal fade gom-anexo-preview-modal" id="' + modalId + '" tabindex="-1" aria-hidden="true">' +
+    '<div class="modal-dialog modal-dialog-centered modal-xl">' +
+      '<div class="modal-content border-0 shadow-lg">' +
+        '<div class="modal-header bg-primary text-white">' +
+          '<div><h5 class="modal-title fw-bold mb-0"><i class="bi bi-image me-2"></i>' + escapeHtml(nome) + '</h5><small>' + escapeHtml(grupo) + '</small></div>' +
+          '<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>' +
+        '</div>' +
+        '<div class="modal-body text-center">' +
+          '<img class="gom-anexo-preview-img" src="' + escapeHtml(preview) + '" alt="' + escapeHtml(nome) + '">' +
+        '</div>' +
+        '<div class="modal-footer">' +
+          '<a class="btn btn-light border fw-bold" href="' + escapeHtml(url) + '" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right me-1"></i>Abrir arquivo original</a>' +
+          '<button type="button" class="btn btn-primary fw-bold" data-bs-dismiss="modal"><i class="bi bi-x-circle me-1"></i>Fechar</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+
+  document.body.insertAdjacentHTML('beforeend', html);
+  const modalEl = document.getElementById(modalId);
+  modalEl.addEventListener('hidden.bs.modal', function() { modalEl.remove(); });
+  if (window.bootstrap && bootstrap.Modal) new bootstrap.Modal(modalEl).show();
+  else window.open(url, '_blank', 'noopener');
+  return false;
+}
+
 function renderAnexosGrupo(titulo, valor) {
   const anexos = extrairLinksAnexos(valor);
   if (!anexos.length) return '';
@@ -7349,7 +7984,7 @@ function renderAnexosGrupo(titulo, valor) {
 }
 
 function temAnexo(item) {
-  return extrairLinksAnexos(item.anexosSolicitacao || item.anexos).length > 0 || extrairLinksAnexos(item.anexosOrcamento).length > 0 || extrairLinksAnexos(item.anexosServico).length > 0;
+  return coletarAnexosChamado(item).length > 0;
 }
 
 
@@ -7452,6 +8087,10 @@ window.formToObject = window.formToObject || formToObject;
 window.extrairLinksAnexos = window.extrairLinksAnexos || extrairLinksAnexos;
 window.renderAnexosGrupo = window.renderAnexosGrupo || renderAnexosGrupo;
 window.temAnexo = window.temAnexo || temAnexo;
+window.coletarAnexosChamado = window.coletarAnexosChamado || coletarAnexosChamado;
+window.renderMiniaturasAnexosChamado = window.renderMiniaturasAnexosChamado || renderMiniaturasAnexosChamado;
+window.abrirPreviewAnexoCard = window.abrirPreviewAnexoCard || abrirPreviewAnexoCard;
+window.isImagemAnexo = window.isImagemAnexo || isImagemAnexo;
 
 
 // Exposição explícita dos utilitários no escopo global do Web App.
@@ -7474,6 +8113,10 @@ window.formToObject = formToObject;
 window.extrairLinksAnexos = extrairLinksAnexos;
 window.renderAnexosGrupo = renderAnexosGrupo;
 window.temAnexo = temAnexo;
+window.coletarAnexosChamado = coletarAnexosChamado;
+window.renderMiniaturasAnexosChamado = renderMiniaturasAnexosChamado;
+window.abrirPreviewAnexoCard = abrirPreviewAnexoCard;
+window.isImagemAnexo = isImagemAnexo;
 
 // Diagnóstico rápido no console: gomDebugFrontend()
 window.gomDebugFrontend = window.gomDebugFrontend || function() {
@@ -7502,12 +8145,8 @@ window.gomEncontrarBotaoSubmit = window.gomEncontrarBotaoSubmit || gomEncontrarB
 window.gomSetButtonLoading = window.gomSetButtonLoading || gomSetButtonLoading;
 window.gomResetButtonLoading = window.gomResetButtonLoading || gomResetButtonLoading;
 window.gomMostrarErroAcao = window.gomMostrarErroAcao || gomMostrarErroAcao;
-window.gomMostrarSucessoBotao = window.gomMostrarSucessoBotao || gomMostrarSucessoBotao;
-  </script>
-
-  <!-- Scripts_Permissoes.html -->
+window.gomMostrarSucessoBotao = window.gomMostrarSucessoBotao || gomMostrarSucessoBotao;</script>
   <script>
-
 window.usuarioAtualGom = window.usuarioAtualGom || null;
 window.permissoesCarregadas = window.permissoesCarregadas || false;
 
@@ -7628,11 +8267,8 @@ window.podeAcessarPagina = podeAcessarPagina;
 window.getPaginaInicialPermitida = getPaginaInicialPermitida;
 window.aplicarPermissoesInterface = aplicarPermissoesInterface;
 window.renderAcessoNegado = renderAcessoNegado;
-  </script>
-
-  <!-- Scripts_Dashboard.html -->
-  <script>
-function renderDashboard() {
+</script>
+  <script>function renderDashboard() {
   const resumo = document.getElementById('dashboardResumo');
   const painel = document.getElementById('painelDados');
   if (!resumo) return;
@@ -7860,12 +8496,8 @@ function refreshDashboard() {
 window.renderDashboard = renderDashboard;
 window.refreshDashboard = refreshDashboard;
 window.irDashboardPara = irDashboardPara;
-window.irDashboardStatus = irDashboardStatus;  </script>
-
-  <!-- Scripts_State.html -->
-  <script>
-
-// Tela aparece primeiro; os dados carregam em seguida no painel.
+window.irDashboardStatus = irDashboardStatus;</script>
+  <script>// Tela aparece primeiro; os dados carregam em seguida no painel.
 document.addEventListener('DOMContentLoaded', iniciarSistema);
 
 function iniciarSistema() {
@@ -7923,6 +8555,7 @@ function carregarBasesIniciais() {
     .withSuccessHandler(res => {
       listaEscolasGlobal = Array.isArray(res?.escolas) ? res.escolas : [];
       listaEquipesGlobal = Array.isArray(res?.equipes) ? res.equipes : [];
+      window.listaEquipesEmpresaGlobal = Array.isArray(res?.equipesEmpresa) ? res.equipesEmpresa : [];
       if (res && res.usuario) { window.usuarioAtualGom = res.usuario; aplicarPermissoesInterface(); }
       basesCarregadas = true;
       console.log('[GOM] Bases carregadas:', { escolas: listaEscolasGlobal.length, equipes: listaEquipesGlobal.length });
@@ -8060,9 +8693,33 @@ function precarregarObrasEmSegundoPlano() {
   carregarObras({ renderizar: false, forcar: false });
 }
 
-function refreshChamados(callback) {
+function refreshChamados(callback, patchLocal) {
+  // ATUALIZAÇÃO OTIMISTA: se veio um patch { id, campos }, aplica localmente
+  // e NÃO relê o backend. É o que torna o chamado mudar de tela instantaneamente.
+  if (patchLocal && patchLocal.id) {
+    gomAtualizarChamadoLocal(patchLocal.id, patchLocal.campos || {});
+    if (typeof renderizarTela === 'function') renderizarTela();
+    if (typeof callback === 'function') callback(window.listaChamadosGlobal);
+    return;
+  }
   carregarChamados({ renderizar: !callback, forcar: true, callback });
 }
+
+function gomAtualizarChamadoLocal(id, campos) {
+  campos = campos || {};
+  var item = (window.listaChamadosGlobal || []).find(function (c) {
+    return String(c.id) === String(id);
+  });
+  if (!item) return false;
+  Object.keys(campos).forEach(function (k) { item[k] = campos[k]; });
+  if (campos.situacao && !campos.status) item.status = campos.situacao;
+  if (campos.status && !campos.situacao) item.situacao = campos.status;
+  if (campos.situacao && typeof getCorStatus === 'function') item.corStatus = getCorStatus(campos.situacao);
+  return true;
+}
+
+window.refreshChamados = refreshChamados;
+window.gomAtualizarChamadoLocal = gomAtualizarChamadoLocal;
 
 function refreshObras(callback) {
   carregarObras({ renderizar: !callback, forcar: true, callback });
@@ -8148,19 +8805,67 @@ function carregarCampo(opcoes = {}) {
     return;
   }
   carregandoCampo = true;
+
+  // OTIMIZAÇÃO: monta chamados de campo a partir de listaChamadosGlobal (já em memória),
+  // sem round-trip ao backend. O histórico de equipes vem em background.
+  if (dadosCarregados && Array.isArray(listaChamadosGlobal) && listaChamadosGlobal.length && !opcoes.forcarBackend) {
+    const statusCampo = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra'];
+    const chamadosCampo = listaChamadosGlobal.filter(c =>
+      statusCampo.includes(normalizarSituacaoSistema(c.situacao || c.status))
+    );
+    const kpis = {
+      osAbertas:            chamadosCampo.filter(c => normalizarSituacaoSistema(c.situacao||c.status) === 'OS emitida').length,
+      emergenciais:         chamadosCampo.filter(c => normalizarSituacaoSistema(c.situacao||c.status) === 'Atendimento Emergencial').length,
+      osSemNumero:          chamadosCampo.filter(c => normalizarSituacaoSistema(c.situacao||c.status) === 'OS emitida' && !String(c.numeroOs||'').trim()).length,
+      escolasEmAtendimento: new Set(chamadosCampo.map(c => c.unidade).filter(Boolean)).size,
+      preenchidosHoje:      chamadosCampo.filter(c => !!c.temEquipeDiaValida).length,
+      pendentesHoje:        chamadosCampo.filter(c => !c.temEquipeDiaValida).length
+    };
+    const historicoAtual = dadosCampoGlobal?.historico || [];
+    dadosCampoGlobal = { chamados: chamadosCampo, historico: historicoAtual, kpis };
+    carregandoCampo = false;
+    campoCarregado  = true;
+    console.log('[GOM] Campo montado localmente:', chamadosCampo.length, 'chamados');
+    if (opcoes.renderizar !== false && telaAtual === 'campo') renderizarCampo();
+    _carregarHistoricoCampoBackground_();
+    return;
+  }
+
   if (opcoes.renderizar !== false) setPainelCarregando('Carregando equipes em campo...');
   google.script.run
     .withSuccessHandler(res => {
       carregandoCampo = false;
       campoCarregado = true;
       dadosCampoGlobal = normalizarRespostaCampoFrontend_(res);
-      console.log('[GOM] Campo carregado:', dadosCampoGlobal);
+      console.log('[GOM] Campo carregado do backend:', dadosCampoGlobal);
       if (opcoes.renderizar !== false && telaAtual === 'campo') renderizarCampo();
     })
     .withFailureHandler(err => {
       carregandoCampo = false;
       console.error('[GOM] Erro em Campo:', err);
       if (opcoes.renderizar !== false) mostrarErro(err?.message || err);
+    })
+    .gomListarCampoWebV3Json();
+}
+
+function _carregarHistoricoCampoBackground_() {
+  if (window._carregandoHistoricoCampo_) return;
+  if (dadosCampoGlobal?.historico?.length) return; // já tem histórico
+  window._carregandoHistoricoCampo_ = true;
+  google.script.run
+    .withSuccessHandler(res => {
+      window._carregandoHistoricoCampo_ = false;
+      const dados = normalizarRespostaCampoFrontend_(res);
+      if (dadosCampoGlobal) {
+        dadosCampoGlobal.historico = dados.historico || [];
+        dadosCampoGlobal.kpis     = dados.kpis || dadosCampoGlobal.kpis;
+      }
+      if (telaAtual === 'campo' && window.campoTabAtual === 'historico') renderizarCampo();
+      console.log('[GOM] Histórico campo em background:', (dados.historico||[]).length);
+    })
+    .withFailureHandler(err => {
+      window._carregandoHistoricoCampo_ = false;
+      console.warn('[GOM] Histórico campo background (não crítico):', err);
     })
     .gomListarCampoWebV3Json();
 }
@@ -8181,18 +8886,16 @@ function normalizarRespostaCampoFrontend_(res) {
 
 function refreshCampo() {
   campoCarregado = false;
+  window._carregandoHistoricoCampo_ = false;
+  // Força re-montagem local (usa listaChamadosGlobal atualizado)
   carregarCampo({ renderizar: true, forcar: true });
 }
 
 // Exposição explícita de carregadores globais
 window.carregarChamados = window.carregarChamados || carregarChamados;
 window.carregarObras = window.carregarObras || carregarObras;
-window.carregarCampo = window.carregarCampo || carregarCampo;
-  </script>
-
-  <!-- Scripts_Router.html -->
+window.carregarCampo = window.carregarCampo || carregarCampo;</script>
   <script>
-
 const ROTULOS_PAGINAS_GOM = {
   dashboard: 'Dashboard',
   triagem: 'Triagem',
@@ -8377,11 +9080,8 @@ function filtrarPorStatus(s) {
   statusFiltroClicado = s;
   renderizarTela();
 }
-  </script>
-
-  <!-- Scripts_RenderChamados.html — CORRIGIDO: Triagem e Fila em layout lista -->
-  <script>
-function renderizarTela() {
+</script>
+  <script>function renderizarTela() {
   if (telaAtual === 'dashboard') return (typeof renderDashboard === 'function' ? renderDashboard() : null);
   if (telaAtual === 'cadastro' || telaAtual === 'configuracoes') return;
   if (telaAtual === 'campo') return renderizarCampo();
@@ -8404,7 +9104,11 @@ function renderizarTela() {
   const termo = (telaAtual === 'empresa' && (modoEmpresaAtual === 'gerencial' || modoEmpresaAtual === 'equipes')) ? '' : termoPesquisa();
   let listaRender = listaTela.filter(item => {
     const texto = normalizarTextoBase(`${item.id} ${item.unidade} ${item.detalhamento} ${item.situacao} ${item.status} ${item.observacoes} ${item.valorOrcamento} ${item.equipe} ${item.numeroOs} ${item.tipo}`);
-    return texto.includes(termo) && (statusFiltroClicado ? normalizarSituacaoSistema(item.situacao || item.status) === statusFiltroClicado : true);
+    if (!texto.includes(termo)) return false;
+    if (!statusFiltroClicado) return true;
+    if (statusFiltroClicado === 'Entrada hoje') return ehMesmoDia(parseDataOrdenacao(item), new Date());
+    if (statusFiltroClicado === 'A revisar')    return deveRevisarFila(item);
+    return normalizarSituacaoSistema(item.situacao || item.status) === statusFiltroClicado;
   });
 
   const contador = document.getElementById('contador');
@@ -8415,93 +9119,29 @@ function renderizarTela() {
   }
 
   if (telaAtual === 'empresa') {
-    painel.innerHTML = (typeof renderEmpresaView === 'function' ? renderEmpresaView(listaRender) : '<div class="empty-state"><h5>Módulo Empresa não carregado.</h5></div>');
+    painel.innerHTML = (typeof renderEmpresaView === 'function'
+      ? renderEmpresaView(listaRender)
+      : (typeof renderEmpresaViewFallback === 'function' ? renderEmpresaViewFallback(listaRender) : '<div class="empty-state"><h5>Módulo Empresa não carregado.</h5></div>'));
     return;
   }
-  if (telaAtual === 'aprovacao') { painel.innerHTML = renderAprovacaoView(listaRender, listaChamadosGlobal || []); return; }
-  if (telaAtual === 'historico') { painel.innerHTML = renderMemorialView(listaTela); return; }
+
+  if (telaAtual === 'aprovacao') {
+    painel.innerHTML = renderAprovacaoView(listaRender, listaChamadosGlobal || []);
+    return;
+  }
+
+  if (telaAtual === 'historico') {
+    painel.innerHTML = renderMemorialView(listaTela);
+    return;
+  }
 
   if (!listaRender.length) {
     painel.innerHTML = '<div class="empty-state"><h5>Nenhum registro encontrado para os filtros atuais.</h5></div>';
     return;
   }
 
-  // Triagem e Fila: layout em lista (como Execução Diária)
-  if (telaAtual === 'triagem' || telaAtual === 'fila') {
-    painel.innerHTML = renderListaChamados(listaRender);
-    return;
-  }
-
-  // Fallback: grid de cards
-  painel.innerHTML = listaRender.map((item) => renderCardChamado(item)).join('');
-}
-
-// ── Layout lista para Triagem e Fila ─────────────────────────────────────────
-function renderListaChamados(lista) {
-  const isFila = telaAtual === 'fila';
-  const hoje = new Date();
-  const colunasCab = isFila
-    ? 'minmax(320px,1.5fr) 140px 160px minmax(200px,1fr) 130px'
-    : 'minmax(320px,1.5fr) 160px minmax(200px,1fr) 160px 130px';
-  const cabTexto = isFila
-    ? '<div>Unidade / descrição</div><div>Posição / tempo</div><div>Entrada na fila</div><div>Observações</div><div>Status</div>'
-    : '<div>Unidade / descrição</div><div>Data / origem</div><div>Detalhamento</div><div>Observações</div><div>Status</div>';
-
-  const cabecalho = `<div style="display:grid;grid-template-columns:${colunasCab};gap:14px;align-items:center;padding:11px 16px;border-radius:16px;background:linear-gradient(90deg,#003b73,#075f82);color:#fff;box-shadow:0 8px 20px rgba(0,43,94,.14);font-size:.66rem;font-weight:950;text-transform:uppercase;letter-spacing:.07em;min-width:1100px;">${cabTexto}</div>`;
-
-  const linhas = lista.map((item, idx) => isFila ? renderLinhaFila(item, idx, hoje) : renderLinhaTriagem(item)).join('');
-  return `<div style="overflow-x:auto;padding-bottom:4px;"><div style="display:flex;flex-direction:column;gap:10px;min-width:1100px;">${cabecalho}${linhas}</div></div>`;
-}
-
-function renderLinhaTriagem(item) {
-  const id = escapeHtml(item.id); const idJs = escapeJsAttr(item.id);
-  const st = normalizarSituacaoSistema(item.situacao || item.status);
-  const cor = getCorStatus(st); const classe = getClasseStatus(st);
-  const unidade = escapeHtml(item.unidade || 'Unidade não informada');
-  const tipo = escapeHtml(item.tipo || 'Sem tipo');
-  const dataHora = escapeHtml(item.dataHora || item.data || 'Sem data');
-  const origem = escapeHtml(item.sistema || 'Sem origem');
-  const detalhe = escapeHtml(resumirTextoLista(item.detalhamento || '', 130));
-  const detalheCompleto = escapeHtml(item.detalhamento || 'Sem detalhamento.');
-  const obs = escapeHtml(resumirTextoLista(item.observacoes || item.observacaoAntiga || '', 100));
-  const iconeAnexo = temAnexo(item) ? '<i class="bi bi-paperclip ms-1 text-muted"></i>' : '';
-  return `<div class="empresa-os-list-row-v2 ${classe}" style="--card-accent:${cor};display:grid;grid-template-columns:minmax(320px,1.5fr) 160px minmax(200px,1fr) 160px 130px;gap:14px;align-items:stretch;min-width:1100px;">
-    <div><details class="empresa-expand"><summary><span class="empresa-unidade-link">${unidade}</span><span class="empresa-os-id">#${id}${iconeAnexo}</span></summary><div class="empresa-expand-body mt-2"><div class="card-detail mb-2">${detalheCompleto}</div><button class="btn btn-light btn-sm border fw-bold" onclick="abrirModalAnalise('${idJs}')"><i class="bi bi-box-arrow-up-right me-1"></i>Abrir</button></div></details><div style="color:#64748b;font-size:.76rem;margin-top:4px;">${tipo}</div></div>
-    <div class="campo-status-data-cell"><span class="empresa-os-meta-line"><i class="bi bi-calendar3"></i> ${dataHora}</span><span style="color:#94a3b8;font-size:.72rem;">${origem}</span></div>
-    <div class="campo-readonly-cell">${detalhe || '<span style="color:#94a3b8;">Sem detalhamento</span>'}</div>
-    <div class="campo-readonly-cell">${obs || '<span style="color:#94a3b8;">Sem observações</span>'}</div>
-    <div class="campo-status-dia-cell d-flex align-items-center justify-content-center"><span style="display:inline-flex;align-items:center;border-radius:999px;padding:7px 10px;background:color-mix(in srgb,${cor} 12%,#fff);color:#0f172a;border:1px solid ${cor};font-size:.70rem;font-weight:950;white-space:nowrap;">${escapeHtml(st)}</span></div>
-  </div>`;
-}
-
-function renderLinhaFila(item, index, hoje) {
-  const id = escapeHtml(item.id); const idJs = escapeJsAttr(item.id);
-  const timestamp = parseDataOrdenacao(item);
-  const st = normalizarSituacaoSistema(item.situacao || item.status);
-  const cor = getCorStatus(st); const classe = getClasseStatus(st);
-  const unidade = escapeHtml(item.unidade || 'Unidade não informada');
-  const tipo = escapeHtml(item.tipo || 'Sem tipo');
-  const entrada = escapeHtml(item.dataHoraEntradaFila || item.dataEntradaFila || item.dataHora || item.data || 'Sem data');
-  const tempoFila = escapeHtml(formatarTempoFila(timestamp));
-  const precisaRevisao = deveRevisarFila(item);
-  const obs = escapeHtml(resumirTextoLista(item.observacoes || item.observacaoAntiga || '', 100));
-  const detalheCompleto = escapeHtml(item.detalhamento || '');
-  const posicao = String(index + 1).padStart(2, '0');
-  const iconeAnexo = temAnexo(item) ? '<i class="bi bi-paperclip ms-1 text-muted"></i>' : '';
-  const alertaRev = precisaRevisao ? '<span class="empresa-os-alert"><i class="bi bi-exclamation-triangle-fill"></i> Revisar</span>' : '';
-  return `<div class="empresa-os-list-row-v2 ${classe}" style="--card-accent:${cor};display:grid;grid-template-columns:minmax(320px,1.5fr) 140px 160px minmax(200px,1fr) 130px;gap:14px;align-items:stretch;min-width:1100px;">
-    <div><details class="empresa-expand"><summary><span class="empresa-unidade-link">${unidade}</span><span class="empresa-os-id">#${id}${iconeAnexo}</span></summary><div class="empresa-expand-body mt-2"><div class="card-detail mb-2">${detalheCompleto}</div><button class="btn btn-light btn-sm border fw-bold" onclick="abrirModalAnalise('${idJs}')"><i class="bi bi-box-arrow-up-right me-1"></i>Abrir</button></div></details><div style="color:#64748b;font-size:.76rem;margin-top:4px;">${tipo}</div></div>
-    <div class="campo-status-data-cell"><span class="fila-rank-badge" style="width:34px;height:34px;font-size:.82rem;">${posicao}</span><span class="empresa-os-meta-line mt-1"><i class="bi bi-hourglass-split"></i> ${tempoFila}</span>${alertaRev}</div>
-    <div class="campo-status-data-cell"><span class="empresa-os-meta-line"><i class="bi bi-calendar3"></i> ${entrada}</span></div>
-    <div class="campo-readonly-cell">${obs || '<span style="color:#94a3b8;">Sem observações</span>'}</div>
-    <div class="campo-status-dia-cell d-flex align-items-center justify-content-center"><span style="display:inline-flex;align-items:center;border-radius:999px;padding:7px 10px;background:color-mix(in srgb,${cor} 12%,#fff);color:#0f172a;border:1px solid ${cor};font-size:.70rem;font-weight:950;white-space:nowrap;">${escapeHtml(st)}</span></div>
-  </div>`;
-}
-
-function resumirTextoLista(valor, limite) {
-  const texto = String(valor || '').replace(/\s+/g, ' ').trim();
-  if (texto.length <= limite) return texto;
-  return texto.slice(0, limite - 1).trim() + '…';
+  if (telaAtual === 'fila') painel.innerHTML = listaRender.map((item, idx) => renderCardFila(item, idx)).join('');
+  else painel.innerHTML = listaRender.map((item) => renderCardChamado(item)).join('');
 }
 
 function filtrarTelaChamados(lista) {
@@ -8509,6 +9149,7 @@ function filtrarTelaChamados(lista) {
   const statusFilaSet = new Set(STATUS_FILA);
   const statusAprovacaoSet = new Set(STATUS_APROVACAO);
   const statusMemorialSet = new Set(STATUS_MEMORIAL);
+
   const getStatusEmpresaPorModo = function() {
     const modo = window.empresaModoAtual || 'diario';
     if (modo === 'orcamentos') return window.STATUS_EMPRESA_ORCAMENTO || ['Solicitado Orçamento'];
@@ -8516,11 +9157,16 @@ function filtrarTelaChamados(lista) {
     if (modo === 'equipes') return [];
     return window.STATUS_EMPRESA_DIARIO || ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra'];
   };
+
   return (lista || []).filter(item => {
     const st = normalizarSituacaoSistema(item.situacao || item.status || item['Situação'] || item['Status']);
     item.situacao = st;
     if (telaAtual === 'fila') return statusFilaSet.has(st);
-    if (telaAtual === 'empresa') { const modo = window.empresaModoAtual || 'diario'; if (modo === 'equipes') return true; return new Set(getStatusEmpresaPorModo()).has(st); }
+    if (telaAtual === 'empresa') {
+      const modo = window.empresaModoAtual || 'diario';
+      if (modo === 'equipes') return true;
+      return new Set(getStatusEmpresaPorModo()).has(st);
+    }
     if (telaAtual === 'aprovacao') return statusAprovacaoSet.has(st);
     if (telaAtual === 'historico') return statusMemorialSet.has(st);
     if (telaAtual === 'triagem') return statusTriagemSet.has(st);
@@ -8535,89 +9181,152 @@ function ordenarChamados(lista) {
 function renderizarKPIsChamados(listaTela) {
   const grid = document.getElementById('kpiGrid');
   if (!grid) return;
+
   const cont = {};
-  (listaTela || []).forEach(i => { const st = normalizarSituacaoSistema(i.situacao || i.status); cont[st] = (cont[st] || 0) + 1; });
+  (listaTela || []).forEach(i => {
+    const st = normalizarSituacaoSistema(i.situacao || i.status);
+    cont[st] = (cont[st] || 0) + 1;
+  });
+
   let html = '';
+
   if (telaAtual === 'fila') {
     const hoje = new Date();
     const entradaHoje = (listaTela || []).filter(item => ehMesmoDia(parseDataOrdenacao(item), hoje)).length;
-    const revisar = (listaTela || []).filter(item => deveRevisarFila(item)).length;
-    html += montarKpiCard('Aguardando visita', 'Fila de visita', listaTela.length, 'var(--primary)', true, 'Chamados na fila', false);
-    html += montarKpiCard('Entrada hoje', 'Entrada hoje', entradaHoje, 'var(--visita)', false, 'Chamados que entraram hoje', false);
-    html += montarKpiCard('A revisar', 'A revisar', revisar, 'var(--orcamento)', false, 'Com inconsistência de data', false);
-    grid.innerHTML = html; return;
+    const revisar     = (listaTela || []).filter(item => deveRevisarFila(item)).length;
+    html += montarKpiCard(null,           'Fila de visita', listaTela.length, 'var(--primary)',   statusFiltroClicado === null,          'Exibir todos os chamados da fila.', true);
+    html += montarKpiCard('Entrada hoje', 'Entrada hoje',   entradaHoje,      'var(--visita)',    statusFiltroClicado === 'Entrada hoje', 'Chamados que entraram em atendimento hoje.', true);
+    html += montarKpiCard('A revisar',    'A revisar',      revisar,          'var(--orcamento)', statusFiltroClicado === 'A revisar',    'Chamados com inconsistência de data de entrada.', true);
+    grid.innerHTML = html;
+    return;
   }
-  let statuses = [], tituloTotal = 'Todos na tela';
+
+  let statuses = [];
+  let tituloTotal = 'Todos na tela';
+
   if (telaAtual === 'triagem') statuses = STATUS_TRIAGEM;
   if (telaAtual === 'empresa') {
     const modoEmpresa = window.empresaModoAtual || 'diario';
-    if (modoEmpresa === 'equipes') { grid.innerHTML = ''; return; }
-    if (modoEmpresa === 'orcamentos') { statuses = window.STATUS_EMPRESA_ORCAMENTO || ['Solicitado Orçamento']; tituloTotal = 'Orçamentos'; }
-    else if (modoEmpresa === 'gerencial') { statuses = window.STATUS_EMPRESA_GERENCIAL || ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Serviço Realizado']; tituloTotal = 'OS em acompanhamento'; }
-    else { statuses = window.STATUS_EMPRESA_DIARIO || ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra']; tituloTotal = 'Execução diária'; }
+    if (modoEmpresa === 'equipes') {
+      grid.innerHTML = '';
+      return;
+    }
+    if (modoEmpresa === 'orcamentos') {
+      statuses = window.STATUS_EMPRESA_ORCAMENTO || ['Solicitado Orçamento'];
+      tituloTotal = 'Orçamentos';
+    } else if (modoEmpresa === 'gerencial') {
+      statuses = window.STATUS_EMPRESA_GERENCIAL || ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Serviço Realizado'];
+      tituloTotal = 'OS em acompanhamento';
+    } else {
+      statuses = window.STATUS_EMPRESA_DIARIO || ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra'];
+      tituloTotal = 'Execução diária';
+    }
   }
   if (telaAtual === 'aprovacao') statuses = STATUS_APROVACAO;
   if (telaAtual === 'historico') statuses = STATUS_MEMORIAL;
-  html += montarKpiCard(null, tituloTotal, listaTela.length, 'var(--primary)', statusFiltroClicado === null, 'Total desta visão', false);
-  statuses.forEach(st => { const valor = cont[st] || 0; if (valor > 0) html += montarKpiCard(st, st, valor, getCorStatus(st), statusFiltroClicado === st, 'Filtrar por ' + st); });
+
+  html += montarKpiCard(null, tituloTotal, listaTela.length, 'var(--primary)', statusFiltroClicado === null, 'Total de registros desta visão', false);
+
+  statuses.forEach(st => {
+    const valor = cont[st] || 0;
+    if (valor > 0) html += montarKpiCard(st, st, valor, getCorStatus(st), statusFiltroClicado === st, 'Filtrar por ' + st);
+  });
+
   grid.innerHTML = html;
 }
 
 function renderCardChamado(item) {
   const st = normalizarSituacaoSistema(item.situacao || item.status);
-  const classe = getClasseStatus(st); const corStatus = getCorStatus(st);
-  const idSeguro = escapeHtml(item.id); const tipo = escapeHtml(item.tipo || 'Sem tipo');
+  const classe = getClasseStatus(st);
+  const corStatus = getCorStatus(st);
+  const idSeguro = escapeHtml(item.id);
+  const tipo = escapeHtml(item.tipo || 'Sem tipo');
   const unidade = escapeHtml(item.unidade || 'Unidade não informada');
   const detalhamento = escapeHtml(item.detalhamento || 'Sem detalhamento informado.');
   const observacoes = escapeHtml(item.observacoes || item.observacaoAntiga || 'Sem observações registradas.');
   const dataEntrada = escapeHtml(item.dataHora || item.data || 'Sem data');
   const valorOrcamento = item.valorOrcamento ? `<div class="card-money"><i class="bi bi-cash-coin"></i> Orçamento: ${escapeHtml(item.valorOrcamento)}</div>` : '';
-  const iconeAnexo = temAnexo(item) ? '<span class="card-anexo-icon" title="Com anexo"><i class="bi bi-paperclip"></i></span>' : '';
+  const iconeAnexo = temAnexo(item) ? '<span class="card-anexo-icon" title="Chamado com anexo"><i class="bi bi-paperclip"></i></span>' : '';
+  const miniaturasAnexos = typeof renderMiniaturasAnexosChamado === 'function' ? renderMiniaturasAnexosChamado(item, 4) : '';
   const labelSituacao = telaAtual === 'historico' ? 'Status final' : 'Situação atual';
-  return `<div class="card-admin ${classe}" style="--card-accent: ${corStatus};" onclick="abrirModalAnalise('${idSeguro}')">
-    <div class="card-topline"><span class="card-kind"><span class="card-dot"></span>${tipo}</span><span class="card-id">#${escapeHtml(item.id || '-')}${iconeAnexo}</span></div>
-    <div class="card-title-wrap"><span class="card-icon"><i class="bi bi-building"></i></span><div><div class="card-label">Unidade escolar</div><div class="card-unit">${unidade}</div><div class="card-subline"><i class="bi bi-calendar3"></i> ${dataEntrada}</div></div></div>
-    <div class="card-detail">${detalhamento}</div>
-    <div class="card-observacao"><strong>Observações:</strong> ${observacoes}</div>
-    ${valorOrcamento}
-    <div class="card-footer-row"><span class="card-footer-label">${labelSituacao}</span><span class="status-pill"><span class="status-dot"></span>${escapeHtml(st || 'Sem status')}</span></div>
-  </div>`;
+
+  return `
+    <div class="card-admin ${classe}" style="--card-accent: ${corStatus};" onclick="abrirModalAnalise('${idSeguro}')">
+      <div class="card-topline">
+        <span class="card-kind"><span class="card-dot"></span>${tipo}</span>
+        <span class="card-id">#${escapeHtml(item.id || '-')}${iconeAnexo}</span>
+      </div>
+      <div class="card-title-wrap">
+        <span class="card-icon"><i class="bi bi-building"></i></span>
+        <div>
+          <div class="card-label">Unidade escolar</div>
+          <div class="card-unit">${unidade}</div>
+          <div class="card-subline"><i class="bi bi-calendar3"></i> ${dataEntrada}</div>
+        </div>
+      </div>
+      <div class="card-detail">${detalhamento}</div>
+      <div class="card-observacao"><strong>Observações:</strong> ${observacoes}</div>
+      ${miniaturasAnexos}
+      ${valorOrcamento}
+      <div class="card-footer-row">
+        <span class="card-footer-label">${labelSituacao}</span>
+        <span class="status-pill"><span class="status-dot"></span>${escapeHtml(st || 'Sem status')}</span>
+      </div>
+    </div>`;
 }
 
 function renderCardFila(item, index) {
   const timestamp = parseDataOrdenacao(item);
   const st = normalizarSituacaoSistema(item.situacao || item.status);
-  const classe = getClasseStatus(st); const corStatus = getCorStatus(st);
-  const idSeguro = escapeHtml(item.id); const tipo = escapeHtml(item.tipo || 'Sem tipo');
+  const classe = getClasseStatus(st);
+  const corStatus = getCorStatus(st);
+  const idSeguro = escapeHtml(item.id);
+  const tipo = escapeHtml(item.tipo || 'Sem tipo');
   const unidade = escapeHtml(item.unidade || 'Unidade não informada');
   const detalhamento = escapeHtml(item.detalhamento || 'Sem detalhamento informado.');
   const observacoes = escapeHtml(item.observacoes || item.observacaoAntiga || 'Sem observações registradas.');
   const entrada = escapeHtml(item.dataHoraEntradaFila || item.dataEntradaFila || item.dataHora || item.data || 'Sem data informada');
   const tempoFila = escapeHtml(formatarTempoFila(timestamp));
   const precisaRevisao = deveRevisarFila(item);
-  const avisoEntrada = precisaRevisao ? '<span class="fila-warning-badge"><i class="bi bi-exclamation-triangle-fill"></i> Revisar entrada</span>' : '<span class="fila-order-badge"><i class="bi bi-sort-down"></i> Ordem de entrada</span>';
+  const avisoEntrada = precisaRevisao
+    ? '<span class="fila-warning-badge" title="Verifique a data/hora de entrada em atendimento."><i class="bi bi-exclamation-triangle-fill"></i> Revisar entrada</span>'
+    : '<span class="fila-order-badge"><i class="bi bi-sort-down"></i> Ordem de entrada</span>';
   const posicao = String(index + 1).padStart(2, '0');
   const iconeAnexo = temAnexo(item) ? ' · Anexo' : '';
-  return `<div class="card-admin fila-card ${classe}" style="--card-accent: ${corStatus};" onclick="abrirModalAnalise('${idSeguro}')">
-    <div class="card-topline"><span class="fila-rank-badge">${posicao}</span>${avisoEntrada}</div>
-    <div class="card-title-wrap"><span class="card-icon"><i class="bi bi-building"></i></span><div><div class="card-label">Unidade escolar</div><div class="card-unit">${unidade}</div></div></div>
-    <div class="fila-meta-grid"><div class="fila-meta-item"><span class="fila-meta-label">Entrada na fila</span><span class="fila-meta-value">${entrada}</span></div><div class="fila-meta-item"><span class="fila-meta-label">Tempo na fila</span><span class="fila-meta-value">${tempoFila}</span></div></div>
-    <div class="card-detail">${detalhamento}</div>
-    <div class="card-observacao"><strong>Observações:</strong> ${observacoes}</div>
-    <div class="card-footer-row"><span class="card-footer-label">#${escapeHtml(item.id || '-')} · ${tipo}${iconeAnexo}</span><span class="status-pill"><span class="status-dot"></span>${escapeHtml(st)}</span></div>
-  </div>`;
+  const miniaturasAnexos = typeof renderMiniaturasAnexosChamado === 'function' ? renderMiniaturasAnexosChamado(item, 4) : '';
+
+  return `
+    <div class="card-admin fila-card ${classe}" style="--card-accent: ${corStatus};" onclick="abrirModalAnalise('${idSeguro}')">
+      <div class="card-topline">
+        <span class="fila-rank-badge" title="Posição atual na fila">${posicao}</span>
+        ${avisoEntrada}
+      </div>
+      <div class="card-title-wrap">
+        <span class="card-icon"><i class="bi bi-building"></i></span>
+        <div>
+          <div class="card-label">Unidade escolar</div>
+          <div class="card-unit">${unidade}</div>
+        </div>
+      </div>
+      <div class="fila-meta-grid">
+        <div class="fila-meta-item"><span class="fila-meta-label">Entrada na fila</span><span class="fila-meta-value">${entrada}</span></div>
+        <div class="fila-meta-item"><span class="fila-meta-label">Tempo na fila</span><span class="fila-meta-value">${tempoFila}</span></div>
+      </div>
+      <div class="card-detail">${detalhamento}</div>
+      <div class="card-observacao"><strong>Observações:</strong> ${observacoes}</div>
+      ${miniaturasAnexos}
+      <div class="card-footer-row">
+        <span class="card-footer-label">#${escapeHtml(item.id || '-')} · ${tipo}${iconeAnexo}</span>
+        <span class="status-pill"><span class="status-dot"></span>${escapeHtml(st)}</span>
+      </div>
+    </div>`;
 }
 
-window.renderizarTela = renderizarTela;
-window.renderListaChamados = renderListaChamados;
-window.resumirTextoLista = resumirTextoLista;
-window.filtrarTelaChamados = filtrarTelaChamados;
-window.ordenarChamados = ordenarChamados;
-window.renderizarKPIsChamados = renderizarKPIsChamados;
-  </script>
 
-  <!-- Memorial e Aprovação (do Scripts_RenderChamados.html original) -->
-  <script>
+
+/* ==========================================================
+   Memorial / Prontuário do Chamado - v11
+   ========================================================== */
 function renderMemorialView(lista) {
   const base = Array.isArray(lista) ? lista : [];
   popularFiltrosMemorial(base);
@@ -9132,7 +9841,283 @@ function imprimirProntuarioMemorial(id) {
       '<footer class="footer"><span>Documento gerado pelo Sistema GOM/SME</span><span>Gerado em ' + escapeHtml(dataImpressao) + '</span></footer>',
     '</main>',
     '<script>setTimeout(function(){ window.print(); }, 350);<\/script>',
-    '</body></html>'
+    '
+<!-- Scripts_RuntimePatch.html — patch opcional seguro -->
+<script>
+(function gomRuntimePatch(){
+  'use strict';
+  window.STATUS_OBRAS = window.STATUS_OBRAS || ['Aguardando','Em projeto','Em licitação','Em execução','Suspensa','Concluída','Arquivada'];
+  window.PRIORIDADES_OBRAS = window.PRIORIDADES_OBRAS || ['P0','P1','P2','P3'];
+  window.STATUS_TODOS = window.STATUS_TODOS || [
+    'Em análise','Aguardando visita','Solicitado Orçamento','Orçamento Realizado','OS emitida','Atendimento Emergencial','Garantia de Obra','Serviço Realizado','Devolvido para a escola','Concluído','Encaminhado para outra gerência ou Unidade escolar.','A cargo da unidade escolar','Duplicado'
+  ];
+
+  // Alguns arquivos usam os nomes diretamente. Criamos bindings globais seguros.
+  try { if (typeof STATUS_OBRAS === 'undefined') window.eval('var STATUS_OBRAS = window.STATUS_OBRAS;'); } catch(e) {}
+  try { if (typeof PRIORIDADES_OBRAS === 'undefined') window.eval('var PRIORIDADES_OBRAS = window.PRIORIDADES_OBRAS;'); } catch(e) {}
+  try { if (typeof STATUS_TODOS === 'undefined') window.eval('var STATUS_TODOS = window.STATUS_TODOS;'); } catch(e) {}
+
+
+  if (typeof window.formatarInputDate !== 'function') {
+    window.formatarInputDate = function(valor) {
+      if (valor === null || valor === undefined || valor === '') return '';
+      var texto = String(valor || '').trim();
+      if (!texto) return '';
+      var iso = texto.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (iso) return iso[1] + '-' + iso[2] + '-' + iso[3];
+      var br = texto.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+      if (br) {
+        var ano = Number(br[3]);
+        if (ano < 100) ano += 2000;
+        return String(ano).padStart(4, '0') + '-' + String(Number(br[2])).padStart(2, '0') + '-' + String(Number(br[1])).padStart(2, '0');
+      }
+      var data = new Date(texto);
+      if (!isNaN(data.getTime())) return data.getFullYear() + '-' + String(data.getMonth() + 1).padStart(2, '0') + '-' + String(data.getDate()).padStart(2, '0');
+      return '';
+    };
+  }
+  try { if (typeof formatarInputDate === 'undefined') window.eval('var formatarInputDate = window.formatarInputDate;'); } catch(e) {}
+
+  if (typeof window.formToObject !== 'function') {
+    window.formToObject = function(form) {
+      const fd = new FormData(form);
+      const obj = {};
+      fd.forEach((value, key) => {
+        if (obj[key] !== undefined) obj[key] = Array.isArray(obj[key]) ? obj[key].concat(value) : [obj[key], value];
+        else obj[key] = value;
+      });
+      Object.keys(obj).forEach(k => { if (Array.isArray(obj[k])) obj[k] = obj[k].join(', '); });
+      return obj;
+    };
+  }
+
+  if (typeof window.arquivosInputParaBase64 !== 'function') {
+    window.arquivosInputParaBase64 = async function(input) {
+      if (!input || !input.files) return [];
+      const files = Array.from(input.files || []);
+      const limiteArquivos = 5;
+      const limiteBytes = 8 * 1024 * 1024;
+      if (files.length > limiteArquivos) throw new Error('Selecione no máximo ' + limiteArquivos + ' arquivos.');
+      files.forEach(file => { if (file.size > limiteBytes) throw new Error('O arquivo "' + file.name + '" ultrapassa 8 MB.'); });
+      return Promise.all(files.map(file => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve({ nome: file.name, mimeType: file.type || 'application/octet-stream', tamanho: file.size, base64: String(reader.result || '').split(',').pop() });
+        reader.onerror = () => reject(new Error('Não foi possível ler o arquivo: ' + file.name));
+        reader.readAsDataURL(file);
+      })));
+    };
+  }
+
+  if (typeof window.inicializarTelaCadastro !== 'function') {
+    window.inicializarTelaCadastro = function() {
+      const preencher = (id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const atual = el.value;
+        const escolas = Array.isArray(window.listaEscolasGlobal) ? window.listaEscolasGlobal : [];
+        el.innerHTML = '<option value="">Selecione...</option>' + escolas.map(e => `<option value="${escapeHtml(e.nome || e)}">${escapeHtml(e.nome || e)}</option>`).join('');
+        if (atual) el.value = atual;
+      };
+      preencher('selectUnidade');
+      preencher('selectUnidadeEscola');
+      preencher('selectUnidadeEscolaWeb');
+      const sS = document.getElementById('selectSituacaoCadastro');
+      if (sS) sS.innerHTML = (window.STATUS_TODOS || []).map(s => `<option value="${escapeHtml(s)}" ${s==='Em análise'?'selected':''}>${escapeHtml(s)}</option>`).join('');
+    };
+  }
+
+  if (typeof window.setTipoEscola !== 'function') {
+    window.setTipoEscola = function() {
+      const nome = document.getElementById('selectUnidade')?.value || document.getElementById('selectUnidadeEscola')?.value || document.getElementById('selectUnidadeEscolaWeb')?.value || '';
+      const e = (window.listaEscolasGlobal || []).find(x => (x.nome || x) === nome);
+      ['inputTipo','inputTipoEscola','inputTipoEscolaWeb'].forEach(id => { const input = document.getElementById(id); if (input) input.value = e ? (e.tipo || '') : ''; });
+    };
+    window.setTipoEscolaWeb = window.setTipoEscola;
+  }
+
+  if (typeof window.toggleCamposSistema !== 'function') {
+    window.toggleCamposSistema = function() {
+      const s = document.getElementById('selectSistema')?.value;
+      const solar = document.getElementById('divSolar'); if (solar) solar.style.display = s === 'Solar' ? 'block' : 'none';
+      const solicitacao = document.getElementById('divSolicitacaoPor'); if (solicitacao) solicitacao.style.display = s === 'Solicitação por' ? 'block' : 'none';
+    };
+  }
+
+  if (typeof window.setEmpresaModo !== 'function') {
+    window.setEmpresaModo = function(modo, botao) {
+      window.empresaModoAtual = modo || 'diario';
+      document.querySelectorAll('#empresaModoTabs .nav-link').forEach(b => b.classList.remove('active'));
+      if (botao) botao.classList.add('active');
+      if (typeof window.renderizarTela === 'function') window.renderizarTela();
+    };
+  }
+
+  if (typeof window.renderEmpresaView !== 'function') {
+    window.renderEmpresaView = function(listaRender) {
+      const modo = window.empresaModoAtual || 'diario';
+      if (modo === 'equipes') {
+        setTimeout(() => { if (typeof renderizarListaEquipes === 'function') renderizarListaEquipes(); }, 0);
+        return `<div class="row align-items-start mt-2"><div class="col-md-5"><div class="bg-white p-4 rounded shadow-sm border-top border-4 border-info"><h5 class="fw-bold text-dark mb-3"><i class="bi bi-person-plus-fill text-info me-2"></i>Cadastrar Equipe</h5><form onsubmit="salvarEquipeForm(event)"><div class="mb-3"><label class="form-label text-muted small fw-bold">NOME DA EQUIPE OU TÉCNICO</label><input type="text" id="nomeNovaEquipe" class="form-control form-control-lg bg-light" placeholder="Ex: Equipe Alfa" required></div><button type="submit" class="btn btn-info text-white w-100 fw-bold shadow-sm">ADICIONAR EQUIPE</button></form></div></div><div class="col-md-7"><div class="bg-white p-4 rounded shadow-sm h-100 border-top border-4 border-secondary"><h5 class="fw-bold text-dark mb-3"><i class="bi bi-card-checklist text-secondary me-2"></i>Equipes Disponíveis</h5><div id="listaEquipesCadastradasHtml" class="d-flex flex-wrap gap-2"></div></div></div></div>`;
+      }
+      const filtrarModo = (item) => {
+        const st = normalizarSituacaoSistema(item.situacao || item.status);
+        if (modo === 'orcamentos') return st === 'Solicitado Orçamento';
+        if (modo === 'gerencial') return ['OS emitida','Atendimento Emergencial','Garantia de Obra','Serviço Realizado'].includes(st);
+        return ['OS emitida','Atendimento Emergencial','Garantia de Obra'].includes(st);
+      };
+      const lista = (listaRender || []).filter(filtrarModo);
+      if (!lista.length) return '<div class="empty-state"><h5>Nenhuma demanda encontrada para esta visualização.</h5></div>';
+      return '<div class="empresa-grid">' + lista.map(item => (typeof renderEmpresaCard === 'function' ? renderEmpresaCard(item, modo) : renderEmpresaCardFallback(item, modo))).join('') + '</div>';
+    };
+  }
+
+  if (typeof window.renderEmpresaCardFallback !== 'function') {
+    window.renderEmpresaCardFallback = function(item, modo) {
+      const id = escapeHtml(item.id || '');
+      const st = normalizarSituacaoSistema(item.situacao || item.status);
+      const classe = getClasseStatus(st);
+      const cor = getCorStatus(st);
+      const unidade = escapeHtml(item.unidade || 'Unidade não informada');
+      const detalhe = escapeHtml(item.detalhamento || 'Sem detalhamento informado.');
+      const data = escapeHtml(item.dataHoraUltimaAcao || item.dataHora || item.data || 'Sem data');
+      const os = escapeHtml(item.numeroOs || '');
+      const semOs = st === 'OS emitida' && !String(item.numeroOs || '').trim();
+      const aviso = semOs ? '<div class="empresa-aviso"><i class="bi bi-exclamation-triangle-fill"></i> OS emitida sem numeração preenchida.</div>' : '';
+      const equipeOptions = '<option value="">-- Equipe do dia --</option>' + (window.listaEquipesGlobal || []).map(e => `<option value="${escapeHtml(e)}">${escapeHtml(e)}</option>`).join('');
+      if (st === 'Solicitado Orçamento') {
+        return `<div class="empresa-card ${classe}" style="--card-accent:${cor};"><div class="empresa-card-head"><span class="badge bg-warning text-dark">${escapeHtml(st)}</span><span class="card-id">#${id}</span></div><h5 class="empresa-unidade" onclick="abrirModalAnalise('${id}')">${unidade}</h5><div class="card-detail">${detalhe}</div><form onsubmit="enviarOrcamentoEmpresa(event,'${id}')" class="mt-3"><div class="row g-2"><div class="col-md-4"><label class="form-label small fw-bold">Valor</label><input class="form-control form-control-sm" name="valorOrcamento" placeholder="R$ 0,00" required></div><div class="col-md-8"><label class="form-label small fw-bold">Observações</label><textarea class="form-control form-control-sm" name="observacoes" rows="2"></textarea></div><div class="col-12"><label class="form-label small fw-bold">Anexos do orçamento</label><input class="form-control form-control-sm" type="file" name="anexosOrcamento" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"></div></div><button class="btn btn-primary btn-sm fw-bold mt-3"><i class="bi bi-send-check me-1"></i>Devolver orçamento</button></form></div>`;
+      }
+      return `<div class="empresa-card ${classe}" style="--card-accent:${cor};"><div class="empresa-card-head"><span class="badge bg-info text-dark">${escapeHtml(st)}</span><span class="card-id">#${id}</span></div><h5 class="empresa-unidade" onclick="abrirModalAnalise('${id}')">${unidade}</h5><div class="card-detail">${detalhe}</div>${aviso}<div class="fila-meta-grid"><div class="fila-meta-item"><span class="fila-meta-label">Encaminhamento</span><span class="fila-meta-value">${data}</span></div><div class="fila-meta-item"><span class="fila-meta-label">Nº OS</span><span class="fila-meta-value">${os || 'Sem número'}</span></div></div><form onsubmit="salvarEquipeDiaEmpresaFront(event,'${id}')" class="empresa-os-form"><select class="form-select form-select-sm" name="equipe" required>${equipeOptions}</select><input type="hidden" name="numeroOs" value="${os}"><textarea class="form-control form-control-sm mt-2" name="observacoes" rows="1" placeholder="Observação do dia"></textarea><button class="btn btn-primary btn-sm fw-bold mt-2"><i class="bi bi-save me-1"></i>Salvar equipe do dia</button></form></div>`;
+    };
+  }
+
+  if (typeof window.renderizarCampo !== 'function') {
+    window.renderizarCampo = function() {
+      const painel = document.getElementById('painelDados');
+      if (painel) painel.innerHTML = '<div class="empty-state"><h5>Painel de campo carregado.</h5><p>Use a tela Empresa para registrar a equipe do dia.</p></div>';
+    };
+  }
+  if (typeof window.carregarCampo !== 'function') {
+    window.carregarCampo = function(opcoes) {
+      window.campoCarregado = true;
+      if (!window.dadosCampoGlobal) window.dadosCampoGlobal = { chamados: [], historico: [], kpis: {} };
+      if (!opcoes || opcoes.renderizar !== false) window.renderizarCampo();
+    };
+  }
+
+  if (typeof window.renderizarListaEquipes !== 'function') {
+    window.renderizarListaEquipes = function() {
+      const box = document.getElementById('listaEquipesCadastradasHtml');
+      if (!box) return;
+      const equipes = window.listaEquipesGlobal || [];
+      box.innerHTML = equipes.length ? equipes.map(eq => `<span class="badge bg-light border border-info text-dark p-2 fs-6"><i class="bi bi-person-workspace text-info me-1"></i>${escapeHtml(eq)}</span>`).join('') : '<span class="text-muted small">Nenhuma equipe cadastrada.</span>';
+    };
+  }
+})();
+</script>
+
+<!-- Scripts_PerfPatch.html — patch opcional seguro -->
+<script>
+/* ============================================================
+   GOM — Patch de Performance Frontend (carregar por último)
+   ------------------------------------------------------------
+   Ataca os gargalos de exibição sem mudar a lógica de negócio:
+   1. Debounce na busca: digitar não dispara N re-renders dos 150+ chamados.
+   2. Memo de normalizarSituacaoSistema: a normalização roda milhares de
+      vezes por render (filtro + KPIs + cards). Cacheamos por valor de entrada.
+   3. requestAnimationFrame no render: evita travar a UI em listas grandes.
+   ============================================================ */
+(function gomPerfPatch() {
+  'use strict';
+
+  // ── 1. MEMOIZAÇÃO DE normalizarSituacaoSistema ────────────────────────────
+  // É a função mais chamada do front. Para cada chamado ela roda no filtro,
+  // de novo nos KPIs e de novo no card. Com 150 chamados são ~450 chamadas
+  // por render, cada uma normalizando string. Cache por valor bruto resolve.
+  if (typeof window.normalizarSituacaoSistema === 'function' && !window.__normStatusMemoized) {
+    var _normOriginal = window.normalizarSituacaoSistema;
+    var _normCache = Object.create(null);
+    window.normalizarSituacaoSistema = function(valor) {
+      var chave = valor == null ? '' : String(valor);
+      var hit = _normCache[chave];
+      if (hit !== undefined) return hit;
+      var resultado = _normOriginal(valor);
+      _normCache[chave] = resultado;
+      return resultado;
+    };
+    window.__normStatusMemoized = true;
+  }
+
+  // ── 2. DEBOUNCE GENÉRICO ───────────────────────────────────────────────────
+  function gomDebounce(fn, delay) {
+    var timer = null;
+    return function() {
+      var ctx = this, args = arguments;
+      clearTimeout(timer);
+      timer = setTimeout(function() { fn.apply(ctx, args); }, delay);
+    };
+  }
+  window.gomDebounce = gomDebounce;
+
+  // ── 3. BUSCA COM DEBOUNCE ──────────────────────────────────────────────────
+  // Liga os campos de busca a uma versão debounced do render, sem precisar
+  // alterar o HTML (que usa onkeyup="renderizarTela()").
+  // Estratégia: substituímos as funções globais de render por versões que,
+  // quando chamadas a partir de um campo de busca, são debounced.
+  function instalarDebounceBusca() {
+    var DELAY = 180; // ms — rápido o suficiente para parecer instantâneo
+
+    // Mapa: id do input de busca -> função de render daquela tela
+    var camposBusca = [
+      { id: 'pesquisa',               fn: 'renderizarTela' },
+      { id: 'pesquisaAlertas',        fn: 'renderizarAlertas' },
+      { id: 'pesquisaConfiguracoes',  fn: 'renderizarConfiguracoes' },
+      { id: 'relatorioBusca',         fn: 'renderRelatorios' }
+    ];
+
+    camposBusca.forEach(function(campo) {
+      var el = document.getElementById(campo.id);
+      if (!el || el.__gomDebounceLigado) return;
+      var fnRender = window[campo.fn];
+      if (typeof fnRender !== 'function') return;
+
+      var debounced = gomDebounce(fnRender, DELAY);
+      // Remove o onkeyup inline e liga o debounced
+      el.removeAttribute('onkeyup');
+      el.addEventListener('input', debounced);
+      el.__gomDebounceLigado = true;
+    });
+  }
+
+  // Reinstala o debounce sempre que uma página é carregada (loadPage troca o DOM)
+  if (typeof window.loadPage === 'function' && !window.__loadPagePatchedPerf) {
+    var _loadPageOriginal = window.loadPage;
+    window.loadPage = function(pageName, inicial) {
+      var r = _loadPageOriginal.apply(this, arguments);
+      // Após o DOM da página estar montado, liga os campos de busca
+      setTimeout(instalarDebounceBusca, 0);
+      return r;
+    };
+    window.__loadPagePatchedPerf = true;
+  }
+
+  // Liga na carga inicial também
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() { setTimeout(instalarDebounceBusca, 300); });
+  } else {
+    setTimeout(instalarDebounceBusca, 300);
+  }
+
+  // ── 4. INVALIDAR MEMO DE STATUS QUANDO A LISTA RECARREGA ───────────────────
+  // Se um chamado mudou de status no backend, o valor bruto também muda,
+  // então o cache por chave continua correto. Não precisa invalidar.
+  // (Mantido aqui como nota de design.)
+
+  console.log('[GOM] Patch de performance frontend ativo.');
+})();
+</script>
+
+</body></html>'
   ].join('');
 
   const w = window.open('', '_blank');
@@ -9371,14 +10356,8 @@ window.renderAprovacaoView = renderAprovacaoView;
 window.atualizarCamposAprovacao = atualizarCamposAprovacao;
 window.salvarDecisaoAprovacaoFront = salvarDecisaoAprovacaoFront;
 
-window.abrirEmpresaOrcamentosAprovacao = abrirEmpresaOrcamentosAprovacao;
-
-  </script>
-
-  <!-- Scripts_ModalChamados.html -->
-  <script>
-
-function gomFormatarInputDateModal_(valor) {
+window.abrirEmpresaOrcamentosAprovacao = abrirEmpresaOrcamentosAprovacao;</script>
+  <script>function gomFormatarInputDateModal_(valor) {
   if (valor === null || valor === undefined || valor === '') return '';
 
   if (valor instanceof Date && !isNaN(valor.getTime())) {
@@ -9452,6 +10431,31 @@ function atualizarCamposModalAprovacao() {
     var precisaPrevisao = decisao === 'aprovar';
     dataPrev.disabled = !precisaPrevisao;
   }
+}
+
+function limparAnexosModalAtualizacao_() {
+  var input = document.getElementById('mdlAnexosAtualizacao');
+  if (input) input.value = '';
+}
+
+async function coletarAnexosModalAtualizacao_() {
+  var input = document.getElementById('mdlAnexosAtualizacao');
+  if (!input || !input.files || !input.files.length) return [];
+  if (typeof arquivosInputParaBase64 !== 'function') {
+    throw new Error('Função de leitura de anexos não carregada. Recarregue o sistema e tente novamente.');
+  }
+  return await arquivosInputParaBase64(input);
+}
+
+function renderAnexosDetalhesChamadoModal_(chamado) {
+  var html = '';
+  if (typeof renderAnexosGrupo === 'function') {
+    html += renderAnexosGrupo('Anexos da solicitação', chamado.anexosSolicitacao || chamado.anexos);
+    html += renderAnexosGrupo('Anexos do orçamento', chamado.anexosOrcamento);
+    html += renderAnexosGrupo('Anexos do serviço realizado', chamado.anexosServico);
+  }
+  if (html) return html;
+  return '<div class="anexo-grupo mb-3"><div class="modal-label">Arquivos anexados</div><div class="anexo-empty"><i class="bi bi-inbox me-1"></i>Nenhum anexo cadastrado neste chamado.</div></div>';
 }
 
 
@@ -9566,7 +10570,7 @@ function abrirModalAnalise(id) {
   document.getElementById('mdlData').innerText = c.dataHoraEncaminhamento || c.dataHoraEntradaFila || c.dataHora || c.data || '';
   document.getElementById('mdlDetalhe').innerText = c.detalhamento || 'Sem detalhe';
   document.getElementById('mdlObservacoes').innerText = c.observacoes || 'Sem observações';
-  document.getElementById('mdlAnexosBox').innerHTML = renderAnexosGrupo('Anexos da solicitação', c.anexos) + renderAnexosGrupo('Anexos do orçamento', c.anexosOrcamento) + renderAnexosGrupo('Anexos do serviço realizado', c.anexosServico);
+  document.getElementById('mdlAnexosBox').innerHTML = renderAnexosDetalhesChamadoModal_(c);
   carregarTimelineChamadoModal_(c.id);
   preencherSelectStatusModal(c);
   const emAprovacaoModal = isFluxoAprovacaoModal_(c);
@@ -9575,6 +10579,7 @@ function abrirModalAnalise(id) {
   if (workflow) workflow.style.display = telaAtual === 'historico' ? 'none' : '';
   const inputObs = document.getElementById('mdlNovaObservacao');
   if (inputObs) inputObs.value = '';
+  limparAnexosModalAtualizacao_();
   const numeroOs = document.getElementById('mdlNumeroOs');
   if (numeroOs) numeroOs.value = c.numeroOs || '';
   const prev = document.getElementById('mdlDataPrevistaConclusao');
@@ -9582,6 +10587,18 @@ function abrirModalAnalise(id) {
     const valorPrev = c.dataPrevistaConclusaoRaw || c.dataPrevistaConclusao || '';
     prev.value = gomFormatarInputDateModal_(valorPrev);
   }
+  // Campo de agendamento de visita — só visível na tela de fila
+  const camposFila = document.querySelectorAll('.modal-extra-fila');
+  const ehFila = (telaAtual === 'fila' || normalizarSituacaoSistema(c.situacao || c.status) === 'Aguardando visita');
+  camposFila.forEach(function(el) { el.style.display = ehFila ? '' : 'none'; });
+  const dataAgend = document.getElementById('mdlDataAgendamentoVisita');
+  if (dataAgend) {
+    const valorAgend = c.dataAgendamentoVisitaRaw || c.dataAgendamentoVisita || '';
+    dataAgend.value = gomFormatarInputDateModal_(valorAgend);
+  }
+  // Botão "Salvar observação" — sempre visível quando não é aprovação
+  const btnObs = document.getElementById('mdlBtnSalvarObs');
+  if (btnObs) btnObs.style.display = emAprovacaoModal ? 'none' : '';
   document.querySelectorAll('.modal-extra-aprovacao').forEach(el => { el.style.display = emAprovacaoModal ? '' : 'none'; });
   if (emAprovacaoModal) atualizarCamposModalAprovacao();
   new bootstrap.Modal(document.getElementById('modalAnalise')).show();
@@ -9619,7 +10636,7 @@ function preencherSelectStatusModal(chamado) {
   select.value = atual;
 }
 
-function salvarStatusDoModal(botao) {
+async function salvarStatusDoModal(botao) {
   const select = document.getElementById('mdlSelectStatus');
   const chamado = (window.listaChamadosGlobal || []).find(x => String(x.id) === String(idChamadoAberto)) || {};
   const emAprovacao = isFluxoAprovacaoModal_(chamado);
@@ -9652,11 +10669,21 @@ function salvarStatusDoModal(botao) {
       if (dataPrev && dataPrev.value) payload.dataPrevistaConclusao = dataPrev.value;
     }
 
+    try {
+      const anexosAtualizacao = await coletarAnexosModalAtualizacao_();
+      if (anexosAtualizacao.length) payload.anexosAtualizacao = anexosAtualizacao;
+    } catch (erroAnexo) {
+      if (typeof gomMostrarErroAcao === 'function') gomMostrarErroAcao(erroAnexo, 'Não foi possível preparar os anexos.');
+      else alert((erroAnexo && erroAnexo.message) || erroAnexo);
+      return;
+    }
+
     if (typeof gomSetButtonLoading === 'function') gomSetButtonLoading(btn, 'Registrando decisão...');
     else if (btn) btn.disabled = true;
 
     google.script.run
       .withSuccessHandler(function() {
+        limparAnexosModalAtualizacao_();
         const modal = bootstrap.Modal.getInstance(document.getElementById('modalAnalise'));
         if (modal) modal.hide();
         refreshChamados(function() {
@@ -9674,18 +10701,52 @@ function salvarStatusDoModal(botao) {
   }
 
   const status = select ? select.value : '';
-  const payload = { id: idChamadoAberto, situacao: status, observacoes: obs };
+  const chamadoAtual = (window.listaChamadosGlobal || []).find(function(x) { return String(x.id) === String(idChamadoAberto); }) || {};
+  const statusAtual = normalizarSituacaoSistema(chamadoAtual.situacao || chamadoAtual.status);
+  const statusMudou = status && status !== statusAtual;
+
+  // Só inclui situacao no payload se realmente mudou — evita transição indesejada
+  const payload = { id: idChamadoAberto, observacoes: obs };
+  if (statusMudou) payload.situacao = status;
   if (numeroOs && numeroOs.value) payload.numeroOs = numeroOs.value;
   if (dataPrev && dataPrev.value) payload.dataPrevistaConclusao = dataPrev.value;
+
+  // Data de agendamento de visita (campo exclusivo da fila)
+  // Compara com o valor original para detectar mudança real
+  const dataAgend = document.getElementById('mdlDataAgendamentoVisita');
+  const valorAgendAtual = dataAgend ? dataAgend.value : '';
+  const valorAgendOriginal = chamadoAtual.dataAgendamentoVisitaRaw || chamadoAtual.dataAgendamentoVisita || '';
+  const agendamentoMudou = valorAgendAtual && valorAgendAtual !== gomFormatarInputDateModal_(valorAgendOriginal);
+  if (agendamentoMudou) payload.dataAgendamentoVisita = valorAgendAtual;
+
+  let anexosAtualizacao = [];
+  try {
+    anexosAtualizacao = await coletarAnexosModalAtualizacao_();
+    if (anexosAtualizacao.length) payload.anexosAtualizacao = anexosAtualizacao;
+  } catch (erroAnexo) {
+    if (typeof gomMostrarErroAcao === 'function') gomMostrarErroAcao(erroAnexo, 'Não foi possível preparar os anexos.');
+    else alert((erroAnexo && erroAnexo.message) || erroAnexo);
+    return;
+  }
+
+  if (!obs && !statusMudou && !payload.numeroOs && !payload.dataPrevistaConclusao && !agendamentoMudou && !anexosAtualizacao.length) {
+    alert('Preencha ao menos a observação, anexe um arquivo ou altere algum campo antes de atualizar.');
+    return;
+  }
 
   if (typeof gomSetButtonLoading === 'function') gomSetButtonLoading(btn, 'Atualizando...');
   else if (btn) btn.disabled = true;
 
   google.script.run
     .withSuccessHandler(function() {
+      limparAnexosModalAtualizacao_();
       const modal = bootstrap.Modal.getInstance(document.getElementById('modalAnalise'));
       if (modal) modal.hide();
-      refreshChamados();
+      const camposLocais = {};
+      if (statusMudou) camposLocais.situacao = status;
+      if (obs) camposLocais.observacoes = (chamadoAtual.observacoes ? chamadoAtual.observacoes + '\n' : '') + obs;
+      if (payload.dataAgendamentoVisita) camposLocais.dataAgendamentoVisita = payload.dataAgendamentoVisita;
+      refreshChamados(null, Object.keys(camposLocais).length ? { id: idChamadoAberto, campos: camposLocais } : null);
     })
     .withFailureHandler(function(err) {
       if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(btn);
@@ -9696,15 +10757,70 @@ function salvarStatusDoModal(botao) {
     .atualizarChamadoWorkflow(payload);
 }
 
+
+/**
+ * Salva observação sem alterar o status do chamado.
+ * Também salva data de agendamento de visita se preenchida.
+ */
+async function salvarApenasObservacao(botao) {
+  const obs = document.getElementById('mdlNovaObservacao') ? document.getElementById('mdlNovaObservacao').value.trim() : '';
+  const dataAgend = document.getElementById('mdlDataAgendamentoVisita');
+  const valorAgendObs = dataAgend ? dataAgend.value : '';
+  const chamadoAtual = (window.listaChamadosGlobal || []).find(function(x) { return String(x.id) === String(idChamadoAberto); }) || {};
+  const valorAgendOriginalObs = chamadoAtual.dataAgendamentoVisitaRaw || chamadoAtual.dataAgendamentoVisita || '';
+  // Só considera mudança real se o valor é diferente do que já está salvo
+  const agendamentoMudouObs = valorAgendObs && valorAgendObs !== gomFormatarInputDateModal_(valorAgendOriginalObs);
+
+  let anexosAtualizacao = [];
+  try {
+    anexosAtualizacao = await coletarAnexosModalAtualizacao_();
+  } catch (erroAnexo) {
+    if (typeof gomMostrarErroAcao === 'function') gomMostrarErroAcao(erroAnexo, 'Não foi possível preparar os anexos.');
+    else alert((erroAnexo && erroAnexo.message) || erroAnexo);
+    return;
+  }
+
+  if (!obs && !agendamentoMudouObs && !anexosAtualizacao.length) {
+    alert('Preencha a observação, anexe um arquivo ou altere a data de agendamento da visita antes de salvar.');
+    return;
+  }
+
+  const payload = { id: idChamadoAberto };
+  if (obs) payload.observacoes = obs;
+  if (agendamentoMudouObs) payload.dataAgendamentoVisita = valorAgendObs;
+  if (anexosAtualizacao.length) payload.anexosAtualizacao = anexosAtualizacao;
+
+  if (typeof gomSetButtonLoading === 'function') gomSetButtonLoading(botao, 'Salvando...');
+  else if (botao) botao.disabled = true;
+
+  google.script.run
+    .withSuccessHandler(function() {
+      if (typeof gomResetButtonLoading === 'function') gomMostrarSucessoBotao ? gomMostrarSucessoBotao(botao, 'Salvo') : gomResetButtonLoading(botao);
+      else if (botao) botao.disabled = false;
+      if (document.getElementById('mdlNovaObservacao')) document.getElementById('mdlNovaObservacao').value = '';
+      limparAnexosModalAtualizacao_();
+      const camposLocais = {};
+      if (obs) camposLocais.observacoes = (chamadoAtual.observacoes ? chamadoAtual.observacoes + '\n' : '') + obs;
+      if (agendamentoMudouObs) camposLocais.dataAgendamentoVisita = valorAgendObs;
+      if (typeof gomAtualizarChamadoLocal === 'function') gomAtualizarChamadoLocal(idChamadoAberto, camposLocais);
+      // Refresh em background sem fechar o modal
+      if (typeof refreshChamados === 'function') refreshChamados(null, null);
+    })
+    .withFailureHandler(function(err) {
+      if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(botao);
+      else if (botao) botao.disabled = false;
+      if (typeof gomMostrarErroAcao === 'function') gomMostrarErroAcao(err, 'Não foi possível salvar a observação.');
+      else alert((err && err.message) || err);
+    })
+    .atualizarChamadoWorkflow(payload);
+}
+
+window.salvarApenasObservacao = salvarApenasObservacao;
 window.atualizarCamposModalAprovacao = atualizarCamposModalAprovacao;
 window.salvarStatusDoModal = salvarStatusDoModal;
 
-window.recarregarTimelineModal = recarregarTimelineModal;
-  </script>
-
-  <!-- Scripts_Empresa.html -->
-  <script>
-window.empresaDiaAlterados = window.empresaDiaAlterados || {};
+window.recarregarTimelineModal = recarregarTimelineModal;</script>
+  <script>window.empresaDiaAlterados = window.empresaDiaAlterados || {};
 
 function totalEncaminhamentosDiaAlterados_() {
   return Object.keys(window.empresaDiaAlterados || {}).length;
@@ -9748,7 +10864,19 @@ function marcarEncaminhamentoDiaEmpresaAlterado(id) {
   payload.id = id;
   delete payload.numeroOs;
 
+
+
+  // Enriquecer com unidade vinda do listaChamadosGlobal
+  // (a unidade é texto renderizado no HTML, não um campo do form)
+  var itemGlobal = (window.listaChamadosGlobal || []).find(function(c) {
+    return String(c.id || '').trim() === id;
+  });
+  if (itemGlobal && itemGlobal.unidade) payload.unidade = itemGlobal.unidade;
+
   window.empresaDiaAlterados = window.empresaDiaAlterados || {};
+  // Preserva a data de atendimento já aplicada pela data global do cabeçalho
+  var dataAtendPrev = (window.empresaDiaAlterados[id] || {}).dataAtendimento;
+  if (dataAtendPrev && !payload.dataAtendimento) payload.dataAtendimento = dataAtendPrev;
   window.empresaDiaAlterados[id] = payload;
 
   var row = form.closest ? form.closest('.empresa-os-list-row-v2') : null;
@@ -9761,6 +10889,69 @@ function descartarEncaminhamentosDiaEmpresa(botao) {
   if (totalEncaminhamentosDiaAlterados_() > 0 && !confirm('Deseja descartar os encaminhamentos do dia que ainda não foram salvos?')) return;
   window.empresaDiaAlterados = {};
   if (typeof renderizarTela === 'function') renderizarTela();
+}
+
+// ─── Helpers de data para o modal de confirmação ─────────────────────────────
+
+var DIAS_SEMANA_PT = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+var MESES_PT = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+
+function formatarDataAgendamentoConfirmacao(valorDate) {
+  if (!valorDate) return null;
+  var partes = String(valorDate).split('-');
+  if (partes.length !== 3) return null;
+  var ano = parseInt(partes[0], 10);
+  var mes = parseInt(partes[1], 10) - 1;
+  var dia = parseInt(partes[2], 10);
+  var d = new Date(ano, mes, dia);
+  if (isNaN(d.getTime())) return null;
+  return {
+    diaSemana: DIAS_SEMANA_PT[d.getDay()],
+    diaNum: dia,
+    mesNome: MESES_PT[mes],
+    ano: ano,
+    texto: 'dia ' + dia + ' de ' + MESES_PT[mes] + ' de ' + ano + ' (' + DIAS_SEMANA_PT[d.getDay()] + ')'
+  };
+}
+
+function _confirmarESalvarEncaminhamentos(botao, lista) {
+  if (botao && typeof gomSetButtonLoading === 'function') gomSetButtonLoading(botao, 'Salvando encaminhamentos...');
+  setBotoesEncaminhamentoDiaEmpresa_(true);
+
+  var listaPayload = lista.map(function(item) {
+    var payload = Object.assign({}, item);
+    payload.id = String(payload.id || '').trim();
+    delete payload.numeroOs;
+    if (payload.dataAgendamento) payload.dataAgendamentoVisita = payload.dataAgendamento;
+    // Data de atendimento aplicada pela data global → vai para o registro do histórico
+    if (payload.dataAtendimento) payload.dataAgendamentoVisita = payload.dataAtendimento;
+    return payload;
+  });
+
+  var indice = 0;
+  function salvarProximo() {
+    if (indice >= listaPayload.length) {
+      window.empresaDiaAlterados = {};
+      setBotoesEncaminhamentoDiaEmpresa_(false);
+      if (botao && typeof gomMostrarSucessoBotao === 'function') gomMostrarSucessoBotao(botao, 'Salvo');
+      else if (botao && typeof gomResetButtonLoading === 'function') gomResetButtonLoading(botao);
+      refreshChamados(function() {
+        if (window.telaAtual === 'empresa' && typeof renderizarTela === 'function') renderizarTela();
+        if (window.telaAtual === 'campo' && typeof refreshCampo === 'function') refreshCampo();
+      });
+      return;
+    }
+    google.script.run
+      .withSuccessHandler(function() { indice++; salvarProximo(); })
+      .withFailureHandler(function(err) {
+        setBotoesEncaminhamentoDiaEmpresa_(false);
+        if (botao && typeof gomResetButtonLoading === 'function') gomResetButtonLoading(botao);
+        if (typeof gomMostrarErroAcao === 'function') gomMostrarErroAcao(err, 'Não foi possível salvar os encaminhamentos do dia.');
+        else alert((err && err.message) || err);
+      })
+      .salvarEquipeDiaEmpresa(listaPayload[indice]);
+  }
+  salvarProximo();
 }
 
 function salvarEncaminhamentosDiaEmpresa(botao) {
@@ -9777,42 +10968,93 @@ function salvarEncaminhamentosDiaEmpresa(botao) {
     return;
   }
 
-  if (botao && typeof gomSetButtonLoading === 'function') gomSetButtonLoading(botao, 'Salvando encaminhamentos...');
-  setBotoesEncaminhamentoDiaEmpresa_(true);
+  // Enriquecer lista com dados do listaChamadosGlobal (unidade e outros campos
+  // que podem não estar no buffer caso o item tenha sido marcado antes da correção)
+  lista = lista.map(function(item) {
+    var idStr = String(item.id || '').trim();
+    var global = (window.listaChamadosGlobal || []).find(function(c) {
+      return String(c.id || '').trim() === idStr;
+    });
+    if (global && global.unidade && !item.unidade) item.unidade = global.unidade;
+    return item;
+  });
 
-  var indice = 0;
-  function salvarProximo() {
-    if (indice >= lista.length) {
-      window.empresaDiaAlterados = {};
-      setBotoesEncaminhamentoDiaEmpresa_(false);
-      if (botao && typeof gomMostrarSucessoBotao === 'function') gomMostrarSucessoBotao(botao, 'Salvo');
-      else if (botao && typeof gomResetButtonLoading === 'function') gomResetButtonLoading(botao);
-      refreshChamados(function() {
-        if (window.telaAtual === 'empresa' && typeof renderizarTela === 'function') renderizarTela();
-        if (window.telaAtual === 'campo' && typeof refreshCampo === 'function') refreshCampo();
-      });
-      return;
+  // Montar resumo para o modal de confirmação
+  var linhasConfirmacao = lista.map(function(item) {
+    var unidade = escapeHtml(String(item.unidade || 'Unidade não informada'));
+    var equipe  = escapeHtml(String(item.equipe  || '—'));
+    var agend   = formatarDataAgendamentoConfirmacao(item.dataAgendamento);
+    var dataStr = agend
+      ? '<strong>' + agend.texto + '</strong>'
+      : '<span class="text-muted">sem agendamento</span>';
+    return '<li class="mb-2">'
+      + '<span class="fw-bold">' + unidade + '</span><br>'
+      + '<span class="text-muted small">Equipe: </span><strong>' + equipe + '</strong>'
+      + ' &nbsp;|&nbsp; <span class="text-muted small">Data: </span>' + dataStr
+      + '</li>';
+  });
+
+  // Verificar se há agendamentos com data preenchida para destacar no alerta
+  var comAgendamento = lista.filter(function(i) { return !!i.dataAgendamento; });
+
+  var msgAgendamento = '';
+  if (comAgendamento.length === 1) {
+    var agend = formatarDataAgendamentoConfirmacao(comAgendamento[0].dataAgendamento);
+    if (agend) {
+      msgAgendamento = '<div class="alert alert-info mt-3 mb-0 py-2 px-3 small">'
+        + '<i class="bi bi-calendar-check-fill me-1"></i>'
+        + 'Agendamento: <strong>' + agend.texto + '</strong> &nbsp;|&nbsp; '
+        + 'Equipe: <strong>' + escapeHtml(String(comAgendamento[0].equipe || '—')) + '</strong>'
+        + '</div>';
     }
-
-    var payload = Object.assign({}, lista[indice]);
-    payload.id = String(payload.id || '').trim();
-    delete payload.numeroOs;
-
-    google.script.run
-      .withSuccessHandler(function() {
-        indice++;
-        salvarProximo();
-      })
-      .withFailureHandler(function(err) {
-        setBotoesEncaminhamentoDiaEmpresa_(false);
-        if (botao && typeof gomResetButtonLoading === 'function') gomResetButtonLoading(botao);
-        if (typeof gomMostrarErroAcao === 'function') gomMostrarErroAcao(err, 'Não foi possível salvar os encaminhamentos do dia.');
-        else alert((err && err.message) || err);
-      })
-      .salvarEquipeDiaEmpresa(payload);
+  } else if (comAgendamento.length > 1) {
+    msgAgendamento = '<div class="alert alert-info mt-3 mb-0 py-2 px-3 small">'
+      + '<i class="bi bi-calendar-check-fill me-1"></i>'
+      + comAgendamento.length + ' encaminhamento(s) com data de agendamento definida.'
+      + '</div>';
   }
 
-  salvarProximo();
+  // Exibir modal de confirmação (Bootstrap)
+  var modalId = 'modalConfirmacaoAgendamento';
+  var modalExistente = document.getElementById(modalId);
+  if (modalExistente) modalExistente.remove();
+
+  var modalHtml = '<div class="modal fade" id="' + modalId + '" tabindex="-1" aria-hidden="true">'
+    + '<div class="modal-dialog modal-dialog-centered">'
+    + '<div class="modal-content">'
+    + '<div class="modal-header bg-primary text-white">'
+    +   '<h5 class="modal-title fw-bold"><i class="bi bi-check2-circle me-2"></i>Confirmar encaminhamentos do dia</h5>'
+    +   '<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>'
+    + '</div>'
+    + '<div class="modal-body">'
+    +   '<p class="mb-2">Você está prestes a salvar <strong>' + lista.length + ' encaminhamento(s)</strong>:</p>'
+    +   '<ul class="list-unstyled ps-2">' + linhasConfirmacao.join('') + '</ul>'
+    +   msgAgendamento
+    + '</div>'
+    + '<div class="modal-footer">'
+    +   '<button type="button" class="btn btn-light border fw-bold" data-bs-dismiss="modal">'
+    +     '<i class="bi bi-x-circle me-1"></i>Cancelar'
+    +   '</button>'
+    +   '<button type="button" class="btn btn-primary fw-bold" id="btnConfirmarAgendamento">'
+    +     '<i class="bi bi-check2-circle me-1"></i>Confirmar e salvar'
+    +   '</button>'
+    + '</div>'
+    + '</div></div></div>';
+
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+  var modal = new bootstrap.Modal(document.getElementById(modalId));
+
+  document.getElementById('btnConfirmarAgendamento').addEventListener('click', function() {
+    modal.hide();
+    _confirmarESalvarEncaminhamentos(botao, lista);
+  });
+
+  document.getElementById(modalId).addEventListener('hidden.bs.modal', function() {
+    document.getElementById(modalId).remove();
+  });
+
+  modal.show();
 }
 
 
@@ -9843,11 +11085,62 @@ function setEmpresaModo(modo, botao) {
   if (botao) botao.classList.add('active');
 
   if (window.empresaModoAtual === 'gerencial') carregarHistoricoCampoEmpresaSePreciso();
+  gomEmpresaAtualizarVisibilidadeData_();
   renderizarTela();
 }
 
+// Mostra o campo de data global só na Execução diária (e Orçamentos, opcional).
+// Atualiza o rótulo conforme o modo.
+function gomEmpresaAtualizarVisibilidadeData_() {
+  var wrap = document.getElementById('gomDataGlobalWrap_empresa');
+  var label = document.getElementById('gomDataGlobalLabel_empresa');
+  if (!wrap) return;
+  var modo = window.empresaModoAtual || 'diario';
+  if (modo === 'diario') {
+    wrap.style.display = '';
+    if (label) label.textContent = 'Data de atendimento para todos:';
+  } else {
+    wrap.style.display = 'none';
+  }
+}
+window.gomEmpresaAtualizarVisibilidadeData_ = gomEmpresaAtualizarVisibilidadeData_;
+
+// Aplica a data escolhida em todos os campos de agendamento da lista visível.
+// Como o agendamento individual foi removido, esta é a forma de definir a data
+// de atendimento — ela entra no buffer e vai junto ao salvar os encaminhamentos.
+function gomEmpresaAplicarDataGlobal() {
+  var input = document.getElementById('gomEmpresaDataGlobal');
+  if (!input || !input.value) { alert('Selecione uma data antes de aplicar.'); return; }
+  var dataEscolhida = input.value;
+
+  // Marca a data no buffer de cada chamado que já tem equipe selecionada/alterada
+  var ids = Object.keys(window.empresaDiaAlterados || {});
+  if (!ids.length) {
+    alert('A data será salva com os encaminhamentos.\n\nSelecione a equipe de um ou mais chamados primeiro; ao salvar, esta data de atendimento vai junto.');
+    return;
+  }
+  ids.forEach(function(id) {
+    window.empresaDiaAlterados[id] = window.empresaDiaAlterados[id] || {};
+    window.empresaDiaAlterados[id].dataAtendimento = dataEscolhida;
+  });
+  var btn = document.querySelector('#gomDataGlobalWrap_empresa button');
+  if (btn && typeof gomMostrarSucessoBotao === 'function') gomMostrarSucessoBotao(btn, 'Aplicada a ' + ids.length, 1500);
+}
+window.gomEmpresaAplicarDataGlobal = gomEmpresaAplicarDataGlobal;
+
+// Pré-preenche o campo com a data de hoje ao entrar na Empresa.
+function gomEmpresaPrePreencherDataHoje_() {
+  var input = document.getElementById('gomEmpresaDataGlobal');
+  if (input && !input.value) {
+    var h = new Date();
+    input.value = h.getFullYear() + '-' + String(h.getMonth()+1).padStart(2,'0') + '-' + String(h.getDate()).padStart(2,'0');
+  }
+}
+window.gomEmpresaPrePreencherDataHoje_ = gomEmpresaPrePreencherDataHoje_;
+
 function renderEmpresaView(listaRender) {
   var modo = window.empresaModoAtual || 'diario';
+  setTimeout(function() { gomEmpresaAtualizarVisibilidadeData_(); gomEmpresaPrePreencherDataHoje_(); }, 0);
   var listaBase = listaRender || [];
 
   if (modo === 'equipes') return renderGestaoEquipes();
@@ -9859,7 +11152,7 @@ function renderEmpresaView(listaRender) {
     if (!listaOrc.length) {
       return '<div class="empty-state"><h5>Nenhum orçamento solicitado.</h5><p>Quando a triagem solicitar orçamento, ele aparecerá aqui para a empresa responder.</p></div>';
     }
-    return '<div class="empresa-grid">' + listaOrc.map(renderCardOrcamentoEmpresa).join('') + '</div>';
+    return renderListaOrcamentoEmpresa(listaOrc);
   }
 
   if (modo === 'gerencial') {
@@ -9936,17 +11229,79 @@ function renderCardOrcamentoEmpresa(item) {
   var obs = escapeHtml(item.observacoes || '');
   var valor = escapeHtml(item.valorOrcamento || '');
   var dataPrevInput = escapeHtml(formatarInputDateEmpresa(item.dataPrevistaConclusao || item.dataPrevistaConclusaoRaw));
+  var miniaturasAnexos = typeof renderMiniaturasAnexosChamado === 'function' ? renderMiniaturasAnexosChamado(item, 4) : '';
   return [
     '<div class="empresa-card st-orcamento" style="--card-accent: var(--orcamento);">',
       '<div class="empresa-card-head"><span class="badge-status">Solicitado Orçamento</span><span class="card-id">#' + id + '</span></div>',
       '<h5 class="empresa-unidade" onclick="abrirModalAnalise(\'' + idJs + '\')">' + unidade + '</h5>',
       '<div class="card-detail">' + detalhe + '</div>',
+      miniaturasAnexos,
       '<form onsubmit="enviarOrcamentoEmpresa(event,\'' + idJs + '\')" class="row g-2 mt-2 align-items-end">',
         '<div class="col-md-4"><label class="form-label small fw-bold">Valor do orçamento</label><input class="form-control form-control-sm" name="valorOrcamento" value="' + valor + '" placeholder="R$ 0,00" required></div>',
         '<div class="col-md-4"><label class="form-label small fw-bold">Previsão de conclusão</label><input class="form-control form-control-sm" type="date" name="dataPrevistaConclusao" value="' + dataPrevInput + '"></div>',
         '<div class="col-md-4"><label class="form-label small fw-bold"><i class="bi bi-paperclip me-1"></i>Anexos do orçamento</label><input class="form-control form-control-sm" type="file" name="anexosOrcamento" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"></div>',
-        '<div class="col-12"><label class="form-label small fw-bold">Observações da empresa</label><textarea class="form-control form-control-sm" name="observacoes" rows="2" required>' + obs + '</textarea></div>',
+        '<div class="col-12"><label class="form-label small fw-bold">Observações da empresa <span class="text-muted fw-normal">(opcional)</span></label><textarea class="form-control form-control-sm" name="observacoes" rows="2">' + obs + '</textarea></div>',
         '<div class="col-12"><button class="btn btn-primary btn-sm fw-bold mt-2"><i class="bi bi-send-check me-1"></i> Devolver orçamento para aprovação</button></div>',
+      '</form>',
+    '</div>'
+  ].join('');
+}
+
+function renderListaOrcamentoEmpresa(lista) {
+  return [
+    '<div class="empresa-lista-os empresa-lista-compacta empresa-lista-dia-v2 empresa-lista-orcamento-v2">',
+      '<div class="empresa-lista-head empresa-lista-head-v2 empresa-lista-head-orcamento">',
+        '<div>Unidade / descrição</div>',
+        '<div>Valor e previsão</div>',
+        '<div>Anexos do orçamento</div>',
+        '<div>Observações (opcional)</div>',
+      '</div>',
+      (lista || []).map(renderLinhaOrcamentoEmpresa).join(''),
+    '</div>'
+  ].join('');
+}
+
+function renderLinhaOrcamentoEmpresa(item) {
+  var id = escapeHtml(item.id);
+  var idJs = escapeJsAttr(item.id);
+  var unidade = escapeHtml(item.unidade || 'Unidade não informada');
+  var detalheCompleto = escapeHtml(item.detalhamento || 'Sem detalhamento informado.');
+  var detalheCurto = escapeHtml(resumirTextoEmpresa(item.detalhamento || 'Sem detalhamento informado.', 135));
+  var obs = escapeHtml(item.observacoes || '');
+  var valor = escapeHtml(item.valorOrcamento || '');
+  var dataPrevInput = escapeHtml(formatarInputDateEmpresa(item.dataPrevistaConclusao || item.dataPrevistaConclusaoRaw));
+  var cor = getCorStatus('Solicitado Orçamento');
+  var miniaturasAnexos = typeof renderMiniaturasAnexosChamado === 'function' ? renderMiniaturasAnexosChamado(item, 3) : '';
+  var formId = 'formOrcamento_' + String(item.id || '').replace(/[^A-Za-z0-9_-]/g, '_');
+
+  return [
+    '<div class="empresa-os-list-row empresa-os-list-row-v2 st-orcamento" style="--card-accent:' + cor + ';">',
+      '<div class="empresa-os-unidade" data-label="Unidade / descrição">',
+        '<details class="empresa-expand">',
+          '<summary><span class="empresa-unidade-link">' + unidade + '</span><span class="empresa-os-id">#' + id + '</span></summary>',
+          '<div class="empresa-expand-body">',
+            '<div class="modal-label">Descrição completa</div>',
+            '<div class="card-detail mb-2">' + detalheCompleto + '</div>',
+            '<button type="button" class="btn btn-light btn-sm border fw-bold" onclick="abrirModalAnalise(\'' + idJs + '\')"><i class="bi bi-box-arrow-up-right me-1"></i>Abrir detalhes completos</button>',
+          '</div>',
+        '</details>',
+        '<div class="empresa-os-desc">' + detalheCurto + '</div>',
+        miniaturasAnexos,
+      '</div>',
+      '<div class="empresa-os-info" data-label="Valor e previsão">',
+        '<label class="empresa-field-label"><i class="bi bi-cash-coin me-1"></i>Valor do orçamento</label>',
+        '<input class="form-control form-control-sm fw-bold" name="valorOrcamento" form="' + formId + '" value="' + valor + '" placeholder="R$ 0,00" required>',
+        '<label class="empresa-field-label mt-2"><i class="bi bi-calendar-check me-1"></i>Previsão de conclusão</label>',
+        '<input class="form-control form-control-sm" type="date" name="dataPrevistaConclusao" form="' + formId + '" value="' + dataPrevInput + '">',
+      '</div>',
+      '<div class="empresa-os-agendamento-wrap" data-label="Anexos do orçamento">',
+        '<label class="empresa-field-label"><i class="bi bi-paperclip me-1"></i>Anexos do orçamento</label>',
+        '<input class="form-control form-control-sm" type="file" name="anexosOrcamento" form="' + formId + '" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx">',
+      '</div>',
+      '<form id="' + formId + '" class="empresa-os-form-inline" data-label="Observações (opcional)" onsubmit="enviarOrcamentoEmpresa(event,\'' + idJs + '\')">',
+        '<label class="empresa-field-label"><i class="bi bi-chat-left-text me-1"></i>Observações <span class="text-muted fw-normal">(opcional)</span></label>',
+        '<textarea class="form-control form-control-sm" name="observacoes" rows="2" placeholder="Observações da empresa...">' + obs + '</textarea>',
+        '<button type="submit" class="btn btn-primary btn-sm fw-bold mt-2"><i class="bi bi-send-check me-1"></i>Devolver orçamento</button>',
       '</form>',
     '</div>'
   ].join('');
@@ -10003,6 +11358,7 @@ function renderLinhaExecucaoDiaria(item) {
   var alertaOs = st === 'OS emitida' && !numeroOsBruto
     ? '<span class="empresa-os-alert"><i class="bi bi-exclamation-triangle-fill"></i> OS sem número</span>'
     : '';
+  var miniaturasAnexos = typeof renderMiniaturasAnexosChamado === 'function' ? renderMiniaturasAnexosChamado(item, 3) : '';
 
   var opts = '<option value="">-- Selecionar equipe --</option>';
   (window.listaEquipesGlobal || []).forEach(function(e) {
@@ -10023,6 +11379,7 @@ function renderLinhaExecucaoDiaria(item) {
           '</div>',
         '</details>',
         '<div class="empresa-os-desc">' + detalheCurto + '</div>',
+        miniaturasAnexos,
       '</div>',
       '<div class="empresa-os-info" data-label="Status, OS e encaminhamento">',
         '<div class="empresa-os-status"><span class="badge-status">' + escapeHtml(st) + '</span>' + alertaOs + '</div>',
@@ -10121,6 +11478,7 @@ function renderLinhaGerencialOsEmpresa(item) {
   var alertaOs = st === 'OS emitida' && !String(item.numeroOs || '').trim()
     ? '<div class="empresa-aviso mb-2"><i class="bi bi-info-circle-fill"></i> OS ainda sem numeração informada pela GOM.</div>'
     : '';
+  var miniaturasAnexos = typeof renderMiniaturasAnexosChamado === 'function' ? renderMiniaturasAnexosChamado(item, 3) : '';
   var statusPrevId = 'empresaPrevStatus_' + idBruto.replace(/[^A-Za-z0-9_-]/g, '_');
 
   return [
@@ -10128,7 +11486,7 @@ function renderLinhaGerencialOsEmpresa(item) {
       '<div class="empresa-gerencial-unidade" data-label="Unidade / OS">',
         '<details class="empresa-expand">',
           '<summary><span class="empresa-unidade-link">' + unidade + '</span><span class="empresa-os-id">#' + id + '</span></summary>',
-          '<div class="empresa-expand-body"><div class="modal-label">Descrição completa</div><div class="card-detail">' + detalheCompleto + '</div></div>',
+          '<div class="empresa-expand-body"><div class="modal-label">Descrição completa</div><div class="card-detail">' + detalheCompleto + '</div>' + miniaturasAnexos + '</div>',
         '</details>',
         '<div class="empresa-os-desc">' + detalhe + '</div>',
       '</div>',
@@ -10303,10 +11661,22 @@ async function enviarOrcamentoEmpresa(e, id) {
   var payload = formToObject(form);
   payload.id = id;
   delete payload.numeroOs;
+
   try {
     payload.anexosOrcamento = await arquivosInputParaBase64(form.querySelector('[name="anexosOrcamento"]'));
     google.script.run
-      .withSuccessHandler(function() { refreshChamados(); })
+      .withSuccessHandler(function() {
+        if (typeof gomMostrarSucessoBotao === 'function') gomMostrarSucessoBotao(botao, 'Orçamento enviado');
+        else if (botao) botao.disabled = false;
+        // OTIMISTA: orçamento muda status para 'Orçamento Realizado' e sai da aba.
+        // Aplica local e re-renderiza na hora, sem reler os 50+ chamados.
+        if (typeof window.gomAtualizarChamadoLocal === 'function') {
+          window.gomAtualizarChamadoLocal(id, { situacao: 'Orçamento Realizado', valorOrcamento: payload.valorOrcamento || '' });
+          if (typeof renderizarTela === 'function') renderizarTela();
+        } else {
+          refreshChamados();
+        }
+      })
       .withFailureHandler(function(err) {
         if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(botao);
         else if (botao) botao.disabled = false;
@@ -10331,6 +11701,8 @@ function salvarEquipeDiaEmpresaFront(e, id) {
   var payload = formToObject(form);
   payload.id = id;
   delete payload.numeroOs;
+  // Capturar data de agendamento do input fora do form (vinculado via form=)
+
   google.script.run
     .withSuccessHandler(function() { refreshChamados(function() { if (window.telaAtual === 'empresa' && typeof renderizarTela === 'function') renderizarTela(); if (window.telaAtual === 'campo' && typeof refreshCampo === 'function') refreshCampo(); }); })
     .withFailureHandler(function(err) {
@@ -10409,6 +11781,8 @@ async function finalizarOsEmpresaFront(e, id) {
   var payload = formToObject(form);
   payload.id = id;
   delete payload.numeroOs;
+  // Capturar data de agendamento do input fora do form (vinculado via form=)
+
   try {
     payload.anexosServico = await arquivosInputParaBase64(form.querySelector('[name="anexosServico"]'));
     google.script.run
@@ -10506,12 +11880,8 @@ window.devolverOrcamentoEmpresa = enviarOrcamentoEmpresa;
 window.finalizarOsEmpresaFront = finalizarOsEmpresaFront;
 window.finalizarOsEmpresa = finalizarOsEmpresaFront;
 window.renderizarListaEquipes = renderizarListaEquipes;
-window.salvarEquipeForm = salvarEquipeForm;
-  </script>
-
-  <!-- Scripts_Formularios.html -->
-  <script>
-function inicializarTelaCadastro() {
+window.salvarEquipeForm = salvarEquipeForm;</script>
+  <script>function inicializarTelaCadastro() {
   preencherSelectEscolas('selectUnidade');
   preencherSelectEscolas('selectUnidadeEscola');
   const sS = document.getElementById('selectSituacaoCadastro');
@@ -10605,11 +11975,8 @@ window.enviarSolicitacaoEscola = window.enviarSolicitacaoEscola || enviarCadastr
 window.setTipoEscola = window.setTipoEscola || setTipoEscola;
 window.setTipoEscolaWeb = window.setTipoEscola;
 window.toggleCamposSistema = window.toggleCamposSistema || toggleCamposSistema;
-  </script>
-
-  <!-- Scripts_Obras.html -->
-  <script>
-const CORES_OBRAS = {
+</script>
+  <script>const CORES_OBRAS = {
   'Aguardando': '#f59e0b',
   'Em projeto': '#6366f1',
   'Em licitação': '#0ea5e9',
@@ -10796,11 +12163,8 @@ function salvarObraModal(botao) {
 }
 
 window.renderizarObras = window.renderizarObras || renderizarObras;
-  </script>
-
-  <!-- Scripts_Campo.html -->
-  <script>
-var campoTabAtual = window.campoTabAtual || 'dia';
+</script>
+  <script>var campoTabAtual = window.campoTabAtual || 'dia';
 var campoFiltroAtual = window.campoFiltroAtual || null;
 var campoEscolaFiltroAtual = window.campoEscolaFiltroAtual || '';
 
@@ -10937,8 +12301,12 @@ function renderizarCampo() {
     return;
   }
 
-  painel.innerHTML = chamados.length ? renderListaCampoOficial(chamados, { modo: 'dia' }) : '<div class="empty-state"><h5>Nenhuma unidade em campo para os filtros atuais.</h5><p>Use a busca ou os KPIs para remover filtros aplicados.</p></div>';
-  setContadorCampo(chamados.length);
+  // Acompanhamento diário: mostra somente os com equipe registrada hoje
+  const preenchidosHojeLista = chamados.filter(function(c) { return !!c.temEquipeDiaValida; });
+  painel.innerHTML = preenchidosHojeLista.length
+    ? renderListaCampoOficial(preenchidosHojeLista, { modo: 'dia' })
+    : '<div class="empty-state"><h5>Nenhum preenchimento registrado hoje.</h5><p>A empresa ainda não registrou equipes do dia. Use o botão <strong>Pendências de hoje</strong> para ver o que está em aberto.</p></div>';
+  setContadorCampo(preenchidosHojeLista.length);
 }
 
 function aplicarFiltroCampo(lista) {
@@ -11496,12 +12864,8 @@ window.loadCampoTab = loadCampoTab;
 window.filtrarCampo = filtrarCampo;
 window.limparFiltrosCampo = limparFiltrosCampo;
 window.filtrarCampoKpi = filtrarCampoKpi;
-window.salvarEquipeDiaCampoFront = salvarEquipeDiaCampoFront;
-  </script>
-
-  <!-- Scripts_Alertas.html -->
-  <script>
-(function() {
+window.salvarEquipeDiaCampoFront = salvarEquipeDiaCampoFront;</script>
+  <script>(function() {
   window.alertasGlobal = Array.isArray(window.alertasGlobal) ? window.alertasGlobal : [];
   window.alertasFiltroAtual = window.alertasFiltroAtual || 'todos';
   window.alertasConfiguracoesCarregadas = Boolean(window.alertasConfiguracoesCarregadas);
@@ -12164,11 +13528,8 @@ window.salvarEquipeDiaCampoFront = salvarEquipeDiaCampoFront;
     });
   };
 })();
-  </script>
-
-  <!-- Scripts_Relatorios.html -->
-  <script>
-window.relatoriosCharts = window.relatoriosCharts || {};
+</script>
+  <script>window.relatoriosCharts = window.relatoriosCharts || {};
 window.relatoriosTabAtual = window.relatoriosTabAtual || 'visao';
 
 function inicializarRelatorios(forcar) {
@@ -12761,12 +14122,8 @@ window.renderRelatorios = renderRelatorios;
 window.renderRelatoriosGraficos = renderRelatoriosGraficos;
 window.setRelatorioTab = setRelatorioTab;
 window.limparFiltrosRelatorios = limparFiltrosRelatorios;
-window.exportarRelatoriosCsv = exportarRelatoriosCsv;
-  </script>
-
-  <!-- Scripts_Acompanhar.html -->
-  <script>
-window.acompanharChamadosResultado = window.acompanharChamadosResultado || [];
+window.exportarRelatoriosCsv = exportarRelatoriosCsv;</script>
+  <script>window.acompanharChamadosResultado = window.acompanharChamadosResultado || [];
 window.acompanharListaPayload = window.acompanharListaPayload || null;
 
 function inicializarAcompanhar() {
@@ -13015,12 +14372,8 @@ window.consultarProtocoloEscola = consultarProtocoloEscola;
 window.enviarComplementoEscola = enviarComplementoEscola;
 window.limparConsultaAcompanhar = limparConsultaAcompanhar;
 window.abrirDetalheAcompanhar = abrirDetalheAcompanhar;
-window.voltarListaAcompanhar = voltarListaAcompanhar;
-  </script>
-
-  <!-- Scripts_Configuracoes.html -->
-  <script>
-(function() {
+window.voltarListaAcompanhar = voltarListaAcompanhar;</script>
+  <script>(function() {
   window.configuracoesGlobal = Array.isArray(window.configuracoesGlobal) ? window.configuracoesGlobal : [];
   window.configuracoesGrupoAtual = window.configuracoesGrupoAtual || 'Todos';
   window.configuracoesCarregadas = Boolean(window.configuracoesCarregadas);
@@ -13626,183 +14979,498 @@ window.voltarListaAcompanhar = voltarListaAcompanhar;
   });
 
 })();
-  </script>
-
-  <!-- Scripts_RuntimePatch.html -->
-  <script>
-
-(function gomRuntimePatch(){
+</script>
+  <script>/* ==========================================================
+   GOM v6.0 - Patch final Triagem/Fila em lista com edição inline
+   Carregar este arquivo por ÚLTIMO no Index.html.
+   Objetivo: forçar Triagem e Fila a usarem a mesma base visual da
+   Execução Diária da Empresa, com edição diretamente na linha.
+   ========================================================== */
+(function gomTriagemFilaInlinePatchV6(){
   'use strict';
-  window.STATUS_OBRAS = window.STATUS_OBRAS || ['Aguardando','Em projeto','Em licitação','Em execução','Suspensa','Concluída','Arquivada'];
-  window.PRIORIDADES_OBRAS = window.PRIORIDADES_OBRAS || ['P0','P1','P2','P3'];
-  window.STATUS_TODOS = window.STATUS_TODOS || [
-    'Em análise','Aguardando visita','Solicitado Orçamento','Orçamento Realizado','OS emitida','Atendimento Emergencial','Garantia de Obra','Serviço Realizado','Devolvido para a escola','Concluído','Encaminhado para outra gerência ou Unidade escolar.','A cargo da unidade escolar','Duplicado'
-  ];
 
-  // Alguns arquivos usam os nomes diretamente. Criamos bindings globais seguros.
-  try { if (typeof STATUS_OBRAS === 'undefined') window.eval('var STATUS_OBRAS = window.STATUS_OBRAS;'); } catch(e) {}
-  try { if (typeof PRIORIDADES_OBRAS === 'undefined') window.eval('var PRIORIDADES_OBRAS = window.PRIORIDADES_OBRAS;'); } catch(e) {}
-  try { if (typeof STATUS_TODOS === 'undefined') window.eval('var STATUS_TODOS = window.STATUS_TODOS;'); } catch(e) {}
+  window.gomTriagemFilaInlinePatchV6 = true;
 
-
-  if (typeof window.formatarInputDate !== 'function') {
-    window.formatarInputDate = function(valor) {
-      if (valor === null || valor === undefined || valor === '') return '';
-      var texto = String(valor || '').trim();
-      if (!texto) return '';
-      var iso = texto.match(/^(\d{4})-(\d{2})-(\d{2})/);
-      if (iso) return iso[1] + '-' + iso[2] + '-' + iso[3];
-      var br = texto.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
-      if (br) {
-        var ano = Number(br[3]);
-        if (ano < 100) ano += 2000;
-        return String(ano).padStart(4, '0') + '-' + String(Number(br[2])).padStart(2, '0') + '-' + String(Number(br[1])).padStart(2, '0');
-      }
-      var data = new Date(texto);
-      if (!isNaN(data.getTime())) return data.getFullYear() + '-' + String(data.getMonth() + 1).padStart(2, '0') + '-' + String(data.getDate()).padStart(2, '0');
-      return '';
-    };
+  function gomGetTelaAtual_() {
+    return window.telaAtual || (typeof telaAtual !== 'undefined' ? telaAtual : 'dashboard');
   }
-  try { if (typeof formatarInputDate === 'undefined') window.eval('var formatarInputDate = window.formatarInputDate;'); } catch(e) {}
 
-  if (typeof window.formToObject !== 'function') {
-    window.formToObject = function(form) {
-      const fd = new FormData(form);
-      const obj = {};
-      fd.forEach((value, key) => {
-        if (obj[key] !== undefined) obj[key] = Array.isArray(obj[key]) ? obj[key].concat(value) : [obj[key], value];
-        else obj[key] = value;
+  function gomSetTelaAtual_(valor) {
+    window.telaAtual = valor;
+    try { if (typeof telaAtual !== 'undefined') telaAtual = valor; } catch(e) {}
+  }
+
+  function gomHtml_(valor) {
+    return typeof escapeHtml === 'function' ? escapeHtml(valor) : String(valor == null ? '' : valor)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  }
+
+  function gomJs_(valor) {
+    return typeof escapeJsAttr === 'function' ? escapeJsAttr(valor) : String(valor == null ? '' : valor).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\r?\n/g, ' ');
+  }
+
+  function gomNormalizar_(valor) {
+    return typeof normalizarSituacaoSistema === 'function' ? normalizarSituacaoSistema(valor) : String(valor || '').trim();
+  }
+
+  function gomTexto_(valor) {
+    return typeof normalizarTextoBase === 'function' ? normalizarTextoBase(valor) : String(valor || '').toLowerCase().trim();
+  }
+
+  function gomCorStatus_(st) {
+    return typeof getCorStatus === 'function' ? getCorStatus(st) : 'var(--primary)';
+  }
+
+  function gomClasseStatus_(st) {
+    return typeof getClasseStatus === 'function' ? getClasseStatus(st) : 'st-default';
+  }
+
+  function gomResumo_(valor, limite) {
+    var texto = String(valor || '').replace(/\s+/g, ' ').trim();
+    limite = Number(limite || 135);
+    if (!texto) return '';
+    if (texto.length <= limite) return texto;
+    return texto.slice(0, limite - 1).trim() + '…';
+  }
+
+  function gomFormatarDataInput_(valor) {
+    if (typeof formatarInputDate === 'function') return formatarInputDate(valor);
+    if (typeof gomFormatarInputDateModal_ === 'function') return gomFormatarInputDateModal_(valor);
+    return String(valor || '').trim();
+  }
+
+  function gomStatusPermitidos_(item, contexto) {
+    var st = gomNormalizar_(item && (item.situacao || item.status));
+    if (contexto === 'triagem' || st === 'Em análise') {
+      return ['Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Devolvido para a escola'];
+    }
+    if (contexto === 'fila' || st === 'Aguardando visita' || st === 'Em atendimento') {
+      return ['Devolvido para a escola', 'Atendimento Emergencial', 'Solicitado Orçamento'];
+    }
+    return window.STATUS_TODOS || [st];
+  }
+
+  function gomOptionsStatus_(item, contexto) {
+    var atual = gomNormalizar_(item && (item.situacao || item.status));
+    var vistos = {};
+    var lista = [atual].concat(gomStatusPermitidos_(item, contexto)).map(gomNormalizar_).filter(function(s) {
+      if (!s || vistos[s]) return false;
+      vistos[s] = true;
+      return true;
+    });
+    return lista.map(function(s) {
+      return '<option value="' + gomHtml_(s) + '"' + (s === atual ? ' selected' : '') + '>' + gomHtml_(s) + '</option>';
+    }).join('');
+  }
+
+  function gomResumoAnexos_(item) {
+    var total = 0;
+    try {
+      if (typeof extrairLinksAnexos === 'function') {
+        total += extrairLinksAnexos(item.anexosSolicitacao || item.anexos).length;
+        total += extrairLinksAnexos(item.anexosOrcamento).length;
+        total += extrairLinksAnexos(item.anexosServico).length;
+      }
+    } catch(e) {}
+    if (!total) return '<div class="empresa-os-meta-line text-muted"><i class="bi bi-paperclip"></i><strong>Anexos:</strong> nenhum</div>';
+    return '<div class="empresa-os-meta-line"><i class="bi bi-paperclip"></i><strong>Anexos:</strong> ' + total + ' arquivo(s)</div>';
+  }
+
+  function gomAbrirModalLinha_(event, id) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    if (typeof abrirModalAnalise === 'function') abrirModalAnalise(id);
+  }
+
+  window.gomAbrirModalLinhaTriagemFilaV6 = gomAbrirModalLinha_;
+
+  function gomRenderLinhaEditavel_(item, index, contexto) {
+    item = item || {};
+    var idOriginal = String(item.id || '').trim();
+    var idSeguro = idOriginal.replace(/[^A-Za-z0-9_-]/g, '_');
+    var id = gomHtml_(idOriginal || '-');
+    var idJs = gomJs_(idOriginal);
+    var formId = 'gomTfForm_' + idSeguro;
+    var statusId = 'gomTfStatus_' + idSeguro;
+
+    var obsId = 'gomTfObs_' + idSeguro;
+    var anexosId = 'gomTfAnexos_' + idSeguro;
+
+    var st = gomNormalizar_(item.situacao || item.status);
+    var classe = gomClasseStatus_(st);
+    var cor = gomCorStatus_(st);
+    var unidade = gomHtml_(item.unidade || 'Unidade não informada');
+    var tipo = gomHtml_(item.tipo || 'Sem tipo');
+    var origem = gomHtml_(item.sistema || item.origem || item.solicitacao || 'Solicitação');
+    var dataAbertura = gomHtml_(item.dataHora || item.data || 'Sem data');
+    var detalhe = gomHtml_(item.detalhamento || 'Sem detalhamento informado.');
+    var detalheCurto = gomHtml_(gomResumo_(item.detalhamento || 'Sem detalhamento informado.', 145));
+    var obsAtuais = gomHtml_(gomResumo_(item.observacoes || item.observacaoAntiga || 'Sem observações registradas.', 140));
+    var ehFila = contexto === 'fila';
+    var posicao = String(index + 1).padStart(2, '0');
+    var entradaFila = gomHtml_(item.dataHoraEntradaFila || item.dataEntradaFila || item.dataHoraEncaminhamento || item.dataHoraUltimaAcao || item.dataHora || item.data || 'Sem data');
+    var tempoFila = gomHtml_(typeof formatarTempoFila === 'function' ? formatarTempoFila(typeof parseDataOrdenacao === 'function' ? parseDataOrdenacao(item) : null) : '');
+    var precisaRevisar = ehFila && typeof deveRevisarFila === 'function' && deveRevisarFila(item);
+    var avisoFila = precisaRevisar
+      ? '<span class="empresa-os-alert"><i class="bi bi-exclamation-triangle-fill"></i> Revisar entrada</span>'
+      : (ehFila ? '<span class="badge-soft"><i class="bi bi-sort-down"></i> Ordem ' + posicao + '</span>' : '');
+
+
+
+    return [
+      '<div class="empresa-os-list-row empresa-os-list-row-v2 ' + classe + ' gom-tf-row-v6" id="gomTfLinha_' + gomHtml_(idSeguro) + '" style="--card-accent:' + cor + ';">',
+
+        '<div class="empresa-os-unidade gom-tf-unidade" data-label="' + (ehFila ? 'Ordem / unidade' : 'Unidade / descrição') + '">',
+          '<details class="empresa-expand">',
+            '<summary>',
+              '<span class="empresa-unidade-link gom-tf-unidade-nome">' + unidade + '</span>',
+              '<span class="empresa-os-id">#' + id + '</span>',
+            '</summary>',
+            '<div class="empresa-expand-body">' + detalhe + '</div>',
+          '</details>',
+          '<div class="empresa-os-desc">' + detalheCurto + '</div>',
+          '<div class="empresa-os-meta-line gom-tf-obs-atual"><i class="bi bi-chat-left-text"></i><strong>Observações:</strong> ' + obsAtuais + '</div>',
+        '</div>',
+
+        '<div class="empresa-os-info gom-tf-status" data-label="Alterar situação">',
+          '<div class="empresa-os-status"><span class="badge-status">' + gomHtml_(st) + '</span>' + avisoFila + '</div>',
+          '<div class="empresa-os-meta-line"><i class="bi bi-building"></i><strong>Tipo:</strong> ' + tipo + '</div>',
+          ehFila
+            ? '<div class="empresa-os-meta-line"><i class="bi bi-calendar3"></i><strong>Entrada:</strong> ' + entradaFila + '</div><div class="empresa-os-meta-line"><i class="bi bi-stopwatch"></i><strong>Tempo:</strong> ' + tempoFila + '</div>'
+            : '<div class="empresa-os-meta-line"><i class="bi bi-send"></i><strong>Origem:</strong> ' + origem + '</div><div class="empresa-os-meta-line"><i class="bi bi-calendar3"></i><strong>Abertura:</strong> ' + dataAbertura + '</div>',
+          '<label class="empresa-field-label"><i class="bi bi-arrow-left-right me-1"></i>Alterar situação</label>',
+          '<select class="form-select form-select-sm fw-bold" id="' + statusId + '" name="situacao" form="' + formId + '" data-id="' + gomHtml_(idOriginal) + '" data-contexto="' + contexto + '" onchange="gomTfMarcarLinhaAlteradaV6(\'' + idJs + '\')">' + gomOptionsStatus_(item, contexto) + '</select>',
+        '</div>',
+
+        '<form id="' + formId + '" class="empresa-os-observacao-wrap gom-tf-form" data-label="Nova observação / anexos" onsubmit="gomTfSalvarLinhaV6(event,\'' + idJs + '\')">',
+          '<label class="empresa-field-label"><i class="bi bi-chat-left-text me-1"></i>Nova observação</label>',
+          '<textarea class="form-control form-control-sm empresa-os-obs" id="' + obsId + '" name="observacoes" rows="2" placeholder="Registrar observação do trâmite..." oninput="gomTfMarcarLinhaAlteradaV6(\'' + idJs + '\')"></textarea>',
+          '<label class="empresa-field-label mt-1"><i class="bi bi-paperclip me-1"></i>Adicionar anexos ao chamado</label>',
+          '<input class="form-control form-control-sm" type="file" id="' + anexosId + '" name="anexos" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" onchange="gomTfMarcarLinhaAlteradaV6(\'' + idJs + '\')">',
+          gomResumoAnexos_(item),
+        '</form>',
+
+      '</div>'
+    ].join('');
+  }
+
+  function gomRenderLista_(lista, contexto) {
+    var ehFila = contexto === 'fila';
+    return [
+      '<div class="empresa-lista-os empresa-lista-compacta empresa-lista-dia-v2 empresa-lista-dia-sem-acao gom-tf-lista-v6 ' + (ehFila ? 'gom-tf-fila-v6' : 'gom-tf-triagem-v6') + '">',
+        '<div class="empresa-lista-head empresa-lista-head-v2 gom-tf-head-v6">',
+          '<div>' + (ehFila ? 'Ordem / unidade' : 'Unidade / descrição') + '</div>',
+          '<div>Status e encaminhamento</div>',
+          '<div>Nova observação / anexos</div>',
+        '</div>',
+        (lista || []).map(function(item, idx) { return gomRenderLinhaEditavel_(item, idx, contexto); }).join(''),
+      '</div>',
+      // Barra flutuante de salvar — igual à Empresa e Configurações.
+      // Só aparece quando há alterações pendentes.
+      '<div class="empresa-dia-save-bar gom-tf-save-bar" id="gomTfSaveBar_' + contexto + '" style="display:none;">',
+        '<div>',
+          '<strong><i class="bi bi-pencil-square me-1"></i>Alterações pendentes</strong>',
+          '<span id="gomTfSaveBarText_' + contexto + '">Nenhuma alteração pendente.</span>',
+        '</div>',
+        '<div class="d-flex gap-2 flex-wrap justify-content-end">',
+          '<button class="btn btn-light border fw-bold btn-sm" type="button" onclick="gomTfDescartarTodasV6(\'' + contexto + '\')"><i class="bi bi-x-circle me-1"></i>Descartar</button>',
+          '<button class="btn btn-primary fw-bold btn-sm" type="button" onclick="gomTfSalvarTodasV6(\'' + contexto + '\')"><i class="bi bi-check2-circle me-1"></i>Salvar alterações</button>',
+        '</div>',
+      '</div>'
+    ].join('');
+  }
+
+  window.renderListaTriagemOperacional = function(lista) { return gomRenderLista_(lista, 'triagem'); };
+  window.renderListaFilaOperacional = function(lista) { return gomRenderLista_(lista, 'fila'); };
+
+
+  // ── BUFFER DE ALTERAÇÕES (igual Empresa/Config) ──────────────────────────────
+  // Guarda só os chamados que tiveram mudança real. A barra flutuante mostra
+  // quantos e quais. Salvar dispara um único lote. Mudança de tela é otimista.
+  window.gomTfAlteracoes = window.gomTfAlteracoes || {}; // { id: { contexto, situacao, observacoes, temAnexo } }
+
+  window.gomTfMarcarLinhaAlteradaV6 = function(id) {
+    id = String(id || '').trim();
+    if (!id) return;
+    var idSeguro = id.replace(/[^A-Za-z0-9_-]/g, '_');
+    var contexto = gomGetTelaAtual_() === 'fila' ? 'fila' : 'triagem';
+
+    var select = document.getElementById('gomTfStatus_' + idSeguro);
+    var obsEl = document.getElementById('gomTfObs_' + idSeguro);
+    var anexosEl = document.getElementById('gomTfAnexos_' + idSeguro);
+
+    var chamadoAtual = (window.listaChamadosGlobal || []).find(function(x) { return String(x.id || '').trim() === id; }) || {};
+    var statusAtual = gomNormalizar_(chamadoAtual.situacao || chamadoAtual.status);
+    var novoStatus = select ? gomNormalizar_(select.value) : '';
+    var obs = obsEl ? String(obsEl.value || '').trim() : '';
+    var temAnexo = !!(anexosEl && anexosEl.files && anexosEl.files.length);
+
+    var statusMudou = novoStatus && novoStatus !== statusAtual;
+    var temMudanca = statusMudou || obs || temAnexo;
+
+    var linha = document.getElementById('gomTfLinha_' + idSeguro);
+
+    if (temMudanca) {
+      window.gomTfAlteracoes[id] = {
+        contexto: contexto,
+        situacao: statusMudou ? novoStatus : '',
+        observacoes: obs,
+        temAnexo: temAnexo
+      };
+      if (linha) linha.classList.add('gom-tf-alterada');
+    } else {
+      // Voltou ao estado original → remove do buffer
+      delete window.gomTfAlteracoes[id];
+      if (linha) linha.classList.remove('gom-tf-alterada');
+    }
+    gomTfAtualizarBarraV6(contexto);
+  };
+
+  function gomTfAtualizarBarraV6(contexto) {
+    var bar = document.getElementById('gomTfSaveBar_' + contexto);
+    if (!bar) return;
+    var ids = Object.keys(window.gomTfAlteracoes).filter(function(id) {
+      return window.gomTfAlteracoes[id].contexto === contexto;
+    });
+    var txt = document.getElementById('gomTfSaveBarText_' + contexto);
+    if (txt) {
+      if (!ids.length) {
+        txt.textContent = 'Nenhuma alteração pendente.';
+      } else {
+        // Mostra quantos e um resumo de quais (unidades)
+        var nomes = ids.slice(0, 3).map(function(id) {
+          var c = (window.listaChamadosGlobal || []).find(function(x) { return String(x.id || '').trim() === id; }) || {};
+          return '#' + id + ' ' + (c.unidade ? String(c.unidade).slice(0, 20) : '');
+        });
+        var resumo = nomes.join(', ') + (ids.length > 3 ? ' e mais ' + (ids.length - 3) : '');
+        txt.textContent = ids.length + ' alteração(ões): ' + resumo;
+      }
+    }
+    bar.style.display = ids.length ? 'flex' : 'none';
+  }
+
+  window.gomTfDescartarTodasV6 = function(contexto) {
+    var ids = Object.keys(window.gomTfAlteracoes).filter(function(id) { return window.gomTfAlteracoes[id].contexto === contexto; });
+    if (!ids.length) return;
+    if (!confirm('Descartar ' + ids.length + ' alteração(ões) não salva(s)?')) return;
+    ids.forEach(function(id) { delete window.gomTfAlteracoes[id]; });
+    gomTfAtualizarBarraV6(contexto);
+    if (typeof window.renderizarTela === 'function') window.renderizarTela();
+  };
+
+  // Salva TODAS as alterações pendentes em lote (1 chamada ao backend).
+  // Depois aplica a mudança localmente (otimista) — o chamado muda de tela na hora.
+  window.gomTfSalvarTodasV6 = async function(contexto) {
+    var ids = Object.keys(window.gomTfAlteracoes).filter(function(id) { return window.gomTfAlteracoes[id].contexto === contexto; });
+    if (!ids.length) { alert('Nenhuma alteração para salvar.'); return; }
+
+    var bar = document.getElementById('gomTfSaveBar_' + contexto);
+    var btnSalvar = bar ? bar.querySelector('.btn-primary') : null;
+
+    // Data global pré-setada (opcional) — aplicada a quem mudou de status na fila
+    var inputData = document.getElementById('gomTfDataGlobal_' + contexto);
+    var dataGlobal = inputData && inputData.value ? inputData.value : '';
+
+    // Monta os payloads e coleta anexos (anexos exigem await)
+    var payloads = [];
+    for (var i = 0; i < ids.length; i++) {
+      var id = ids[i];
+      var idSeguro = id.replace(/[^A-Za-z0-9_-]/g, '_');
+      var alteracao = window.gomTfAlteracoes[id];
+      var anexosEl = document.getElementById('gomTfAnexos_' + idSeguro);
+      var payload = { id: id };
+      if (alteracao.situacao) payload.situacao = alteracao.situacao;
+      if (alteracao.observacoes) payload.observacoes = alteracao.observacoes;
+      if (dataGlobal) payload.dataAgendamentoVisita = dataGlobal;
+      if (alteracao.temAnexo && anexosEl && anexosEl.files && anexosEl.files.length) {
+        try {
+          payload.anexos = await arquivosInputParaBase64(anexosEl);
+        } catch (e) {
+          if (typeof gomMostrarErroAcao === 'function') gomMostrarErroAcao(e, 'Falha ao preparar anexos de #' + id);
+          else alert('Falha ao preparar anexos de #' + id);
+          return;
+        }
+      }
+      payloads.push(payload);
+    }
+
+    if (typeof gomSetButtonLoading === 'function') gomSetButtonLoading(btnSalvar, 'Salvando ' + payloads.length + '...');
+    else if (btnSalvar) btnSalvar.disabled = true;
+
+    // Aplica OTIMISTA antes da resposta — tela responde na hora
+    function aplicarOtimista() {
+      payloads.forEach(function(p) {
+        var campos = {};
+        if (p.situacao) campos.situacao = p.situacao;
+        if (p.observacoes) {
+          var c = (window.listaChamadosGlobal || []).find(function(x) { return String(x.id||'').trim() === p.id; }) || {};
+          campos.observacoes = (c.observacoes ? c.observacoes + '\n' : '') + p.observacoes;
+        }
+        if (p.dataAgendamentoVisita) campos.dataAgendamentoVisita = p.dataAgendamentoVisita;
+        if (typeof window.gomAtualizarChamadoLocal === 'function' && Object.keys(campos).length) {
+          window.gomAtualizarChamadoLocal(p.id, campos);
+        }
       });
-      Object.keys(obj).forEach(k => { if (Array.isArray(obj[k])) obj[k] = obj[k].join(', '); });
-      return obj;
-    };
+    }
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        var retorno = (typeof res === 'string') ? JSON.parse(res) : res;
+        if (typeof gomMostrarSucessoBotao === 'function') gomMostrarSucessoBotao(btnSalvar, 'Salvo');
+        else if (btnSalvar) btnSalvar.disabled = false;
+        // Limpa buffer e aplica otimista
+        ids.forEach(function(id) { delete window.gomTfAlteracoes[id]; });
+        aplicarOtimista();
+        gomTfAtualizarBarraV6(contexto);
+        if (typeof window.renderizarTela === 'function') window.renderizarTela();
+        if (retorno && retorno.erros && retorno.erros.length) {
+          alert('Salvos: ' + (retorno.salvos || 0) + '. Falharam: ' + retorno.erros.length + '\n' +
+            retorno.erros.map(function(e) { return '#' + e.id + ': ' + e.erro; }).join('\n'));
+        }
+      })
+      .withFailureHandler(function(err) {
+        if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(btnSalvar);
+        else if (btnSalvar) btnSalvar.disabled = false;
+        if (typeof gomMostrarErroAcao === 'function') gomMostrarErroAcao(err, 'Não foi possível salvar as alterações.');
+        else alert((err && err.message) || err);
+      })
+      .gomAtualizarChamadosLoteV1(JSON.stringify(payloads));
+  };
+
+  // Mantém compatibilidade: o submit do form de uma linha agora só marca alteração.
+  window.gomTfSalvarLinhaV6 = function(event, id) {
+    if (event) event.preventDefault();
+    gomTfMarcarLinhaAlteradaV6(id);
+  };
+
+  window.renderizarTela = function renderizarTelaGomTriagemFilaInlineV6() {
+    var tela = gomGetTelaAtual_();
+
+    if (tela === 'dashboard') return (typeof renderDashboard === 'function' ? renderDashboard() : null);
+    if (tela === 'cadastro' || tela === 'configuracoes') return;
+    if (tela === 'campo') return (typeof renderizarCampo === 'function' ? renderizarCampo() : null);
+    if (tela === 'alertas') return (typeof renderizarAlertas === 'function' ? renderizarAlertas() : null);
+    if (tela === 'obras') return (typeof renderizarObras === 'function' ? renderizarObras() : null);
+
+    var painel = document.getElementById('painelDados');
+    if (!painel) return;
+
+    if (!window.dadosCarregados && typeof dadosCarregados !== 'undefined' && !dadosCarregados) {
+      painel.innerHTML = '<div class="empty-state"><div class="spinner-border text-primary"></div><p class="mt-3 fw-bold">Carregando chamados...</p></div>';
+      return;
+    }
+
+    var listaTela = typeof filtrarTelaChamados === 'function' ? filtrarTelaChamados(window.listaChamadosGlobal || []) : (window.listaChamadosGlobal || []);
+    listaTela = typeof ordenarChamados === 'function' ? ordenarChamados(listaTela) : listaTela;
+    if (typeof renderizarKPIsChamados === 'function') renderizarKPIsChamados(listaTela);
+
+    var modoEmpresaAtual = window.empresaModoAtual || 'diario';
+    var termo = (tela === 'empresa' && (modoEmpresaAtual === 'gerencial' || modoEmpresaAtual === 'equipes')) ? '' : (typeof termoPesquisa === 'function' ? termoPesquisa() : '');
+    var listaRender = (listaTela || []).filter(function(item) {
+      var texto = gomTexto_([item.id, item.unidade, item.detalhamento, item.situacao, item.status, item.observacoes, item.valorOrcamento, item.equipe, item.numeroOs, item.tipo].join(' '));
+      if (termo && texto.indexOf(termo) === -1) return false;
+      if (!window.statusFiltroClicado && (typeof statusFiltroClicado === 'undefined' || !statusFiltroClicado)) return true;
+      var filtro = window.statusFiltroClicado || (typeof statusFiltroClicado !== 'undefined' ? statusFiltroClicado : null);
+      if (filtro === 'Entrada hoje') return typeof ehMesmoDia === 'function' && typeof parseDataOrdenacao === 'function' && ehMesmoDia(parseDataOrdenacao(item), new Date());
+      if (filtro === 'A revisar') return typeof deveRevisarFila === 'function' && deveRevisarFila(item);
+      return gomNormalizar_(item.situacao || item.status) === filtro;
+    });
+
+    var contador = document.getElementById('contador');
+    if (contador) {
+      if (tela === 'fila') contador.innerText = listaRender.length + ' na fila';
+      else if (tela === 'aprovacao') contador.innerText = listaRender.length + ' orçamento' + (listaRender.length === 1 ? '' : 's');
+      else contador.innerText = listaRender.length + ' Resultados';
+    }
+
+    if (tela === 'empresa') {
+      painel.innerHTML = (typeof renderEmpresaView === 'function'
+        ? renderEmpresaView(listaRender)
+        : '<div class="empty-state"><h5>Módulo Empresa não carregado.</h5></div>');
+      return;
+    }
+
+    if (tela === 'aprovacao') {
+      painel.innerHTML = typeof renderAprovacaoView === 'function' ? renderAprovacaoView(listaRender, window.listaChamadosGlobal || []) : '';
+      return;
+    }
+
+    if (tela === 'historico') {
+      painel.innerHTML = typeof renderMemorialView === 'function' ? renderMemorialView(listaTela) : '';
+      return;
+    }
+
+    if (!listaRender.length) {
+      painel.className = '';
+      painel.innerHTML = '<div class="empty-state"><h5>Nenhum registro encontrado para os filtros atuais.</h5></div>';
+      return;
+    }
+
+    if (tela === 'triagem') {
+      painel.className = '';
+      painel.innerHTML = window.renderListaTriagemOperacional(listaRender);
+      setTimeout(function() { window.gomTfPrePreencherDataHoje_('triagem'); }, 0);
+      return;
+    }
+
+    if (tela === 'fila') {
+      painel.className = '';
+      painel.innerHTML = window.renderListaFilaOperacional(listaRender);
+      setTimeout(function() { window.gomTfPrePreencherDataHoje_('fila'); }, 0);
+      return;
+    }
+
+    painel.innerHTML = typeof renderCardChamado === 'function' ? listaRender.map(function(item) { return renderCardChamado(item); }).join('') : '';
+  };
+
+  // ── DATA GLOBAL DO CABEÇALHO ────────────────────────────────────────────────
+  // A data NÃO salva sozinha. Ela é aplicada ao buffer dos chamados que JÁ têm
+  // alteração pendente (mudança de status). Quando você clica "Salvar alterações"
+  // na barra flutuante, a data vai junto. Isso evita salvar os 53 chamados.
+  window.gomTfAplicarDataGlobal_ = function(contexto) {
+    var input = document.getElementById('gomTfDataGlobal_' + contexto);
+    if (!input || !input.value) { alert('Selecione uma data antes de aplicar.'); return; }
+
+    var ids = Object.keys(window.gomTfAlteracoes || {}).filter(function(id) {
+      return window.gomTfAlteracoes[id].contexto === contexto;
+    });
+
+    if (!ids.length) {
+      alert('A data será aplicada automaticamente aos chamados que você alterar.\n\nMude o status de um ou mais chamados primeiro; ao salvar, esta data vai junto.');
+      return;
+    }
+
+    var btn = document.querySelector('#gomDataGlobalWrap_' + contexto + ' button, .gom-data-global-wrap button');
+    if (btn && typeof gomMostrarSucessoBotao === 'function') {
+      gomMostrarSucessoBotao(btn, 'Aplicada a ' + ids.length, 1500);
+    }
+    // A data já está no input; gomTfSalvarTodasV6 a lê na hora de salvar.
+  };
+
+  function gomFormatarDataBR_(iso) {
+    var m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return m ? (m[3] + '/' + m[2] + '/' + m[1]) : iso;
   }
 
-  if (typeof window.arquivosInputParaBase64 !== 'function') {
-    window.arquivosInputParaBase64 = async function(input) {
-      if (!input || !input.files) return [];
-      const files = Array.from(input.files || []);
-      const limiteArquivos = 5;
-      const limiteBytes = 8 * 1024 * 1024;
-      if (files.length > limiteArquivos) throw new Error('Selecione no máximo ' + limiteArquivos + ' arquivos.');
-      files.forEach(file => { if (file.size > limiteBytes) throw new Error('O arquivo "' + file.name + '" ultrapassa 8 MB.'); });
-      return Promise.all(files.map(file => new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve({ nome: file.name, mimeType: file.type || 'application/octet-stream', tamanho: file.size, base64: String(reader.result || '').split(',').pop() });
-        reader.onerror = () => reject(new Error('Não foi possível ler o arquivo: ' + file.name));
-        reader.readAsDataURL(file);
-      })));
-    };
-  }
+  // Pré-preenche o campo de data global com o dia de HOJE ao montar a tela.
+  window.gomTfPrePreencherDataHoje_ = function(contexto) {
+    var input = document.getElementById('gomTfDataGlobal_' + contexto);
+    if (input && !input.value) {
+      var hoje = new Date();
+      input.value = hoje.getFullYear() + '-' +
+        String(hoje.getMonth() + 1).padStart(2, '0') + '-' +
+        String(hoje.getDate()).padStart(2, '0');
+    }
+  };
 
-  if (typeof window.inicializarTelaCadastro !== 'function') {
-    window.inicializarTelaCadastro = function() {
-      const preencher = (id) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        const atual = el.value;
-        const escolas = Array.isArray(window.listaEscolasGlobal) ? window.listaEscolasGlobal : [];
-        el.innerHTML = '<option value="">Selecione...</option>' + escolas.map(e => `<option value="${escapeHtml(e.nome || e)}">${escapeHtml(e.nome || e)}</option>`).join('');
-        if (atual) el.value = atual;
-      };
-      preencher('selectUnidade');
-      preencher('selectUnidadeEscola');
-      preencher('selectUnidadeEscolaWeb');
-      const sS = document.getElementById('selectSituacaoCadastro');
-      if (sS) sS.innerHTML = (window.STATUS_TODOS || []).map(s => `<option value="${escapeHtml(s)}" ${s==='Em análise'?'selected':''}>${escapeHtml(s)}</option>`).join('');
-    };
-  }
+  try { if (typeof renderizarTela !== 'undefined') renderizarTela = window.renderizarTela; } catch(e) {}
+  try { if (typeof renderListaTriagemOperacional !== 'undefined') renderListaTriagemOperacional = window.renderListaTriagemOperacional; } catch(e) {}
+  try { if (typeof renderListaFilaOperacional !== 'undefined') renderListaFilaOperacional = window.renderListaFilaOperacional; } catch(e) {}
 
-  if (typeof window.setTipoEscola !== 'function') {
-    window.setTipoEscola = function() {
-      const nome = document.getElementById('selectUnidade')?.value || document.getElementById('selectUnidadeEscola')?.value || document.getElementById('selectUnidadeEscolaWeb')?.value || '';
-      const e = (window.listaEscolasGlobal || []).find(x => (x.nome || x) === nome);
-      ['inputTipo','inputTipoEscola','inputTipoEscolaWeb'].forEach(id => { const input = document.getElementById(id); if (input) input.value = e ? (e.tipo || '') : ''; });
-    };
-    window.setTipoEscolaWeb = window.setTipoEscola;
-  }
-
-  if (typeof window.toggleCamposSistema !== 'function') {
-    window.toggleCamposSistema = function() {
-      const s = document.getElementById('selectSistema')?.value;
-      const solar = document.getElementById('divSolar'); if (solar) solar.style.display = s === 'Solar' ? 'block' : 'none';
-      const solicitacao = document.getElementById('divSolicitacaoPor'); if (solicitacao) solicitacao.style.display = s === 'Solicitação por' ? 'block' : 'none';
-    };
-  }
-
-  if (typeof window.setEmpresaModo !== 'function') {
-    window.setEmpresaModo = function(modo, botao) {
-      window.empresaModoAtual = modo || 'diario';
-      document.querySelectorAll('#empresaModoTabs .nav-link').forEach(b => b.classList.remove('active'));
-      if (botao) botao.classList.add('active');
-      if (typeof window.renderizarTela === 'function') window.renderizarTela();
-    };
-  }
-
-  if (typeof window.renderEmpresaView !== 'function') {
-    window.renderEmpresaView = function(listaRender) {
-      const modo = window.empresaModoAtual || 'diario';
-      if (modo === 'equipes') {
-        setTimeout(() => { if (typeof renderizarListaEquipes === 'function') renderizarListaEquipes(); }, 0);
-        return `<div class="row align-items-start mt-2"><div class="col-md-5"><div class="bg-white p-4 rounded shadow-sm border-top border-4 border-info"><h5 class="fw-bold text-dark mb-3"><i class="bi bi-person-plus-fill text-info me-2"></i>Cadastrar Equipe</h5><form onsubmit="salvarEquipeForm(event)"><div class="mb-3"><label class="form-label text-muted small fw-bold">NOME DA EQUIPE OU TÉCNICO</label><input type="text" id="nomeNovaEquipe" class="form-control form-control-lg bg-light" placeholder="Ex: Equipe Alfa" required></div><button type="submit" class="btn btn-info text-white w-100 fw-bold shadow-sm">ADICIONAR EQUIPE</button></form></div></div><div class="col-md-7"><div class="bg-white p-4 rounded shadow-sm h-100 border-top border-4 border-secondary"><h5 class="fw-bold text-dark mb-3"><i class="bi bi-card-checklist text-secondary me-2"></i>Equipes Disponíveis</h5><div id="listaEquipesCadastradasHtml" class="d-flex flex-wrap gap-2"></div></div></div></div>`;
-      }
-      const filtrarModo = (item) => {
-        const st = normalizarSituacaoSistema(item.situacao || item.status);
-        if (modo === 'orcamentos') return st === 'Solicitado Orçamento';
-        if (modo === 'gerencial') return ['OS emitida','Atendimento Emergencial','Garantia de Obra','Serviço Realizado'].includes(st);
-        return ['OS emitida','Atendimento Emergencial','Garantia de Obra'].includes(st);
-      };
-      const lista = (listaRender || []).filter(filtrarModo);
-      if (!lista.length) return '<div class="empty-state"><h5>Nenhuma demanda encontrada para esta visualização.</h5></div>';
-      return '<div class="empresa-grid">' + lista.map(item => (typeof renderEmpresaCard === 'function' ? renderEmpresaCard(item, modo) : renderEmpresaCardFallback(item, modo))).join('') + '</div>';
-    };
-  }
-
-  if (typeof window.renderEmpresaCardFallback !== 'function') {
-    window.renderEmpresaCardFallback = function(item, modo) {
-      const id = escapeHtml(item.id || '');
-      const st = normalizarSituacaoSistema(item.situacao || item.status);
-      const classe = getClasseStatus(st);
-      const cor = getCorStatus(st);
-      const unidade = escapeHtml(item.unidade || 'Unidade não informada');
-      const detalhe = escapeHtml(item.detalhamento || 'Sem detalhamento informado.');
-      const data = escapeHtml(item.dataHoraUltimaAcao || item.dataHora || item.data || 'Sem data');
-      const os = escapeHtml(item.numeroOs || '');
-      const semOs = st === 'OS emitida' && !String(item.numeroOs || '').trim();
-      const aviso = semOs ? '<div class="empresa-aviso"><i class="bi bi-exclamation-triangle-fill"></i> OS emitida sem numeração preenchida.</div>' : '';
-      const equipeOptions = '<option value="">-- Equipe do dia --</option>' + (window.listaEquipesGlobal || []).map(e => `<option value="${escapeHtml(e)}">${escapeHtml(e)}</option>`).join('');
-      if (st === 'Solicitado Orçamento') {
-        return `<div class="empresa-card ${classe}" style="--card-accent:${cor};"><div class="empresa-card-head"><span class="badge bg-warning text-dark">${escapeHtml(st)}</span><span class="card-id">#${id}</span></div><h5 class="empresa-unidade" onclick="abrirModalAnalise('${id}')">${unidade}</h5><div class="card-detail">${detalhe}</div><form onsubmit="enviarOrcamentoEmpresa(event,'${id}')" class="mt-3"><div class="row g-2"><div class="col-md-4"><label class="form-label small fw-bold">Valor</label><input class="form-control form-control-sm" name="valorOrcamento" placeholder="R$ 0,00" required></div><div class="col-md-8"><label class="form-label small fw-bold">Observações</label><textarea class="form-control form-control-sm" name="observacoes" rows="2"></textarea></div><div class="col-12"><label class="form-label small fw-bold">Anexos do orçamento</label><input class="form-control form-control-sm" type="file" name="anexosOrcamento" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"></div></div><button class="btn btn-primary btn-sm fw-bold mt-3"><i class="bi bi-send-check me-1"></i>Devolver orçamento</button></form></div>`;
-      }
-      return `<div class="empresa-card ${classe}" style="--card-accent:${cor};"><div class="empresa-card-head"><span class="badge bg-info text-dark">${escapeHtml(st)}</span><span class="card-id">#${id}</span></div><h5 class="empresa-unidade" onclick="abrirModalAnalise('${id}')">${unidade}</h5><div class="card-detail">${detalhe}</div>${aviso}<div class="fila-meta-grid"><div class="fila-meta-item"><span class="fila-meta-label">Encaminhamento</span><span class="fila-meta-value">${data}</span></div><div class="fila-meta-item"><span class="fila-meta-label">Nº OS</span><span class="fila-meta-value">${os || 'Sem número'}</span></div></div><form onsubmit="salvarEquipeDiaEmpresaFront(event,'${id}')" class="empresa-os-form"><select class="form-select form-select-sm" name="equipe" required>${equipeOptions}</select><input type="hidden" name="numeroOs" value="${os}"><textarea class="form-control form-control-sm mt-2" name="observacoes" rows="1" placeholder="Observação do dia"></textarea><button class="btn btn-primary btn-sm fw-bold mt-2"><i class="bi bi-save me-1"></i>Salvar equipe do dia</button></form></div>`;
-    };
-  }
-
-  if (typeof window.renderizarCampo !== 'function') {
-    window.renderizarCampo = function() {
-      const painel = document.getElementById('painelDados');
-      if (painel) painel.innerHTML = '<div class="empty-state"><h5>Painel de campo carregado.</h5><p>Use a tela Empresa para registrar a equipe do dia.</p></div>';
-    };
-  }
-  if (typeof window.carregarCampo !== 'function') {
-    window.carregarCampo = function(opcoes) {
-      window.campoCarregado = true;
-      if (!window.dadosCampoGlobal) window.dadosCampoGlobal = { chamados: [], historico: [], kpis: {} };
-      if (!opcoes || opcoes.renderizar !== false) window.renderizarCampo();
-    };
-  }
-
-  if (typeof window.renderizarListaEquipes !== 'function') {
-    window.renderizarListaEquipes = function() {
-      const box = document.getElementById('listaEquipesCadastradasHtml');
-      if (!box) return;
-      const equipes = window.listaEquipesGlobal || [];
-      box.innerHTML = equipes.length ? equipes.map(eq => `<span class="badge bg-light border border-info text-dark p-2 fs-6"><i class="bi bi-person-workspace text-info me-1"></i>${escapeHtml(eq)}</span>`).join('') : '<span class="text-muted small">Nenhuma equipe cadastrada.</span>';
-    };
-  }
-})();
-  </script>
-
-
+  console.log('[GOM] Patch Triagem/Fila edição inline v6 carregado.');
+})();</script>
 </body>
 </html>
