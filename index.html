@@ -7,7 +7,7 @@
   <title>GOM | SME</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-  <style>
+<style>
 :root { 
       --primary: #002b5e; --neon-blue: #00e5ff; --bg: #f4f7f9;
       --atendimento: #00e5ff; 
@@ -5861,7 +5861,8 @@ body {
     max-width: 220px;
   }
 }
-  </style>
+
+</style>
 </head>
 <body>
 
@@ -5947,7 +5948,7 @@ body {
     <button class="mobile-nav-item" data-page="triagem" onclick="loadPage('triagem')"><i class="bi bi-funnel"></i><span>Triagem</span></button>
     <button class="mobile-nav-item" data-page="empresa" onclick="loadPage('empresa')"><i class="bi bi-building-check"></i><span>Empresa</span></button>
     <button class="mobile-nav-item" data-page="campo" onclick="loadPage('campo')"><i class="bi bi-geo-alt"></i><span>Campo</span></button>
-    <button class="mobile-nav-item mobile-nav-more" onclick="abrirMobileMais()"><i class="bi bi-grid-3x3-gap"></i><span>Mais</span></button>
+    <button class="mobile-nav-item mobile-nav-more" data-page="mais" onclick="abrirMobileMais()"><i class="bi bi-grid-3x3-gap"></i><span>Mais</span></button>
   </nav>
 
   <!-- Conteúdo principal -->
@@ -5996,9 +5997,9 @@ body {
   </div>
 </div>
 
-
   <!-- Templates de tela -->
-  <script type="text/html" id="tpl-dashboard"><div class="dashboard-page">
+  <template id="tpl-dashboard">
+<div class="dashboard-page">
   <div class="dashboard-hero mb-3">
     <div>
       <span class="dashboard-eyebrow"><i class="bi bi-speedometer2 me-1"></i>Painel geral</span>
@@ -6078,8 +6079,10 @@ body {
   </div>
 
   <div id="painelDados" class="dashboard-hidden-panel"></div>
-</div></script>
-  <script type="text/html" id="tpl-triagem"><h4 class="text-primary fw-bold mb-1"><i class="bi bi-funnel me-2"></i>Triagem Operacional GOM</h4>
+</div>  </template>
+
+  <template id="tpl-triagem">
+<h4 class="text-primary fw-bold mb-1"><i class="bi bi-funnel me-2"></i>Triagem Operacional GOM</h4>
 <p class="text-muted small mb-3">Chamados sem interação inicial aguardando definição da equipe interna.</p>
 <div id="kpiGrid" class="kpi-grid"></div>
 <div class="fila-help"><i class="bi bi-info-circle-fill"></i><span>Na triagem inicial, os encaminhamentos permitidos são: emergencial, orçamento, aguardando visita ou devolvido para a escola.</span></div>
@@ -6088,8 +6091,10 @@ body {
   <span class="badge bg-primary px-3 py-2" id="contador">0 Resultados</span>
 </div>
 <div id="painelDados" class="grid-cards"></div>
-</script>
-  <script type="text/html" id="tpl-fila"><h4 class="text-primary fw-bold mb-1"><i class="bi bi-hourglass-split me-2"></i>Fila de Visita</h4>
+  </template>
+
+  <template id="tpl-fila">
+<h4 class="text-primary fw-bold mb-1"><i class="bi bi-hourglass-split me-2"></i>Fila de Visita</h4>
 <p class="text-muted small mb-3">Chamados aguardando visita técnica, organizados pela data e horário de encaminhamento.</p>
 <div id="kpiGrid" class="kpi-grid"></div>
 <div class="fila-help"><i class="bi bi-info-circle-fill"></i><span>Da fila de visita, o chamado pode ser devolvido para a escola, encaminhado como emergencial ou enviado para orçamento.</span></div>
@@ -6098,8 +6103,10 @@ body {
   <span class="badge bg-primary px-3 py-2" id="contador">0 na fila</span>
 </div>
 <div id="painelDados" class="grid-cards fila-grid"></div>
-</script>
-  <script type="text/html" id="tpl-aprovacao"><h4 class="text-primary fw-bold mb-1"><i class="bi bi-clipboard2-check me-2"></i>Aprovação de Orçamentos</h4>
+  </template>
+
+  <template id="tpl-aprovacao">
+<h4 class="text-primary fw-bold mb-1"><i class="bi bi-clipboard2-check me-2"></i>Aprovação de Orçamentos</h4>
 <p class="text-muted small mb-3">Orçamentos devolvidos pela empresa aguardando decisão interna. Ao aprovar, informe obrigatoriamente o número da OS; a previsão pode vir da empresa no orçamento e pode ser ajustada aqui.</p>
 
 <div id="kpiGrid" class="kpi-grid"></div>
@@ -6118,8 +6125,10 @@ body {
 </div>
 
 <div id="painelDados" class="aprovacao-lista"></div>
-</script>
-  <script type="text/html" id="tpl-empresa"><div class="d-flex justify-content-between align-items-center mb-4">
+  </template>
+
+  <template id="tpl-empresa">
+<div class="d-flex justify-content-between align-items-center mb-4">
   <div>
     <h4 class="text-primary fw-bold mb-1"><i class="bi bi-buildings me-2"></i>Painel da Empresa</h4>
     <p class="text-muted small mb-0">Orçamentos, execução diária das equipes e acompanhamento gerencial das OS.</p>
@@ -6145,8 +6154,10 @@ body {
   </div>
   <div id="painelDados"></div>
 </div>
-</script>
-  <script type="text/html" id="tpl-campo"><div class="campo-page-head d-flex justify-content-between align-items-start gap-3 mb-3">
+  </template>
+
+  <template id="tpl-campo">
+<div class="campo-page-head d-flex justify-content-between align-items-start gap-3 mb-3">
   <div>
     <h4 class="text-primary fw-bold mb-1"><i class="bi bi-geo-alt me-2"></i>Campo - Acompanhamento</h4>
     <p class="text-muted small mb-0">Visualização das equipes em atendimento, pendências de preenchimento da empresa e histórico operacional das unidades em campo.</p>
@@ -6190,8 +6201,10 @@ body {
 </div>
 
 <div id="painelDados" class="campo-area"></div>
-</script>
-  <script type="text/html" id="tpl-alertas"><h4 class="text-primary fw-bold mb-1"><i class="bi bi-exclamation-diamond me-2"></i>Pendências e Alertas</h4>
+  </template>
+
+  <template id="tpl-alertas">
+<h4 class="text-primary fw-bold mb-1"><i class="bi bi-exclamation-diamond me-2"></i>Pendências e Alertas</h4>
 <p class="text-muted small mb-3">Radar operacional do sistema: mostra o que está parado, incompleto ou precisa de ação da GOM ou da empresa.</p>
 
 <div class="alertas-help mb-3">
@@ -6232,8 +6245,10 @@ body {
 
 <div id="alertasFiltros" class="alertas-filtros mb-3"></div>
 <div id="painelDados" class="alertas-lista"></div>
-</script>
-  <script type="text/html" id="tpl-obras"><div class="page-title">
+  </template>
+
+  <template id="tpl-obras">
+<div class="page-title">
   <div>
     <h4><i class="bi bi-buildings-fill me-2"></i>Obras e Ampliações</h4>
     <p>Acompanhamento de ampliações, construções e intervenções estruturais nas unidades.</p>
@@ -6264,8 +6279,10 @@ body {
     </div>
   </div></div>
 </div>
-</script>
-  <script type="text/html" id="tpl-historico"><div class="page-title memorial-title">
+  </template>
+
+  <template id="tpl-historico">
+<div class="page-title memorial-title">
   <div>
     <h4><i class="bi bi-archive-fill me-2"></i>Memorial de Atendimentos</h4>
     <p>Prontuário dos chamados encerrados, com filtros por escola, OS, mês, tipo, status final, anexos e tempo total.</p>
@@ -6305,8 +6322,10 @@ body {
 </div>
 
 <div id="painelDados" class="memorial-container"></div>
-</script>
-  <script type="text/html" id="tpl-relatorios"><div class="page-title relatorios-title">
+  </template>
+
+  <template id="tpl-relatorios">
+<div class="page-title relatorios-title">
   <div>
     <h4><i class="bi bi-bar-chart-line-fill me-2"></i>Relatórios e Gráficos</h4>
     <p>Painel gerencial com gráficos, indicadores e exportação para análise da operação.</p>
@@ -6471,8 +6490,10 @@ body {
     </section>
   </div>
 </section>
-</script>
-  <script type="text/html" id="tpl-cadastro"><div class="page-title">
+  </template>
+
+  <template id="tpl-cadastro">
+<div class="page-title">
   <div>
     <h4><i class="bi bi-journal-plus me-2"></i>Cadastro de Solicitações</h4>
     <p>Use a visualização da escola para solicitações externas e o cadastro interno para registros da equipe GOM.</p>
@@ -6535,8 +6556,10 @@ body {
     </form>
   </div>
 </div>
-</script>
-  <script type="text/html" id="tpl-acompanhar"><div class="page-title acompanhar-title">
+  </template>
+
+  <template id="tpl-acompanhar">
+<div class="page-title acompanhar-title">
   <div>
     <h4><i class="bi bi-search-heart me-2"></i>Acompanhar Solicitação</h4>
     <p>Consulta pública do andamento dos protocolos pela escola, por unidade, protocolo ou e-mail cadastrado.</p>
@@ -6603,8 +6626,10 @@ body {
 </div>
 
 <div id="acompanharResultado" class="acompanhar-resultado"></div>
-</script>
-  <script type="text/html" id="tpl-configuracoes"><div class="page-title configuracoes-head d-flex justify-content-between align-items-start gap-3 mb-3">
+  </template>
+
+  <template id="tpl-configuracoes">
+<div class="page-title configuracoes-head d-flex justify-content-between align-items-start gap-3 mb-3">
   <div>
     <h4 class="text-primary fw-bold mb-1"><i class="bi bi-sliders me-2"></i>Configurações do Sistema</h4>
     <p class="text-muted small mb-0">Controle parâmetros operacionais sem alterar código: empresa, prazos, alertas, anexos, status e dados institucionais.</p>
@@ -6655,56 +6680,31 @@ body {
     <button class="btn btn-primary fw-bold btn-sm" onclick="salvarConfiguracoesTela(this)"><i class="bi bi-check2-circle me-1"></i>Salvar alterações</button>
   </div>
 </div>
-</script>
+  </template>
+
 
   <!-- Dependências externas -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <!-- GOM API (substituto do google.script.run) — DEVE VIR ANTES DOS SCRIPTS -->
-
-  <!-- gom-api.js: substituto do google.script.run -->
+  <!-- GOM API — substituto do google.script.run -->
   <script>
-
-/* ─── GOM API — substituto do google.script.run ───────────────────────────────
- * Mantém a mesma interface:
- *   google.script.run.withSuccessHandler(cb).gomListarChamadosWebV3Json()
- * vira:
- *   GomAPI._get_('listarChamados').then(cb)
- * Assim NENHUM outro arquivo precisa mudar — a troca é transparente.
- * ─────────────────────────────────────────────────────────────────────────── */
-
 const GOM_API_URL = 'https://script.google.com/a/macros/educacao.pmrp.sp.gov.br/s/AKfycbzGf9lnIDmlcBdEVT9EzJ5ykQZwqFniWGOCnr6AovtXrUGx7eFPfyVzwQdaurb_T4XR/exec';
 
-// Cliente de API
 const GomAPI = (() => {
   'use strict';
-
   async function _get_(acao, params) {
     const url = new URL(GOM_API_URL);
     url.searchParams.set('acao', acao);
     if (params) Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-    // mode cors + credentials omit: simple request, sem cookies, segue redirect 302 do GAS.
-    // O GAS retorna access-control-allow-origin: * no GET, então CORS passa.
-    const res = await fetch(url.toString(), {
-      method: 'GET',
-      mode: 'cors',
-      credentials: 'omit',
-      redirect: 'follow'
-    });
+    const res = await fetch(url.toString(), { method: 'GET', mode: 'cors', credentials: 'omit', redirect: 'follow' });
     if (!res.ok) throw new Error('Erro ' + res.status + ' em ' + acao);
     const texto = await res.text();
     try { return JSON.parse(texto); } catch(e) { return texto; }
   }
-
   async function _post_(acao, payload) {
-    // text/plain é "simple request" — NÃO dispara preflight OPTIONS (que o GAS não responde).
-    // credentials omit evita envio de cookies que o navegador bloquearia cross-site.
     const res = await fetch(GOM_API_URL, {
-      method: 'POST',
-      mode: 'cors',
-      credentials: 'omit',
-      redirect: 'follow',
+      method: 'POST', mode: 'cors', credentials: 'omit', redirect: 'follow',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ acao, payload })
     });
@@ -6712,171 +6712,117 @@ const GomAPI = (() => {
     const texto = await res.text();
     try { return JSON.parse(texto); } catch(e) { return texto; }
   }
-
   return { _get_, _post_ };
 })();
 
-// ── Substituto do google.script.run ──────────────────────────────────────────
-// Mantém a mesma interface: .withSuccessHandler(fn).withFailureHandler(fn).nomeDaFuncao(args)
-// Assim NENHUM outro arquivo precisa mudar — a troca é transparente.
-
-// ── google.script.run — substituto transparente ──────────────────────────────
-// Padrão de uso original (mantido 100%):
-//   google.script.run.withSuccessHandler(fn).withFailureHandler(fn).nomeDaFuncao(args)
-//
-// Design: um único objeto "runner" com Proxy que intercepta QUALQUER propriedade.
-// withSuccessHandler e withFailureHandler são tratados pelo Proxy como métodos especiais
-// e retornam o próprio Proxy (para encadeamento). Qualquer outra prop é a função GAS.
-
 function _criarRunnerProxy_() {
   const state = { _onSuccess: null, _onFailure: null };
-
   const proxy = new Proxy(state, {
     get(target, prop) {
-      if (prop === 'withSuccessHandler') {
-        return function(fn) { target._onSuccess = fn; return proxy; };
-      }
-      if (prop === 'withFailureHandler') {
-        return function(fn) { target._onFailure = fn; return proxy; };
-      }
-      if (prop === 'withUserObject') {
-        return function() { return proxy; };
-      }
-      // Qualquer outra prop = nome da função GAS a executar
+      if (prop === 'withSuccessHandler') return function(fn) { target._onSuccess = fn; return proxy; };
+      if (prop === 'withFailureHandler') return function(fn) { target._onFailure = fn; return proxy; };
+      if (prop === 'withUserObject') return function() { return proxy; };
       return function(...args) {
         _executarChamadaGAS_(String(prop), args)
-          .then(function(resultado) {
-            if (typeof target._onSuccess === 'function') target._onSuccess(resultado);
-          })
-          .catch(function(erro) {
-            if (typeof target._onFailure === 'function') target._onFailure(erro);
-            else console.error('[GOM API] Erro não tratado em ' + String(prop) + ':', erro);
+          .then(function(r) { if (typeof target._onSuccess === 'function') target._onSuccess(r); })
+          .catch(function(e) {
+            if (typeof target._onFailure === 'function') target._onFailure(e);
+            else console.error('[GOM API] Erro não tratado em ' + String(prop) + ':', e);
           });
       };
     }
   });
-
   return proxy;
 }
 
-// google.script.run também é um Proxy — cada acesso cria um runner novo
 const google = {
   script: {
     run: new Proxy({}, {
-      get(_, prop) {
-        const runner = _criarRunnerProxy_();
-        // Retorna o método do runner (withSuccessHandler, withFailureHandler, ou função GAS)
-        return runner[prop];
-      }
+      get(_, prop) { const runner = _criarRunnerProxy_(); return runner[prop]; }
     })
   }
 };
 
-// ── Mapeamento: nome da função GAS → chamada API ──────────────────────────────
 async function _executarChamadaGAS_(nomeFuncao, args) {
   const payload = args && args[0] !== undefined ? args[0] : {};
-
   switch (nomeFuncao) {
-    // ── Leituras (GET) ────────────────────────────────────────────────────────
     case 'gomListarChamadosWebV3Json':
       return GomAPI._get_('listarChamados');
-
     case 'getDadosIniciais':
       return GomAPI._get_('dadosIniciais').then(r => r && r.dados ? r.dados : r);
-
     case 'gomListarCampoWebV3Json':
       return GomAPI._get_('listarCampo');
-
     case 'gomListarObrasWebV3Json':
       return GomAPI._get_('listarObras');
-
     case 'gomObterUsuarioAtualV1Json':
       return GomAPI._get_('usuarioAtual');
-
     case 'gomConsultarProtocoloEscolaV1Json':
       return GomAPI._get_('consultarProtocoloEscola', payload);
-
+    /* ── CONFIGURAÇÕES ── */
+    case 'gomListarConfiguracoesWebV1Json':
     case 'listarConfiguracoes':
     case 'obterConfiguracoes':
       return GomAPI._get_('listarConfiguracoes');
-
+    case 'gomSalvarConfiguracoesWebV1Json':
+    case 'salvarConfiguracao':
+      return GomAPI._post_('salvarConfiguracoes', payload);
+    /* ── TIMELINE ── */
     case 'gomListarTimelineChamadoV1Json':
     case 'listarTimelineChamado': {
       const id = typeof payload === 'object' ? (payload.id || '') : String(payload || '');
       return GomAPI._get_('timelineChamado', { id });
     }
-
-    // ── Escritas (POST) ───────────────────────────────────────────────────────
+    /* ── ESCRITAS ── */
     case 'atualizarChamadoWorkflow':
       return GomAPI._post_('atualizarChamado', payload);
-
     case 'gomAtualizarChamadosLoteV1': {
-      // payload já vem como JSON string — parsear para passar como objeto
       const listaLote = typeof payload === 'string' ? JSON.parse(payload) : payload;
       return GomAPI._post_('atualizarLote', listaLote);
     }
-
     case 'salvarNovaSolicitacao':
       return GomAPI._post_('criarChamado', payload);
-
     case 'salvarSolicitacaoEscola':
       return GomAPI._post_('criarChamadoEscola', payload);
-
     case 'salvarEquipeDiaEmpresa':
     case 'salvarLoteEquipeDia':
       return GomAPI._post_('salvarEquipeDia', payload);
-
     case 'salvarRespostaOrcamentoEmpresa':
       return GomAPI._post_('salvarRespostaOrcamento', payload);
-
     case 'salvarServicoRealizadoEmpresa':
       return GomAPI._post_('salvarServicoRealizado', payload);
-
     case 'aprovarOrcamentoEmpresa':
       return GomAPI._post_('enviarOrcamento', payload);
-
     case 'salvarDecisaoAprovacao':
       return GomAPI._post_('salvarDecisaoAprovacao', payload);
-
     case 'atualizarPrevisaoOsEmpresa':
       return GomAPI._post_('atualizarPrevisaoOs', payload);
-
     case 'finalizarOsEmpresa':
       return GomAPI._post_('finalizarOs', payload);
-
     case 'salvarNovaEquipe': {
       const nomeEquipe = args[0];
       const tipoEquipe = args[1] || 'secretaria';
       return GomAPI._post_('salvarEquipe', { nome: nomeEquipe, tipo: tipoEquipe });
     }
-
     case 'atualizarObra':
     case 'salvarObraModal':
       return GomAPI._post_('atualizarObra', payload);
-
-    case 'salvarConfiguracoesTela':
-    case 'salvarConfiguracao':
-      return GomAPI._post_('salvarConfiguracoes', payload);
-
     case 'gomRegistrarComplementoEscolaV1Json':
       return GomAPI._post_('registrarComplemento', payload);
-
     case 'gomGerarMemorialXlsxV1Json':
       return GomAPI._post_('gerarMemorialXlsx', payload);
-
+    /* ── COBRANÇAS ── */
+    case 'gomGerarPreviewCobrancaEmpresaV1Json':
+      return GomAPI._get_('previewCobrancaEmpresa');
     case 'enviarCobrancaEmpresa':
     case 'gomEnviarCobrancaPendenciasEmpresaV1Json':
       return GomAPI._post_('enviarCobrancaEmpresa', {});
-
+    case 'gomCriarTriggerCobrancaPendenciasEmpresaV1Json':
+      return GomAPI._post_('criarTriggerCobrancaEmpresa', {});
     default:
       throw new Error('Função GAS não mapeada na API: ' + nomeFuncao);
   }
 }
-
   </script>
-
-
-  <!-- Scripts da aplicação -->
 
   <!-- Scripts_Config.html -->
   <script>
@@ -7062,7 +7008,6 @@ var CORES_STATUS = window.CORES_STATUS = {
 
 var STATUS_OBRAS = window.STATUS_OBRAS = ['Aguardando','Em projeto','Em licitação','Em execução','Suspensa','Concluída','Arquivada'];
 var PRIORIDADES_OBRAS = window.PRIORIDADES_OBRAS = ['P0','P1','P2','P3'];
-
   </script>
 
   <!-- Scripts_Utils.html -->
@@ -7558,7 +7503,6 @@ window.gomSetButtonLoading = window.gomSetButtonLoading || gomSetButtonLoading;
 window.gomResetButtonLoading = window.gomResetButtonLoading || gomResetButtonLoading;
 window.gomMostrarErroAcao = window.gomMostrarErroAcao || gomMostrarErroAcao;
 window.gomMostrarSucessoBotao = window.gomMostrarSucessoBotao || gomMostrarSucessoBotao;
-
   </script>
 
   <!-- Scripts_Permissoes.html -->
@@ -7684,7 +7628,6 @@ window.podeAcessarPagina = podeAcessarPagina;
 window.getPaginaInicialPermitida = getPaginaInicialPermitida;
 window.aplicarPermissoesInterface = aplicarPermissoesInterface;
 window.renderAcessoNegado = renderAcessoNegado;
-
   </script>
 
   <!-- Scripts_Dashboard.html -->
@@ -7917,8 +7860,7 @@ function refreshDashboard() {
 window.renderDashboard = renderDashboard;
 window.refreshDashboard = refreshDashboard;
 window.irDashboardPara = irDashboardPara;
-window.irDashboardStatus = irDashboardStatus;
-  </script>
+window.irDashboardStatus = irDashboardStatus;  </script>
 
   <!-- Scripts_State.html -->
   <script>
@@ -8246,7 +8188,6 @@ function refreshCampo() {
 window.carregarChamados = window.carregarChamados || carregarChamados;
 window.carregarObras = window.carregarObras || carregarObras;
 window.carregarCampo = window.carregarCampo || carregarCampo;
-
   </script>
 
   <!-- Scripts_Router.html -->
@@ -8436,10 +8377,9 @@ function filtrarPorStatus(s) {
   statusFiltroClicado = s;
   renderizarTela();
 }
-
   </script>
 
-  <!-- Scripts_RenderChamados.html -->
+  <!-- Scripts_RenderChamados.html — CORRIGIDO: Triagem e Fila em layout lista -->
   <script>
 function renderizarTela() {
   if (telaAtual === 'dashboard') return (typeof renderDashboard === 'function' ? renderDashboard() : null);
@@ -8475,29 +8415,93 @@ function renderizarTela() {
   }
 
   if (telaAtual === 'empresa') {
-    painel.innerHTML = (typeof renderEmpresaView === 'function'
-      ? renderEmpresaView(listaRender)
-      : (typeof renderEmpresaViewFallback === 'function' ? renderEmpresaViewFallback(listaRender) : '<div class="empty-state"><h5>Módulo Empresa não carregado.</h5></div>'));
+    painel.innerHTML = (typeof renderEmpresaView === 'function' ? renderEmpresaView(listaRender) : '<div class="empty-state"><h5>Módulo Empresa não carregado.</h5></div>');
     return;
   }
-
-  if (telaAtual === 'aprovacao') {
-    painel.innerHTML = renderAprovacaoView(listaRender, listaChamadosGlobal || []);
-    return;
-  }
-
-  if (telaAtual === 'historico') {
-    painel.innerHTML = renderMemorialView(listaTela);
-    return;
-  }
+  if (telaAtual === 'aprovacao') { painel.innerHTML = renderAprovacaoView(listaRender, listaChamadosGlobal || []); return; }
+  if (telaAtual === 'historico') { painel.innerHTML = renderMemorialView(listaTela); return; }
 
   if (!listaRender.length) {
     painel.innerHTML = '<div class="empty-state"><h5>Nenhum registro encontrado para os filtros atuais.</h5></div>';
     return;
   }
 
-  if (telaAtual === 'fila') painel.innerHTML = listaRender.map((item, idx) => renderCardFila(item, idx)).join('');
-  else painel.innerHTML = listaRender.map((item) => renderCardChamado(item)).join('');
+  // Triagem e Fila: layout em lista (como Execução Diária)
+  if (telaAtual === 'triagem' || telaAtual === 'fila') {
+    painel.innerHTML = renderListaChamados(listaRender);
+    return;
+  }
+
+  // Fallback: grid de cards
+  painel.innerHTML = listaRender.map((item) => renderCardChamado(item)).join('');
+}
+
+// ── Layout lista para Triagem e Fila ─────────────────────────────────────────
+function renderListaChamados(lista) {
+  const isFila = telaAtual === 'fila';
+  const hoje = new Date();
+  const colunasCab = isFila
+    ? 'minmax(320px,1.5fr) 140px 160px minmax(200px,1fr) 130px'
+    : 'minmax(320px,1.5fr) 160px minmax(200px,1fr) 160px 130px';
+  const cabTexto = isFila
+    ? '<div>Unidade / descrição</div><div>Posição / tempo</div><div>Entrada na fila</div><div>Observações</div><div>Status</div>'
+    : '<div>Unidade / descrição</div><div>Data / origem</div><div>Detalhamento</div><div>Observações</div><div>Status</div>';
+
+  const cabecalho = `<div style="display:grid;grid-template-columns:${colunasCab};gap:14px;align-items:center;padding:11px 16px;border-radius:16px;background:linear-gradient(90deg,#003b73,#075f82);color:#fff;box-shadow:0 8px 20px rgba(0,43,94,.14);font-size:.66rem;font-weight:950;text-transform:uppercase;letter-spacing:.07em;min-width:1100px;">${cabTexto}</div>`;
+
+  const linhas = lista.map((item, idx) => isFila ? renderLinhaFila(item, idx, hoje) : renderLinhaTriagem(item)).join('');
+  return `<div style="overflow-x:auto;padding-bottom:4px;"><div style="display:flex;flex-direction:column;gap:10px;min-width:1100px;">${cabecalho}${linhas}</div></div>`;
+}
+
+function renderLinhaTriagem(item) {
+  const id = escapeHtml(item.id); const idJs = escapeJsAttr(item.id);
+  const st = normalizarSituacaoSistema(item.situacao || item.status);
+  const cor = getCorStatus(st); const classe = getClasseStatus(st);
+  const unidade = escapeHtml(item.unidade || 'Unidade não informada');
+  const tipo = escapeHtml(item.tipo || 'Sem tipo');
+  const dataHora = escapeHtml(item.dataHora || item.data || 'Sem data');
+  const origem = escapeHtml(item.sistema || 'Sem origem');
+  const detalhe = escapeHtml(resumirTextoLista(item.detalhamento || '', 130));
+  const detalheCompleto = escapeHtml(item.detalhamento || 'Sem detalhamento.');
+  const obs = escapeHtml(resumirTextoLista(item.observacoes || item.observacaoAntiga || '', 100));
+  const iconeAnexo = temAnexo(item) ? '<i class="bi bi-paperclip ms-1 text-muted"></i>' : '';
+  return `<div class="empresa-os-list-row-v2 ${classe}" style="--card-accent:${cor};display:grid;grid-template-columns:minmax(320px,1.5fr) 160px minmax(200px,1fr) 160px 130px;gap:14px;align-items:stretch;min-width:1100px;">
+    <div><details class="empresa-expand"><summary><span class="empresa-unidade-link">${unidade}</span><span class="empresa-os-id">#${id}${iconeAnexo}</span></summary><div class="empresa-expand-body mt-2"><div class="card-detail mb-2">${detalheCompleto}</div><button class="btn btn-light btn-sm border fw-bold" onclick="abrirModalAnalise('${idJs}')"><i class="bi bi-box-arrow-up-right me-1"></i>Abrir</button></div></details><div style="color:#64748b;font-size:.76rem;margin-top:4px;">${tipo}</div></div>
+    <div class="campo-status-data-cell"><span class="empresa-os-meta-line"><i class="bi bi-calendar3"></i> ${dataHora}</span><span style="color:#94a3b8;font-size:.72rem;">${origem}</span></div>
+    <div class="campo-readonly-cell">${detalhe || '<span style="color:#94a3b8;">Sem detalhamento</span>'}</div>
+    <div class="campo-readonly-cell">${obs || '<span style="color:#94a3b8;">Sem observações</span>'}</div>
+    <div class="campo-status-dia-cell d-flex align-items-center justify-content-center"><span style="display:inline-flex;align-items:center;border-radius:999px;padding:7px 10px;background:color-mix(in srgb,${cor} 12%,#fff);color:#0f172a;border:1px solid ${cor};font-size:.70rem;font-weight:950;white-space:nowrap;">${escapeHtml(st)}</span></div>
+  </div>`;
+}
+
+function renderLinhaFila(item, index, hoje) {
+  const id = escapeHtml(item.id); const idJs = escapeJsAttr(item.id);
+  const timestamp = parseDataOrdenacao(item);
+  const st = normalizarSituacaoSistema(item.situacao || item.status);
+  const cor = getCorStatus(st); const classe = getClasseStatus(st);
+  const unidade = escapeHtml(item.unidade || 'Unidade não informada');
+  const tipo = escapeHtml(item.tipo || 'Sem tipo');
+  const entrada = escapeHtml(item.dataHoraEntradaFila || item.dataEntradaFila || item.dataHora || item.data || 'Sem data');
+  const tempoFila = escapeHtml(formatarTempoFila(timestamp));
+  const precisaRevisao = deveRevisarFila(item);
+  const obs = escapeHtml(resumirTextoLista(item.observacoes || item.observacaoAntiga || '', 100));
+  const detalheCompleto = escapeHtml(item.detalhamento || '');
+  const posicao = String(index + 1).padStart(2, '0');
+  const iconeAnexo = temAnexo(item) ? '<i class="bi bi-paperclip ms-1 text-muted"></i>' : '';
+  const alertaRev = precisaRevisao ? '<span class="empresa-os-alert"><i class="bi bi-exclamation-triangle-fill"></i> Revisar</span>' : '';
+  return `<div class="empresa-os-list-row-v2 ${classe}" style="--card-accent:${cor};display:grid;grid-template-columns:minmax(320px,1.5fr) 140px 160px minmax(200px,1fr) 130px;gap:14px;align-items:stretch;min-width:1100px;">
+    <div><details class="empresa-expand"><summary><span class="empresa-unidade-link">${unidade}</span><span class="empresa-os-id">#${id}${iconeAnexo}</span></summary><div class="empresa-expand-body mt-2"><div class="card-detail mb-2">${detalheCompleto}</div><button class="btn btn-light btn-sm border fw-bold" onclick="abrirModalAnalise('${idJs}')"><i class="bi bi-box-arrow-up-right me-1"></i>Abrir</button></div></details><div style="color:#64748b;font-size:.76rem;margin-top:4px;">${tipo}</div></div>
+    <div class="campo-status-data-cell"><span class="fila-rank-badge" style="width:34px;height:34px;font-size:.82rem;">${posicao}</span><span class="empresa-os-meta-line mt-1"><i class="bi bi-hourglass-split"></i> ${tempoFila}</span>${alertaRev}</div>
+    <div class="campo-status-data-cell"><span class="empresa-os-meta-line"><i class="bi bi-calendar3"></i> ${entrada}</span></div>
+    <div class="campo-readonly-cell">${obs || '<span style="color:#94a3b8;">Sem observações</span>'}</div>
+    <div class="campo-status-dia-cell d-flex align-items-center justify-content-center"><span style="display:inline-flex;align-items:center;border-radius:999px;padding:7px 10px;background:color-mix(in srgb,${cor} 12%,#fff);color:#0f172a;border:1px solid ${cor};font-size:.70rem;font-weight:950;white-space:nowrap;">${escapeHtml(st)}</span></div>
+  </div>`;
+}
+
+function resumirTextoLista(valor, limite) {
+  const texto = String(valor || '').replace(/\s+/g, ' ').trim();
+  if (texto.length <= limite) return texto;
+  return texto.slice(0, limite - 1).trim() + '…';
 }
 
 function filtrarTelaChamados(lista) {
@@ -8505,7 +8509,6 @@ function filtrarTelaChamados(lista) {
   const statusFilaSet = new Set(STATUS_FILA);
   const statusAprovacaoSet = new Set(STATUS_APROVACAO);
   const statusMemorialSet = new Set(STATUS_MEMORIAL);
-
   const getStatusEmpresaPorModo = function() {
     const modo = window.empresaModoAtual || 'diario';
     if (modo === 'orcamentos') return window.STATUS_EMPRESA_ORCAMENTO || ['Solicitado Orçamento'];
@@ -8513,16 +8516,11 @@ function filtrarTelaChamados(lista) {
     if (modo === 'equipes') return [];
     return window.STATUS_EMPRESA_DIARIO || ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra'];
   };
-
   return (lista || []).filter(item => {
     const st = normalizarSituacaoSistema(item.situacao || item.status || item['Situação'] || item['Status']);
     item.situacao = st;
     if (telaAtual === 'fila') return statusFilaSet.has(st);
-    if (telaAtual === 'empresa') {
-      const modo = window.empresaModoAtual || 'diario';
-      if (modo === 'equipes') return true;
-      return new Set(getStatusEmpresaPorModo()).has(st);
-    }
+    if (telaAtual === 'empresa') { const modo = window.empresaModoAtual || 'diario'; if (modo === 'equipes') return true; return new Set(getStatusEmpresaPorModo()).has(st); }
     if (telaAtual === 'aprovacao') return statusAprovacaoSet.has(st);
     if (telaAtual === 'historico') return statusMemorialSet.has(st);
     if (telaAtual === 'triagem') return statusTriagemSet.has(st);
@@ -8537,148 +8535,89 @@ function ordenarChamados(lista) {
 function renderizarKPIsChamados(listaTela) {
   const grid = document.getElementById('kpiGrid');
   if (!grid) return;
-
   const cont = {};
-  (listaTela || []).forEach(i => {
-    const st = normalizarSituacaoSistema(i.situacao || i.status);
-    cont[st] = (cont[st] || 0) + 1;
-  });
-
+  (listaTela || []).forEach(i => { const st = normalizarSituacaoSistema(i.situacao || i.status); cont[st] = (cont[st] || 0) + 1; });
   let html = '';
-
   if (telaAtual === 'fila') {
     const hoje = new Date();
     const entradaHoje = (listaTela || []).filter(item => ehMesmoDia(parseDataOrdenacao(item), hoje)).length;
     const revisar = (listaTela || []).filter(item => deveRevisarFila(item)).length;
-    html += montarKpiCard('Aguardando visita', 'Fila de visita', listaTela.length, 'var(--primary)', true, 'Chamados aguardando visita técnica ou registros legados de fila.', false);
-    html += montarKpiCard('Entrada hoje', 'Entrada hoje', entradaHoje, 'var(--visita)', false, 'Chamados que entraram em atendimento hoje.', false);
-    html += montarKpiCard('A revisar', 'A revisar', revisar, 'var(--orcamento)', false, 'Chamados com inconsistência de data de entrada.', false);
-    grid.innerHTML = html;
-    return;
+    html += montarKpiCard('Aguardando visita', 'Fila de visita', listaTela.length, 'var(--primary)', true, 'Chamados na fila', false);
+    html += montarKpiCard('Entrada hoje', 'Entrada hoje', entradaHoje, 'var(--visita)', false, 'Chamados que entraram hoje', false);
+    html += montarKpiCard('A revisar', 'A revisar', revisar, 'var(--orcamento)', false, 'Com inconsistência de data', false);
+    grid.innerHTML = html; return;
   }
-
-  let statuses = [];
-  let tituloTotal = 'Todos na tela';
-
+  let statuses = [], tituloTotal = 'Todos na tela';
   if (telaAtual === 'triagem') statuses = STATUS_TRIAGEM;
   if (telaAtual === 'empresa') {
     const modoEmpresa = window.empresaModoAtual || 'diario';
-    if (modoEmpresa === 'equipes') {
-      grid.innerHTML = '';
-      return;
-    }
-    if (modoEmpresa === 'orcamentos') {
-      statuses = window.STATUS_EMPRESA_ORCAMENTO || ['Solicitado Orçamento'];
-      tituloTotal = 'Orçamentos';
-    } else if (modoEmpresa === 'gerencial') {
-      statuses = window.STATUS_EMPRESA_GERENCIAL || ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Serviço Realizado'];
-      tituloTotal = 'OS em acompanhamento';
-    } else {
-      statuses = window.STATUS_EMPRESA_DIARIO || ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra'];
-      tituloTotal = 'Execução diária';
-    }
+    if (modoEmpresa === 'equipes') { grid.innerHTML = ''; return; }
+    if (modoEmpresa === 'orcamentos') { statuses = window.STATUS_EMPRESA_ORCAMENTO || ['Solicitado Orçamento']; tituloTotal = 'Orçamentos'; }
+    else if (modoEmpresa === 'gerencial') { statuses = window.STATUS_EMPRESA_GERENCIAL || ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Serviço Realizado']; tituloTotal = 'OS em acompanhamento'; }
+    else { statuses = window.STATUS_EMPRESA_DIARIO || ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra']; tituloTotal = 'Execução diária'; }
   }
   if (telaAtual === 'aprovacao') statuses = STATUS_APROVACAO;
   if (telaAtual === 'historico') statuses = STATUS_MEMORIAL;
-
-  html += montarKpiCard(null, tituloTotal, listaTela.length, 'var(--primary)', statusFiltroClicado === null, 'Total de registros desta visão', false);
-
-  statuses.forEach(st => {
-    const valor = cont[st] || 0;
-    if (valor > 0) html += montarKpiCard(st, st, valor, getCorStatus(st), statusFiltroClicado === st, 'Filtrar por ' + st);
-  });
-
+  html += montarKpiCard(null, tituloTotal, listaTela.length, 'var(--primary)', statusFiltroClicado === null, 'Total desta visão', false);
+  statuses.forEach(st => { const valor = cont[st] || 0; if (valor > 0) html += montarKpiCard(st, st, valor, getCorStatus(st), statusFiltroClicado === st, 'Filtrar por ' + st); });
   grid.innerHTML = html;
 }
 
 function renderCardChamado(item) {
   const st = normalizarSituacaoSistema(item.situacao || item.status);
-  const classe = getClasseStatus(st);
-  const corStatus = getCorStatus(st);
-  const idSeguro = escapeHtml(item.id);
-  const tipo = escapeHtml(item.tipo || 'Sem tipo');
+  const classe = getClasseStatus(st); const corStatus = getCorStatus(st);
+  const idSeguro = escapeHtml(item.id); const tipo = escapeHtml(item.tipo || 'Sem tipo');
   const unidade = escapeHtml(item.unidade || 'Unidade não informada');
   const detalhamento = escapeHtml(item.detalhamento || 'Sem detalhamento informado.');
   const observacoes = escapeHtml(item.observacoes || item.observacaoAntiga || 'Sem observações registradas.');
   const dataEntrada = escapeHtml(item.dataHora || item.data || 'Sem data');
   const valorOrcamento = item.valorOrcamento ? `<div class="card-money"><i class="bi bi-cash-coin"></i> Orçamento: ${escapeHtml(item.valorOrcamento)}</div>` : '';
-  const iconeAnexo = temAnexo(item) ? '<span class="card-anexo-icon" title="Chamado com anexo"><i class="bi bi-paperclip"></i></span>' : '';
+  const iconeAnexo = temAnexo(item) ? '<span class="card-anexo-icon" title="Com anexo"><i class="bi bi-paperclip"></i></span>' : '';
   const labelSituacao = telaAtual === 'historico' ? 'Status final' : 'Situação atual';
-
-  return `
-    <div class="card-admin ${classe}" style="--card-accent: ${corStatus};" onclick="abrirModalAnalise('${idSeguro}')">
-      <div class="card-topline">
-        <span class="card-kind"><span class="card-dot"></span>${tipo}</span>
-        <span class="card-id">#${escapeHtml(item.id || '-')}${iconeAnexo}</span>
-      </div>
-      <div class="card-title-wrap">
-        <span class="card-icon"><i class="bi bi-building"></i></span>
-        <div>
-          <div class="card-label">Unidade escolar</div>
-          <div class="card-unit">${unidade}</div>
-          <div class="card-subline"><i class="bi bi-calendar3"></i> ${dataEntrada}</div>
-        </div>
-      </div>
-      <div class="card-detail">${detalhamento}</div>
-      <div class="card-observacao"><strong>Observações:</strong> ${observacoes}</div>
-      ${valorOrcamento}
-      <div class="card-footer-row">
-        <span class="card-footer-label">${labelSituacao}</span>
-        <span class="status-pill"><span class="status-dot"></span>${escapeHtml(st || 'Sem status')}</span>
-      </div>
-    </div>`;
+  return `<div class="card-admin ${classe}" style="--card-accent: ${corStatus};" onclick="abrirModalAnalise('${idSeguro}')">
+    <div class="card-topline"><span class="card-kind"><span class="card-dot"></span>${tipo}</span><span class="card-id">#${escapeHtml(item.id || '-')}${iconeAnexo}</span></div>
+    <div class="card-title-wrap"><span class="card-icon"><i class="bi bi-building"></i></span><div><div class="card-label">Unidade escolar</div><div class="card-unit">${unidade}</div><div class="card-subline"><i class="bi bi-calendar3"></i> ${dataEntrada}</div></div></div>
+    <div class="card-detail">${detalhamento}</div>
+    <div class="card-observacao"><strong>Observações:</strong> ${observacoes}</div>
+    ${valorOrcamento}
+    <div class="card-footer-row"><span class="card-footer-label">${labelSituacao}</span><span class="status-pill"><span class="status-dot"></span>${escapeHtml(st || 'Sem status')}</span></div>
+  </div>`;
 }
 
 function renderCardFila(item, index) {
   const timestamp = parseDataOrdenacao(item);
   const st = normalizarSituacaoSistema(item.situacao || item.status);
-  const classe = getClasseStatus(st);
-  const corStatus = getCorStatus(st);
-  const idSeguro = escapeHtml(item.id);
-  const tipo = escapeHtml(item.tipo || 'Sem tipo');
+  const classe = getClasseStatus(st); const corStatus = getCorStatus(st);
+  const idSeguro = escapeHtml(item.id); const tipo = escapeHtml(item.tipo || 'Sem tipo');
   const unidade = escapeHtml(item.unidade || 'Unidade não informada');
   const detalhamento = escapeHtml(item.detalhamento || 'Sem detalhamento informado.');
   const observacoes = escapeHtml(item.observacoes || item.observacaoAntiga || 'Sem observações registradas.');
   const entrada = escapeHtml(item.dataHoraEntradaFila || item.dataEntradaFila || item.dataHora || item.data || 'Sem data informada');
   const tempoFila = escapeHtml(formatarTempoFila(timestamp));
   const precisaRevisao = deveRevisarFila(item);
-  const avisoEntrada = precisaRevisao
-    ? '<span class="fila-warning-badge" title="Verifique a data/hora de entrada em atendimento."><i class="bi bi-exclamation-triangle-fill"></i> Revisar entrada</span>'
-    : '<span class="fila-order-badge"><i class="bi bi-sort-down"></i> Ordem de entrada</span>';
+  const avisoEntrada = precisaRevisao ? '<span class="fila-warning-badge"><i class="bi bi-exclamation-triangle-fill"></i> Revisar entrada</span>' : '<span class="fila-order-badge"><i class="bi bi-sort-down"></i> Ordem de entrada</span>';
   const posicao = String(index + 1).padStart(2, '0');
   const iconeAnexo = temAnexo(item) ? ' · Anexo' : '';
-
-  return `
-    <div class="card-admin fila-card ${classe}" style="--card-accent: ${corStatus};" onclick="abrirModalAnalise('${idSeguro}')">
-      <div class="card-topline">
-        <span class="fila-rank-badge" title="Posição atual na fila">${posicao}</span>
-        ${avisoEntrada}
-      </div>
-      <div class="card-title-wrap">
-        <span class="card-icon"><i class="bi bi-building"></i></span>
-        <div>
-          <div class="card-label">Unidade escolar</div>
-          <div class="card-unit">${unidade}</div>
-        </div>
-      </div>
-      <div class="fila-meta-grid">
-        <div class="fila-meta-item"><span class="fila-meta-label">Entrada na fila</span><span class="fila-meta-value">${entrada}</span></div>
-        <div class="fila-meta-item"><span class="fila-meta-label">Tempo na fila</span><span class="fila-meta-value">${tempoFila}</span></div>
-      </div>
-      <div class="card-detail">${detalhamento}</div>
-      <div class="card-observacao"><strong>Observações:</strong> ${observacoes}</div>
-      <div class="card-footer-row">
-        <span class="card-footer-label">#${escapeHtml(item.id || '-')} · ${tipo}${iconeAnexo}</span>
-        <span class="status-pill"><span class="status-dot"></span>${escapeHtml(st)}</span>
-      </div>
-    </div>`;
+  return `<div class="card-admin fila-card ${classe}" style="--card-accent: ${corStatus};" onclick="abrirModalAnalise('${idSeguro}')">
+    <div class="card-topline"><span class="fila-rank-badge">${posicao}</span>${avisoEntrada}</div>
+    <div class="card-title-wrap"><span class="card-icon"><i class="bi bi-building"></i></span><div><div class="card-label">Unidade escolar</div><div class="card-unit">${unidade}</div></div></div>
+    <div class="fila-meta-grid"><div class="fila-meta-item"><span class="fila-meta-label">Entrada na fila</span><span class="fila-meta-value">${entrada}</span></div><div class="fila-meta-item"><span class="fila-meta-label">Tempo na fila</span><span class="fila-meta-value">${tempoFila}</span></div></div>
+    <div class="card-detail">${detalhamento}</div>
+    <div class="card-observacao"><strong>Observações:</strong> ${observacoes}</div>
+    <div class="card-footer-row"><span class="card-footer-label">#${escapeHtml(item.id || '-')} · ${tipo}${iconeAnexo}</span><span class="status-pill"><span class="status-dot"></span>${escapeHtml(st)}</span></div>
+  </div>`;
 }
 
+window.renderizarTela = renderizarTela;
+window.renderListaChamados = renderListaChamados;
+window.resumirTextoLista = resumirTextoLista;
+window.filtrarTelaChamados = filtrarTelaChamados;
+window.ordenarChamados = ordenarChamados;
+window.renderizarKPIsChamados = renderizarKPIsChamados;
+  </script>
 
-
-/* ==========================================================
-   Memorial / Prontuário do Chamado - v11
-   ========================================================== */
+  <!-- Memorial e Aprovação (do Scripts_RenderChamados.html original) -->
+  <script>
 function renderMemorialView(lista) {
   const base = Array.isArray(lista) ? lista : [];
   popularFiltrosMemorial(base);
@@ -9761,7 +9700,6 @@ window.atualizarCamposModalAprovacao = atualizarCamposModalAprovacao;
 window.salvarStatusDoModal = salvarStatusDoModal;
 
 window.recarregarTimelineModal = recarregarTimelineModal;
-
   </script>
 
   <!-- Scripts_Empresa.html -->
@@ -10569,7 +10507,6 @@ window.finalizarOsEmpresaFront = finalizarOsEmpresaFront;
 window.finalizarOsEmpresa = finalizarOsEmpresaFront;
 window.renderizarListaEquipes = renderizarListaEquipes;
 window.salvarEquipeForm = salvarEquipeForm;
-
   </script>
 
   <!-- Scripts_Formularios.html -->
@@ -10668,7 +10605,6 @@ window.enviarSolicitacaoEscola = window.enviarSolicitacaoEscola || enviarCadastr
 window.setTipoEscola = window.setTipoEscola || setTipoEscola;
 window.setTipoEscolaWeb = window.setTipoEscola;
 window.toggleCamposSistema = window.toggleCamposSistema || toggleCamposSistema;
-
   </script>
 
   <!-- Scripts_Obras.html -->
@@ -10860,7 +10796,6 @@ function salvarObraModal(botao) {
 }
 
 window.renderizarObras = window.renderizarObras || renderizarObras;
-
   </script>
 
   <!-- Scripts_Campo.html -->
@@ -11562,7 +11497,6 @@ window.filtrarCampo = filtrarCampo;
 window.limparFiltrosCampo = limparFiltrosCampo;
 window.filtrarCampoKpi = filtrarCampoKpi;
 window.salvarEquipeDiaCampoFront = salvarEquipeDiaCampoFront;
-
   </script>
 
   <!-- Scripts_Alertas.html -->
@@ -12230,7 +12164,6 @@ window.salvarEquipeDiaCampoFront = salvarEquipeDiaCampoFront;
     });
   };
 })();
-
   </script>
 
   <!-- Scripts_Relatorios.html -->
@@ -12829,7 +12762,6 @@ window.renderRelatoriosGraficos = renderRelatoriosGraficos;
 window.setRelatorioTab = setRelatorioTab;
 window.limparFiltrosRelatorios = limparFiltrosRelatorios;
 window.exportarRelatoriosCsv = exportarRelatoriosCsv;
-
   </script>
 
   <!-- Scripts_Acompanhar.html -->
@@ -13084,7 +13016,6 @@ window.enviarComplementoEscola = enviarComplementoEscola;
 window.limparConsultaAcompanhar = limparConsultaAcompanhar;
 window.abrirDetalheAcompanhar = abrirDetalheAcompanhar;
 window.voltarListaAcompanhar = voltarListaAcompanhar;
-
   </script>
 
   <!-- Scripts_Configuracoes.html -->
@@ -13695,7 +13626,6 @@ window.voltarListaAcompanhar = voltarListaAcompanhar;
   });
 
 })();
-
   </script>
 
   <!-- Scripts_RuntimePatch.html -->
@@ -13871,7 +13801,6 @@ window.voltarListaAcompanhar = voltarListaAcompanhar;
     };
   }
 })();
-
   </script>
 
 
