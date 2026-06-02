@@ -6708,55 +6708,53 @@ const GomAPI = (() => {
 // Mantém a mesma interface: .withSuccessHandler(fn).withFailureHandler(fn).nomeDaFuncao(args)
 // Assim NENHUM outro arquivo precisa mudar — a troca é transparente.
 
-// ── Builder do google.script.run ─────────────────────────────────────────────
-// Uso: google.script.run.withSuccessHandler(fn).withFailureHandler(fn).nomeDaFuncao(args)
-// O Proxy em google.script.run só é ativado quando chamamos a FUNÇÃO FINAL (ex: gomListarChamados)
-// withSuccessHandler e withFailureHandler são tratados diretamente pelo builder.
+// ── google.script.run — substituto transparente ──────────────────────────────
+// Padrão de uso original (mantido 100%):
+//   google.script.run.withSuccessHandler(fn).withFailureHandler(fn).nomeDaFuncao(args)
+//
+// Design: um único objeto "runner" com Proxy que intercepta QUALQUER propriedade.
+// withSuccessHandler e withFailureHandler são tratados pelo Proxy como métodos especiais
+// e retornam o próprio Proxy (para encadeamento). Qualquer outra prop é a função GAS.
 
-function criarGomScriptRunner_() {
-  const runner = {
-    _onSuccess: null,
-    _onFailure: null,
-    withSuccessHandler: function(fn) { this._onSuccess = fn; return this; },
-    withFailureHandler: function(fn) { this._onFailure = fn; return this; },
-    withUserObject: function() { return this; }
-  };
+function _criarRunnerProxy_() {
+  const state = { _onSuccess: null, _onFailure: null };
 
-  // Proxy no runner para capturar a chamada final (ex: .gomListarChamadosWebV3Json())
-  return new Proxy(runner, {
+  const proxy = new Proxy(state, {
     get(target, prop) {
-      // Métodos do próprio builder — retorna direto
-      if (prop in target) return typeof target[prop] === 'function' ? target[prop].bind(target) : target[prop];
-      // Qualquer outro prop = é a função GAS sendo chamada
+      if (prop === 'withSuccessHandler') {
+        return function(fn) { target._onSuccess = fn; return proxy; };
+      }
+      if (prop === 'withFailureHandler') {
+        return function(fn) { target._onFailure = fn; return proxy; };
+      }
+      if (prop === 'withUserObject') {
+        return function() { return proxy; };
+      }
+      // Qualquer outra prop = nome da função GAS a executar
       return function(...args) {
-        _executarChamadaGAS_(prop, args)
-          .then(resultado => {
+        _executarChamadaGAS_(String(prop), args)
+          .then(function(resultado) {
             if (typeof target._onSuccess === 'function') target._onSuccess(resultado);
           })
-          .catch(erro => {
+          .catch(function(erro) {
             if (typeof target._onFailure === 'function') target._onFailure(erro);
-            else console.error('[GOM API] Erro não tratado em', prop, erro);
+            else console.error('[GOM API] Erro não tratado em ' + String(prop) + ':', erro);
           });
       };
     }
   });
+
+  return proxy;
 }
 
+// google.script.run também é um Proxy — cada acesso cria um runner novo
 const google = {
   script: {
     run: new Proxy({}, {
       get(_, prop) {
-        const runner = criarGomScriptRunner_();
-        // Se chamar direto (sem withSuccessHandler), retorna a função de execução
-        if (prop === 'withSuccessHandler' || prop === 'withFailureHandler' || prop === 'withUserObject') {
-          return runner[prop].bind(runner);
-        }
-        // Chamada direta: google.script.run.nomeDaFuncao(args)
-        return function(...args) {
-          _executarChamadaGAS_(prop, args)
-            .then(() => {})
-            .catch(erro => console.error('[GOM API] Erro em', prop, erro));
-        };
+        const runner = _criarRunnerProxy_();
+        // Retorna o método do runner (withSuccessHandler, withFailureHandler, ou função GAS)
+        return runner[prop];
       }
     })
   }
