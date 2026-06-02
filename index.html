@@ -6684,16 +6684,28 @@ const GomAPI = (() => {
     const url = new URL(GOM_API_URL);
     url.searchParams.set('acao', acao);
     if (params) Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-    const res = await fetch(url.toString(), { method: 'GET' });
+    // mode cors + credentials omit: simple request, sem cookies, segue redirect 302 do GAS.
+    // O GAS retorna access-control-allow-origin: * no GET, então CORS passa.
+    const res = await fetch(url.toString(), {
+      method: 'GET',
+      mode: 'cors',
+      credentials: 'omit',
+      redirect: 'follow'
+    });
     if (!res.ok) throw new Error('Erro ' + res.status + ' em ' + acao);
     const texto = await res.text();
     try { return JSON.parse(texto); } catch(e) { return texto; }
   }
 
   async function _post_(acao, payload) {
+    // text/plain é "simple request" — NÃO dispara preflight OPTIONS (que o GAS não responde).
+    // credentials omit evita envio de cookies que o navegador bloquearia cross-site.
     const res = await fetch(GOM_API_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      mode: 'cors',
+      credentials: 'omit',
+      redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ acao, payload })
     });
     if (!res.ok) throw new Error('Erro ' + res.status + ' em ' + acao);
