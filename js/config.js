@@ -10,7 +10,7 @@
 
 const GOM_SUPABASE = {
   URL: 'https://iqldovwttomkjkoakosc.supabase.co',   // <-- cole aqui o Project URL
-  ANON_KEY: 'sb_publishable_Rl3CEWuGOeWKLPgBRh0Lnw_7ZqF33jb',          // <-- cole aqui a anon public key
+  ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlxbGRvdnd0dG9ta2prb2Frb3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MDU4NzksImV4cCI6MjA5NjA4MTg3OX0.4dYeK5iIEgSD7CEWyLoaqXEXvuITVNVpTlfdmCyJCI0',          // <-- cole aqui a anon public key
   BUCKET_ANEXOS: 'anexos'                     // bucket criado no Storage
 };
 
