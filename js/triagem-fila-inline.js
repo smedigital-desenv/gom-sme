@@ -1,0 +1,492 @@
+/* ==========================================================
+   GOM v6.0 - Patch final Triagem/Fila em lista com edição inline
+   Carregar este arquivo por ÚLTIMO no Index.html.
+   Objetivo: forçar Triagem e Fila a usarem a mesma base visual da
+   Execução Diária da Empresa, com edição diretamente na linha.
+   ========================================================== */
+(function gomTriagemFilaInlinePatchV6(){
+  'use strict';
+
+  window.gomTriagemFilaInlinePatchV6 = true;
+
+  function gomGetTelaAtual_() {
+    return window.telaAtual || (typeof telaAtual !== 'undefined' ? telaAtual : 'dashboard');
+  }
+
+  function gomSetTelaAtual_(valor) {
+    window.telaAtual = valor;
+    try { if (typeof telaAtual !== 'undefined') telaAtual = valor; } catch(e) {}
+  }
+
+  function gomHtml_(valor) {
+    return typeof escapeHtml === 'function' ? escapeHtml(valor) : String(valor == null ? '' : valor)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  }
+
+  function gomJs_(valor) {
+    return typeof escapeJsAttr === 'function' ? escapeJsAttr(valor) : String(valor == null ? '' : valor).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\r?\n/g, ' ');
+  }
+
+  function gomNormalizar_(valor) {
+    return typeof normalizarSituacaoSistema === 'function' ? normalizarSituacaoSistema(valor) : String(valor || '').trim();
+  }
+
+  function gomTexto_(valor) {
+    return typeof normalizarTextoBase === 'function' ? normalizarTextoBase(valor) : String(valor || '').toLowerCase().trim();
+  }
+
+  function gomCorStatus_(st) {
+    return typeof getCorStatus === 'function' ? getCorStatus(st) : 'var(--primary)';
+  }
+
+  function gomClasseStatus_(st) {
+    return typeof getClasseStatus === 'function' ? getClasseStatus(st) : 'st-default';
+  }
+
+  function gomResumo_(valor, limite) {
+    var texto = String(valor || '').replace(/\s+/g, ' ').trim();
+    limite = Number(limite || 135);
+    if (!texto) return '';
+    if (texto.length <= limite) return texto;
+    return texto.slice(0, limite - 1).trim() + '…';
+  }
+
+  function gomFormatarDataInput_(valor) {
+    if (typeof formatarInputDate === 'function') return formatarInputDate(valor);
+    if (typeof gomFormatarInputDateModal_ === 'function') return gomFormatarInputDateModal_(valor);
+    return String(valor || '').trim();
+  }
+
+  function gomStatusPermitidos_(item, contexto) {
+    var st = gomNormalizar_(item && (item.situacao || item.status));
+    if (contexto === 'triagem' || st === 'Em análise') {
+      return ['Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Devolvido para a escola'];
+    }
+    if (contexto === 'fila' || st === 'Aguardando visita' || st === 'Em atendimento') {
+      return ['Devolvido para a escola', 'Atendimento Emergencial', 'Solicitado Orçamento'];
+    }
+    return window.STATUS_TODOS || [st];
+  }
+
+  function gomOptionsStatus_(item, contexto) {
+    var atual = gomNormalizar_(item && (item.situacao || item.status));
+    var vistos = {};
+    var lista = [atual].concat(gomStatusPermitidos_(item, contexto)).map(gomNormalizar_).filter(function(s) {
+      if (!s || vistos[s]) return false;
+      vistos[s] = true;
+      return true;
+    });
+    return lista.map(function(s) {
+      return '<option value="' + gomHtml_(s) + '"' + (s === atual ? ' selected' : '') + '>' + gomHtml_(s) + '</option>';
+    }).join('');
+  }
+
+  function gomResumoAnexos_(item) {
+    var total = 0;
+    try {
+      if (typeof extrairLinksAnexos === 'function') {
+        total += extrairLinksAnexos(item.anexosSolicitacao || item.anexos).length;
+        total += extrairLinksAnexos(item.anexosOrcamento).length;
+        total += extrairLinksAnexos(item.anexosServico).length;
+      }
+    } catch(e) {}
+    if (!total) return '<div class="empresa-os-meta-line text-muted"><i class="bi bi-paperclip"></i><strong>Anexos:</strong> nenhum</div>';
+    return '<div class="empresa-os-meta-line"><i class="bi bi-paperclip"></i><strong>Anexos:</strong> ' + total + ' arquivo(s)</div>';
+  }
+
+  function gomAbrirModalLinha_(event, id) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    if (typeof abrirModalAnalise === 'function') abrirModalAnalise(id);
+  }
+
+  window.gomAbrirModalLinhaTriagemFilaV6 = gomAbrirModalLinha_;
+
+  function gomRenderLinhaEditavel_(item, index, contexto) {
+    item = item || {};
+    var idOriginal = String(item.id || '').trim();
+    var idSeguro = idOriginal.replace(/[^A-Za-z0-9_-]/g, '_');
+    var id = gomHtml_(idOriginal || '-');
+    var idJs = gomJs_(idOriginal);
+    var formId = 'gomTfForm_' + idSeguro;
+    var statusId = 'gomTfStatus_' + idSeguro;
+
+    var obsId = 'gomTfObs_' + idSeguro;
+    var anexosId = 'gomTfAnexos_' + idSeguro;
+
+    var st = gomNormalizar_(item.situacao || item.status);
+    var classe = gomClasseStatus_(st);
+    var cor = gomCorStatus_(st);
+    var unidade = gomHtml_(item.unidade || 'Unidade não informada');
+    var tipo = gomHtml_(item.tipo || 'Sem tipo');
+    var origem = gomHtml_(item.sistema || item.origem || item.solicitacao || 'Solicitação');
+    var dataAbertura = gomHtml_(item.dataHora || item.data || 'Sem data');
+    var detalhe = gomHtml_(item.detalhamento || 'Sem detalhamento informado.');
+    var detalheCurto = gomHtml_(gomResumo_(item.detalhamento || 'Sem detalhamento informado.', 145));
+    var obsAtuais = gomHtml_(gomResumo_(item.observacoes || item.observacaoAntiga || 'Sem observações registradas.', 140));
+    var ehFila = contexto === 'fila';
+    var posicao = String(index + 1).padStart(2, '0');
+    var entradaFila = gomHtml_(item.dataHoraEntradaFila || item.dataEntradaFila || item.dataHoraEncaminhamento || item.dataHoraUltimaAcao || item.dataHora || item.data || 'Sem data');
+    var tempoFila = gomHtml_(typeof formatarTempoFila === 'function' ? formatarTempoFila(typeof parseDataOrdenacao === 'function' ? parseDataOrdenacao(item) : null) : '');
+    var precisaRevisar = ehFila && typeof deveRevisarFila === 'function' && deveRevisarFila(item);
+    var avisoFila = precisaRevisar
+      ? '<span class="empresa-os-alert"><i class="bi bi-exclamation-triangle-fill"></i> Revisar entrada</span>'
+      : (ehFila ? '<span class="badge-soft"><i class="bi bi-sort-down"></i> Ordem ' + posicao + '</span>' : '');
+
+
+
+    return [
+      '<div class="empresa-os-list-row empresa-os-list-row-v2 ' + classe + ' gom-tf-row-v6" id="gomTfLinha_' + gomHtml_(idSeguro) + '" style="--card-accent:' + cor + ';">',
+
+        '<div class="empresa-os-unidade gom-tf-unidade" data-label="' + (ehFila ? 'Ordem / unidade' : 'Unidade / descrição') + '">',
+          '<details class="empresa-expand">',
+            '<summary>',
+              '<span class="empresa-unidade-link gom-tf-unidade-nome">' + unidade + '</span>',
+              '<span class="empresa-os-id">#' + id + '</span>',
+            '</summary>',
+            '<div class="empresa-expand-body">' + detalhe + '</div>',
+          '</details>',
+          '<div class="empresa-os-desc">' + detalheCurto + '</div>',
+          '<div class="empresa-os-meta-line gom-tf-obs-atual"><i class="bi bi-chat-left-text"></i><strong>Observações:</strong> ' + obsAtuais + '</div>',
+        '</div>',
+
+        '<div class="empresa-os-info gom-tf-status" data-label="Alterar situação">',
+          '<div class="empresa-os-status"><span class="badge-status">' + gomHtml_(st) + '</span>' + avisoFila + '</div>',
+          '<div class="empresa-os-meta-line"><i class="bi bi-building"></i><strong>Tipo:</strong> ' + tipo + '</div>',
+          ehFila
+            ? '<div class="empresa-os-meta-line"><i class="bi bi-calendar3"></i><strong>Entrada:</strong> ' + entradaFila + '</div><div class="empresa-os-meta-line"><i class="bi bi-stopwatch"></i><strong>Tempo:</strong> ' + tempoFila + '</div>'
+            : '<div class="empresa-os-meta-line"><i class="bi bi-send"></i><strong>Origem:</strong> ' + origem + '</div><div class="empresa-os-meta-line"><i class="bi bi-calendar3"></i><strong>Abertura:</strong> ' + dataAbertura + '</div>',
+          '<label class="empresa-field-label"><i class="bi bi-arrow-left-right me-1"></i>Alterar situação</label>',
+          '<select class="form-select form-select-sm fw-bold" id="' + statusId + '" name="situacao" form="' + formId + '" data-id="' + gomHtml_(idOriginal) + '" data-contexto="' + contexto + '" onchange="gomTfMarcarLinhaAlteradaV6(\'' + idJs + '\')">' + gomOptionsStatus_(item, contexto) + '</select>',
+        '</div>',
+
+        '<form id="' + formId + '" class="empresa-os-observacao-wrap gom-tf-form" data-label="Nova observação / anexos" onsubmit="gomTfSalvarLinhaV6(event,\'' + idJs + '\')">',
+          '<label class="empresa-field-label"><i class="bi bi-chat-left-text me-1"></i>Nova observação</label>',
+          '<textarea class="form-control form-control-sm empresa-os-obs" id="' + obsId + '" name="observacoes" rows="2" placeholder="Registrar observação do trâmite..." oninput="gomTfMarcarLinhaAlteradaV6(\'' + idJs + '\')"></textarea>',
+          '<label class="empresa-field-label mt-1"><i class="bi bi-paperclip me-1"></i>Adicionar anexos ao chamado</label>',
+          '<input class="form-control form-control-sm" type="file" id="' + anexosId + '" name="anexos" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" onchange="gomTfMarcarLinhaAlteradaV6(\'' + idJs + '\')">',
+          gomResumoAnexos_(item),
+        '</form>',
+
+      '</div>'
+    ].join('');
+  }
+
+  function gomRenderLista_(lista, contexto) {
+    var ehFila = contexto === 'fila';
+    return [
+      '<div class="empresa-lista-os empresa-lista-compacta empresa-lista-dia-v2 empresa-lista-dia-sem-acao gom-tf-lista-v6 ' + (ehFila ? 'gom-tf-fila-v6' : 'gom-tf-triagem-v6') + '">',
+        '<div class="empresa-lista-head empresa-lista-head-v2 gom-tf-head-v6">',
+          '<div>' + (ehFila ? 'Ordem / unidade' : 'Unidade / descrição') + '</div>',
+          '<div>Status e encaminhamento</div>',
+          '<div>Nova observação / anexos</div>',
+        '</div>',
+        (lista || []).map(function(item, idx) { return gomRenderLinhaEditavel_(item, idx, contexto); }).join(''),
+      '</div>',
+      // Barra flutuante de salvar — igual à Empresa e Configurações.
+      // Só aparece quando há alterações pendentes.
+      '<div class="empresa-dia-save-bar gom-tf-save-bar" id="gomTfSaveBar_' + contexto + '" style="display:none;">',
+        '<div>',
+          '<strong><i class="bi bi-pencil-square me-1"></i>Alterações pendentes</strong>',
+          '<span id="gomTfSaveBarText_' + contexto + '">Nenhuma alteração pendente.</span>',
+        '</div>',
+        '<div class="d-flex gap-2 flex-wrap justify-content-end">',
+          '<button class="btn btn-light border fw-bold btn-sm" type="button" onclick="gomTfDescartarTodasV6(\'' + contexto + '\')"><i class="bi bi-x-circle me-1"></i>Descartar</button>',
+          '<button class="btn btn-primary fw-bold btn-sm" type="button" onclick="gomTfSalvarTodasV6(\'' + contexto + '\')"><i class="bi bi-check2-circle me-1"></i>Salvar alterações</button>',
+        '</div>',
+      '</div>'
+    ].join('');
+  }
+
+  window.renderListaTriagemOperacional = function(lista) { return gomRenderLista_(lista, 'triagem'); };
+  window.renderListaFilaOperacional = function(lista) { return gomRenderLista_(lista, 'fila'); };
+
+
+  // ── BUFFER DE ALTERAÇÕES (igual Empresa/Config) ──────────────────────────────
+  // Guarda só os chamados que tiveram mudança real. A barra flutuante mostra
+  // quantos e quais. Salvar dispara um único lote. Mudança de tela é otimista.
+  window.gomTfAlteracoes = window.gomTfAlteracoes || {}; // { id: { contexto, situacao, observacoes, temAnexo } }
+
+  window.gomTfMarcarLinhaAlteradaV6 = function(id) {
+    id = String(id || '').trim();
+    if (!id) return;
+    var idSeguro = id.replace(/[^A-Za-z0-9_-]/g, '_');
+    var contexto = gomGetTelaAtual_() === 'fila' ? 'fila' : 'triagem';
+
+    var select = document.getElementById('gomTfStatus_' + idSeguro);
+    var obsEl = document.getElementById('gomTfObs_' + idSeguro);
+    var anexosEl = document.getElementById('gomTfAnexos_' + idSeguro);
+
+    var chamadoAtual = (window.listaChamadosGlobal || []).find(function(x) { return String(x.id || '').trim() === id; }) || {};
+    var statusAtual = gomNormalizar_(chamadoAtual.situacao || chamadoAtual.status);
+    var novoStatus = select ? gomNormalizar_(select.value) : '';
+    var obs = obsEl ? String(obsEl.value || '').trim() : '';
+    var temAnexo = !!(anexosEl && anexosEl.files && anexosEl.files.length);
+
+    var statusMudou = novoStatus && novoStatus !== statusAtual;
+    var temMudanca = statusMudou || obs || temAnexo;
+
+    var linha = document.getElementById('gomTfLinha_' + idSeguro);
+
+    if (temMudanca) {
+      window.gomTfAlteracoes[id] = {
+        contexto: contexto,
+        situacao: statusMudou ? novoStatus : '',
+        observacoes: obs,
+        temAnexo: temAnexo
+      };
+      if (linha) linha.classList.add('gom-tf-alterada');
+    } else {
+      // Voltou ao estado original → remove do buffer
+      delete window.gomTfAlteracoes[id];
+      if (linha) linha.classList.remove('gom-tf-alterada');
+    }
+    gomTfAtualizarBarraV6(contexto);
+  };
+
+  function gomTfAtualizarBarraV6(contexto) {
+    var bar = document.getElementById('gomTfSaveBar_' + contexto);
+    if (!bar) return;
+    var ids = Object.keys(window.gomTfAlteracoes).filter(function(id) {
+      return window.gomTfAlteracoes[id].contexto === contexto;
+    });
+    var txt = document.getElementById('gomTfSaveBarText_' + contexto);
+    if (txt) {
+      if (!ids.length) {
+        txt.textContent = 'Nenhuma alteração pendente.';
+      } else {
+        // Mostra quantos e um resumo de quais (unidades)
+        var nomes = ids.slice(0, 3).map(function(id) {
+          var c = (window.listaChamadosGlobal || []).find(function(x) { return String(x.id || '').trim() === id; }) || {};
+          return '#' + id + ' ' + (c.unidade ? String(c.unidade).slice(0, 20) : '');
+        });
+        var resumo = nomes.join(', ') + (ids.length > 3 ? ' e mais ' + (ids.length - 3) : '');
+        txt.textContent = ids.length + ' alteração(ões): ' + resumo;
+      }
+    }
+    bar.style.display = ids.length ? 'flex' : 'none';
+  }
+
+  window.gomTfDescartarTodasV6 = function(contexto) {
+    var ids = Object.keys(window.gomTfAlteracoes).filter(function(id) { return window.gomTfAlteracoes[id].contexto === contexto; });
+    if (!ids.length) return;
+    if (!confirm('Descartar ' + ids.length + ' alteração(ões) não salva(s)?')) return;
+    ids.forEach(function(id) { delete window.gomTfAlteracoes[id]; });
+    gomTfAtualizarBarraV6(contexto);
+    if (typeof window.renderizarTela === 'function') window.renderizarTela();
+  };
+
+  // Salva TODAS as alterações pendentes em lote (1 chamada ao backend).
+  // Depois aplica a mudança localmente (otimista) — o chamado muda de tela na hora.
+  window.gomTfSalvarTodasV6 = async function(contexto) {
+    var ids = Object.keys(window.gomTfAlteracoes).filter(function(id) { return window.gomTfAlteracoes[id].contexto === contexto; });
+    if (!ids.length) { alert('Nenhuma alteração para salvar.'); return; }
+
+    var bar = document.getElementById('gomTfSaveBar_' + contexto);
+    var btnSalvar = bar ? bar.querySelector('.btn-primary') : null;
+
+    // Data global pré-setada (opcional) — aplicada a quem mudou de status na fila
+    var inputData = document.getElementById('gomTfDataGlobal_' + contexto);
+    var dataGlobal = inputData && inputData.value ? inputData.value : '';
+
+    // Monta os payloads e coleta anexos (anexos exigem await)
+    var payloads = [];
+    for (var i = 0; i < ids.length; i++) {
+      var id = ids[i];
+      var idSeguro = id.replace(/[^A-Za-z0-9_-]/g, '_');
+      var alteracao = window.gomTfAlteracoes[id];
+      var anexosEl = document.getElementById('gomTfAnexos_' + idSeguro);
+      var payload = { id: id };
+      if (alteracao.situacao) payload.situacao = alteracao.situacao;
+      if (alteracao.observacoes) payload.observacoes = alteracao.observacoes;
+      if (dataGlobal) payload.dataAgendamentoVisita = dataGlobal;
+      if (alteracao.temAnexo && anexosEl && anexosEl.files && anexosEl.files.length) {
+        try {
+          payload.anexos = await arquivosInputParaBase64(anexosEl);
+        } catch (e) {
+          if (typeof gomMostrarErroAcao === 'function') gomMostrarErroAcao(e, 'Falha ao preparar anexos de #' + id);
+          else alert('Falha ao preparar anexos de #' + id);
+          return;
+        }
+      }
+      payloads.push(payload);
+    }
+
+    if (typeof gomSetButtonLoading === 'function') gomSetButtonLoading(btnSalvar, 'Salvando ' + payloads.length + '...');
+    else if (btnSalvar) btnSalvar.disabled = true;
+
+    // Aplica OTIMISTA antes da resposta — tela responde na hora
+    function aplicarOtimista() {
+      payloads.forEach(function(p) {
+        var campos = {};
+        if (p.situacao) campos.situacao = p.situacao;
+        if (p.observacoes) {
+          var c = (window.listaChamadosGlobal || []).find(function(x) { return String(x.id||'').trim() === p.id; }) || {};
+          campos.observacoes = (c.observacoes ? c.observacoes + '\n' : '') + p.observacoes;
+        }
+        if (p.dataAgendamentoVisita) campos.dataAgendamentoVisita = p.dataAgendamentoVisita;
+        if (typeof window.gomAtualizarChamadoLocal === 'function' && Object.keys(campos).length) {
+          window.gomAtualizarChamadoLocal(p.id, campos);
+        }
+      });
+    }
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        var retorno = (typeof res === 'string') ? JSON.parse(res) : res;
+        if (typeof gomMostrarSucessoBotao === 'function') gomMostrarSucessoBotao(btnSalvar, 'Salvo');
+        else if (btnSalvar) btnSalvar.disabled = false;
+        // Limpa buffer e aplica otimista
+        ids.forEach(function(id) { delete window.gomTfAlteracoes[id]; });
+        aplicarOtimista();
+        gomTfAtualizarBarraV6(contexto);
+        if (typeof window.renderizarTela === 'function') window.renderizarTela();
+        if (retorno && retorno.erros && retorno.erros.length) {
+          alert('Salvos: ' + (retorno.salvos || 0) + '. Falharam: ' + retorno.erros.length + '\n' +
+            retorno.erros.map(function(e) { return '#' + e.id + ': ' + e.erro; }).join('\n'));
+        }
+      })
+      .withFailureHandler(function(err) {
+        if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(btnSalvar);
+        else if (btnSalvar) btnSalvar.disabled = false;
+        if (typeof gomMostrarErroAcao === 'function') gomMostrarErroAcao(err, 'Não foi possível salvar as alterações.');
+        else alert((err && err.message) || err);
+      })
+      .gomAtualizarChamadosLoteV1(JSON.stringify(payloads));
+  };
+
+  // Mantém compatibilidade: o submit do form de uma linha agora só marca alteração.
+  window.gomTfSalvarLinhaV6 = function(event, id) {
+    if (event) event.preventDefault();
+    gomTfMarcarLinhaAlteradaV6(id);
+  };
+
+  window.renderizarTela = function renderizarTelaGomTriagemFilaInlineV6() {
+    var tela = gomGetTelaAtual_();
+
+    if (tela === 'dashboard') return (typeof renderDashboard === 'function' ? renderDashboard() : null);
+    if (tela === 'cadastro' || tela === 'configuracoes') return;
+    if (tela === 'campo') return (typeof renderizarCampo === 'function' ? renderizarCampo() : null);
+    if (tela === 'alertas') return (typeof renderizarAlertas === 'function' ? renderizarAlertas() : null);
+    if (tela === 'obras') return (typeof renderizarObras === 'function' ? renderizarObras() : null);
+
+    var painel = document.getElementById('painelDados');
+    if (!painel) return;
+
+    if (!window.dadosCarregados && typeof dadosCarregados !== 'undefined' && !dadosCarregados) {
+      painel.innerHTML = '<div class="empty-state"><div class="spinner-border text-primary"></div><p class="mt-3 fw-bold">Carregando chamados...</p></div>';
+      return;
+    }
+
+    var listaTela = typeof filtrarTelaChamados === 'function' ? filtrarTelaChamados(window.listaChamadosGlobal || []) : (window.listaChamadosGlobal || []);
+    listaTela = typeof ordenarChamados === 'function' ? ordenarChamados(listaTela) : listaTela;
+    if (typeof renderizarKPIsChamados === 'function') renderizarKPIsChamados(listaTela);
+
+    var modoEmpresaAtual = window.empresaModoAtual || 'diario';
+    var termo = (tela === 'empresa' && (modoEmpresaAtual === 'gerencial' || modoEmpresaAtual === 'equipes')) ? '' : (typeof termoPesquisa === 'function' ? termoPesquisa() : '');
+    var listaRender = (listaTela || []).filter(function(item) {
+      var texto = gomTexto_([item.id, item.unidade, item.detalhamento, item.situacao, item.status, item.observacoes, item.valorOrcamento, item.equipe, item.numeroOs, item.tipo].join(' '));
+      if (termo && texto.indexOf(termo) === -1) return false;
+      if (!window.statusFiltroClicado && (typeof statusFiltroClicado === 'undefined' || !statusFiltroClicado)) return true;
+      var filtro = window.statusFiltroClicado || (typeof statusFiltroClicado !== 'undefined' ? statusFiltroClicado : null);
+      if (filtro === 'Entrada hoje') return typeof ehMesmoDia === 'function' && typeof parseDataOrdenacao === 'function' && ehMesmoDia(parseDataOrdenacao(item), new Date());
+      if (filtro === 'A revisar') return typeof deveRevisarFila === 'function' && deveRevisarFila(item);
+      return gomNormalizar_(item.situacao || item.status) === filtro;
+    });
+
+    var contador = document.getElementById('contador');
+    if (contador) {
+      if (tela === 'fila') contador.innerText = listaRender.length + ' na fila';
+      else if (tela === 'aprovacao') contador.innerText = listaRender.length + ' orçamento' + (listaRender.length === 1 ? '' : 's');
+      else contador.innerText = listaRender.length + ' Resultados';
+    }
+
+    if (tela === 'empresa') {
+      painel.innerHTML = (typeof renderEmpresaView === 'function'
+        ? renderEmpresaView(listaRender)
+        : '<div class="empty-state"><h5>Módulo Empresa não carregado.</h5></div>');
+      return;
+    }
+
+    if (tela === 'aprovacao') {
+      painel.innerHTML = typeof renderAprovacaoView === 'function' ? renderAprovacaoView(listaRender, window.listaChamadosGlobal || []) : '';
+      return;
+    }
+
+    if (tela === 'historico') {
+      painel.innerHTML = typeof renderMemorialView === 'function' ? renderMemorialView(listaTela) : '';
+      return;
+    }
+
+    if (!listaRender.length) {
+      painel.className = '';
+      painel.innerHTML = '<div class="empty-state"><h5>Nenhum registro encontrado para os filtros atuais.</h5></div>';
+      return;
+    }
+
+    if (tela === 'triagem') {
+      painel.className = '';
+      painel.innerHTML = window.renderListaTriagemOperacional(listaRender);
+      setTimeout(function() { window.gomTfPrePreencherDataHoje_('triagem'); }, 0);
+      return;
+    }
+
+    if (tela === 'fila') {
+      painel.className = '';
+      painel.innerHTML = window.renderListaFilaOperacional(listaRender);
+      setTimeout(function() { window.gomTfPrePreencherDataHoje_('fila'); }, 0);
+      return;
+    }
+
+    painel.innerHTML = typeof renderCardChamado === 'function' ? listaRender.map(function(item) { return renderCardChamado(item); }).join('') : '';
+  };
+
+  // ── DATA GLOBAL DO CABEÇALHO ────────────────────────────────────────────────
+  // A data NÃO salva sozinha. Ela é aplicada ao buffer dos chamados que JÁ têm
+  // alteração pendente (mudança de status). Quando você clica "Salvar alterações"
+  // na barra flutuante, a data vai junto. Isso evita salvar os 53 chamados.
+  window.gomTfAplicarDataGlobal_ = function(contexto) {
+    var input = document.getElementById('gomTfDataGlobal_' + contexto);
+    if (!input || !input.value) { alert('Selecione uma data antes de aplicar.'); return; }
+
+    var ids = Object.keys(window.gomTfAlteracoes || {}).filter(function(id) {
+      return window.gomTfAlteracoes[id].contexto === contexto;
+    });
+
+    if (!ids.length) {
+      alert('A data será aplicada automaticamente aos chamados que você alterar.\n\nMude o status de um ou mais chamados primeiro; ao salvar, esta data vai junto.');
+      return;
+    }
+
+    var btn = document.querySelector('#gomDataGlobalWrap_' + contexto + ' button, .gom-data-global-wrap button');
+    if (btn && typeof gomMostrarSucessoBotao === 'function') {
+      gomMostrarSucessoBotao(btn, 'Aplicada a ' + ids.length, 1500);
+    }
+    // A data já está no input; gomTfSalvarTodasV6 a lê na hora de salvar.
+  };
+
+  function gomFormatarDataBR_(iso) {
+    var m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return m ? (m[3] + '/' + m[2] + '/' + m[1]) : iso;
+  }
+
+  // Pré-preenche o campo de data global com o dia de HOJE ao montar a tela.
+  window.gomTfPrePreencherDataHoje_ = function(contexto) {
+    var input = document.getElementById('gomTfDataGlobal_' + contexto);
+    if (input && !input.value) {
+      var hoje = new Date();
+      input.value = hoje.getFullYear() + '-' +
+        String(hoje.getMonth() + 1).padStart(2, '0') + '-' +
+        String(hoje.getDate()).padStart(2, '0');
+    }
+  };
+
+  try { if (typeof renderizarTela !== 'undefined') renderizarTela = window.renderizarTela; } catch(e) {}
+  try { if (typeof renderListaTriagemOperacional !== 'undefined') renderListaTriagemOperacional = window.renderListaTriagemOperacional; } catch(e) {}
+  try { if (typeof renderListaFilaOperacional !== 'undefined') renderListaFilaOperacional = window.renderListaFilaOperacional; } catch(e) {}
+
+  console.log('[GOM] Patch Triagem/Fila edição inline v6 carregado.');
+})();
