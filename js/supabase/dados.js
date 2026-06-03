@@ -476,13 +476,6 @@ window.GomDados = (function () {
     return JSON.stringify({ ok: true, id, status: 'Em análise' });
   }
 
-  return {
-    listarChamados, getDadosIniciais, usuarioAtual, listarObras, listarCampo, listarConfiguracoes, timeline,
-    consultarProtocoloEscola,
-    atualizarChamado, criarSolicitacao, criarSolicitacaoEscola, salvarEquipeDiaEmpresa, salvarEquipesDiaEmpresaLote,
-    salvarRespostaOrcamentoEmpresa, salvarServicoRealizadoEmpresa, aprovarOrcamento, salvarDecisaoAprovacao,
-    atualizarPrevisaoOsEmpresa, finalizarOsEmpresa, salvarNovaEquipe, atualizarObra, salvarConfiguracoes, registrarComplementoEscola
-
   async function consultarProtocoloEscola(p) {
     const protocolo = String(p.protocolo || p.id || '').trim();
     if (!protocolo) return JSON.stringify({ ok: false, chamado: null });
@@ -493,15 +486,12 @@ window.GomDados = (function () {
     if (r.error || !r.data) return JSON.stringify({ ok: false, chamado: null });
     return JSON.stringify({ ok: true, chamado: M.mapChamado(r.data, {}) });
   }
-
+ 
   return {
     listarChamados, getDadosIniciais, usuarioAtual, listarObras, listarCampo, listarConfiguracoes, timeline,
     consultarProtocoloEscola,
     atualizarChamado, criarSolicitacao, criarSolicitacaoEscola, salvarEquipeDiaEmpresa, salvarEquipesDiaEmpresaLote,
     salvarRespostaOrcamentoEmpresa, salvarServicoRealizadoEmpresa, aprovarOrcamento, salvarDecisaoAprovacao,
     atualizarPrevisaoOsEmpresa, finalizarOsEmpresa, salvarNovaEquipe, atualizarObra, salvarConfiguracoes, registrarComplementoEscola
-  };
-})();
-      
   };
 })();
