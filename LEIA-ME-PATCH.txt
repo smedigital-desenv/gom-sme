@@ -1,0 +1,15 @@
+Patch pós-upload GOM
+
+Copiar estes arquivos para a pasta do repositório local, preservando as subpastas:
+- js/obras.js
+- js/supabase/api.js
+- js/supabase/dados.js
+
+Depois conferir js/config.js manualmente:
+URL deve ser apenas https://iqldovwttomkjkoakosc.supabase.co
+Não usar https://iqldovwttomkjkoakosc.supabase.co/rest/v1
+
+Em seguida rodar:
+git add .
+git commit -m "Corrige ponte Supabase e tela de obras"
+git push origin main

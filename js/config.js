@@ -9,7 +9,7 @@
  * ========================================================================== */
 
 const GOM_SUPABASE = {
-  URL: 'https://iqldovwttomkjkoakosc.supabase.co/rest/v1/',   // <-- cole aqui o Project URL
+  URL: 'https://iqldovwttomkjkoakosc.supabase.co',   // <-- cole aqui o Project URL
   ANON_KEY: 'sb_publishable_Rl3CEWuGOeWKLPgBRh0Lnw_7ZqF33jb',          // <-- cole aqui a anon public key
   BUCKET_ANEXOS: 'anexos'                     // bucket criado no Storage
 };

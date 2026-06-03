@@ -54,6 +54,7 @@
       case 'listarConfiguracoes': return D.listarConfiguracoes();
       case 'gomListarTimelineChamadoV1Json':
       case 'listarTimelineChamado': { const id = (typeof p === 'object') ? (p.id || '') : p; return D.timeline(id); }
+      case 'gomConsultarProtocoloEscolaV1Json': return D.consultarProtocoloEscola(p);
 
       /* ── Escritas ── */
       case 'atualizarChamadoWorkflow': return D.atualizarChamado(p);
