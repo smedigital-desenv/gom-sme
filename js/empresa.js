@@ -161,7 +161,7 @@ function salvarEncaminhamentosDiaEmpresa(botao) {
   var linhasConfirmacao = lista.map(function(item) {
     var unidade = escapeHtml(String(item.unidade || 'Unidade não informada'));
     var equipe  = escapeHtml(String(item.equipe  || '—'));
-    var agend   = formatarDataAgendamentoConfirmacao(item.dataAgendamento);
+    var agend   = formatarDataAgendamentoConfirmacao(item.dataAtendimento || item.dataAgendamento);
     var dataStr = agend
       ? '<strong>' + agend.texto + '</strong>'
       : '<span class="text-muted">sem agendamento</span>';
@@ -173,11 +173,11 @@ function salvarEncaminhamentosDiaEmpresa(botao) {
   });
 
   // Verificar se há agendamentos com data preenchida para destacar no alerta
-  var comAgendamento = lista.filter(function(i) { return !!i.dataAgendamento; });
+  var comAgendamento = lista.filter(function(i) { return !!(i.dataAtendimento || i.dataAgendamento); });
 
   var msgAgendamento = '';
   if (comAgendamento.length === 1) {
-    var agend = formatarDataAgendamentoConfirmacao(comAgendamento[0].dataAgendamento);
+    var agend = formatarDataAgendamentoConfirmacao(comAgendamento[0].dataAtendimento || comAgendamento[0].dataAgendamento);
     if (agend) {
       msgAgendamento = '<div class="alert alert-info mt-3 mb-0 py-2 px-3 small">'
         + '<i class="bi bi-calendar-check-fill me-1"></i>'
