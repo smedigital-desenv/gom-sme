@@ -72,12 +72,17 @@
   function gomOptionsStatus_(item, contexto) {
     var atual = gomNormalizar_(item && (item.situacao || item.status));
     var vistos = {};
-    var lista = [atual].concat(gomStatusPermitidos_(item, contexto)).map(gomNormalizar_).filter(function(s) {
+    // Triagem: não mostrar "Em análise" como opção — só as transições
+    var baseList = contexto === 'triagem' ? [] : [atual];
+    var lista = baseList.concat(gomStatusPermitidos_(item, contexto)).map(gomNormalizar_).filter(function(s) {
       if (!s || vistos[s]) return false;
       vistos[s] = true;
       return true;
     });
-    return lista.map(function(s) {
+    var placeholder = contexto === 'triagem'
+      ? '<option value="" disabled selected>-- Selecionar encaminhamento --</option>'
+      : '';
+    return placeholder + lista.map(function(s) {
       return '<option value="' + gomHtml_(s) + '"' + (s === atual ? ' selected' : '') + '>' + gomHtml_(s) + '</option>';
     }).join('');
   }
@@ -147,7 +152,16 @@
               '<span class="empresa-unidade-link gom-tf-unidade-nome">' + unidade + '</span>',
               '<span class="empresa-os-id">#' + id + '</span>',
             '</summary>',
-            '<div class="empresa-expand-body">' + detalhe + '</div>',
+            '<div class="empresa-expand-body">',
+              '<div class="card-detail mb-2">' + detalhe + '</div>',
+              item.tipo    ? '<div class="empresa-os-meta-line"><i class="bi bi-tag"></i><strong>Tipo:</strong> ' + tipo + '</div>' : '',
+              item.sistema || item.origem ? '<div class="empresa-os-meta-line"><i class="bi bi-send"></i><strong>Origem:</strong> ' + origem + '</div>' : '',
+              '<div class="empresa-os-meta-line"><i class="bi bi-calendar3"></i><strong>Abertura:</strong> ' + dataAbertura + '</div>',
+              item.observacoes ? '<div class="empresa-os-meta-line"><i class="bi bi-chat-left-text"></i><strong>Obs:</strong> ' + gomHtml_(gomResumo_(item.observacoes, 220)) + '</div>' : '',
+              item.valorOrcamento ? '<div class="empresa-os-meta-line"><i class="bi bi-cash-coin"></i><strong>Orçamento:</strong> ' + gomHtml_(String(item.valorOrcamento)) + '</div>' : '',
+              item.equipe ? '<div class="empresa-os-meta-line"><i class="bi bi-people"></i><strong>Equipe:</strong> ' + gomHtml_(item.equipe) + '</div>' : '',
+              '<div class="mt-2"><button type="button" class="btn btn-light btn-sm border fw-bold" onclick="gomAbrirModalLinhaTriagemFilaV6(event,\''+idJs+'\')"><i class="bi bi-box-arrow-up-right me-1"></i>Abrir chamado completo</button></div>',
+            '</div>',
           '</details>',
           '<div class="empresa-os-desc">' + detalheCurto + '</div>',
           '<div class="empresa-os-meta-line gom-tf-obs-atual"><i class="bi bi-chat-left-text"></i><strong>Observações:</strong> ' + obsAtuais + '</div>',
@@ -160,7 +174,17 @@
             ? '<div class="empresa-os-meta-line"><i class="bi bi-calendar3"></i><strong>Entrada:</strong> ' + entradaFila + '</div><div class="empresa-os-meta-line"><i class="bi bi-stopwatch"></i><strong>Tempo:</strong> ' + tempoFila + '</div>'
             : '<div class="empresa-os-meta-line"><i class="bi bi-send"></i><strong>Origem:</strong> ' + origem + '</div><div class="empresa-os-meta-line"><i class="bi bi-calendar3"></i><strong>Abertura:</strong> ' + dataAbertura + '</div>',
           '<label class="empresa-field-label"><i class="bi bi-arrow-left-right me-1"></i>Alterar situação</label>',
-          '<select class="form-select form-select-sm fw-bold" id="' + statusId + '" name="situacao" form="' + formId + '" data-id="' + gomHtml_(idOriginal) + '" data-contexto="' + contexto + '" onchange="gomTfMarcarLinhaAlteradaV6(\'' + idJs + '\')">' + gomOptionsStatus_(item, contexto) + '</select>',
+          '<select class="form-select form-select-sm fw-bold" id="' + statusId + '" name="situacao" form="' + formId + '" data-id="' + gomHtml_(idOriginal) + '" data-contexto="' + contexto + '" onchange="gomTfMarcarLinhaAlteradaV6(\'' + idJs + '\')">'
+            + gomOptionsStatus_(item, contexto) + '</select>',
+          ehFila ? (
+            '<label class="empresa-field-label mt-1"><i class="bi bi-people me-1"></i>Equipe da visita</label>' +
+            '<select class="form-select form-select-sm" id="gomTfEquipe_' + idSeguro + '" name="equipe" form="' + formId + '" onchange="gomTfMarcarLinhaAlteradaV6(\'' + idJs + '\')">'+
+            '<option value="">-- Selecionar equipe --</option>' +
+            (window.listaEquipesGlobal || []).map(function(eq) {
+              return '<option value="' + gomHtml_(eq) + '"' + (item.equipe === eq ? ' selected' : '') + '>' + gomHtml_(eq) + '</option>';
+            }).join('') +
+            '</select>'
+          ) : '',
         '</div>',
 
         '<form id="' + formId + '" class="empresa-os-observacao-wrap gom-tf-form" data-label="Nova observação / anexos" onsubmit="gomTfSalvarLinhaV6(event,\'' + idJs + '\')">',
@@ -226,8 +250,10 @@
     var obs = obsEl ? String(obsEl.value || '').trim() : '';
     var temAnexo = !!(anexosEl && anexosEl.files && anexosEl.files.length);
 
+    var equipEl = document.getElementById('gomTfEquipe_' + idSeguro);
+    var equipe = equipEl ? String(equipEl.value || '').trim() : '';
     var statusMudou = novoStatus && novoStatus !== statusAtual;
-    var temMudanca = statusMudou || obs || temAnexo;
+    var temMudanca = statusMudou || obs || temAnexo || equipe;
 
     var linha = document.getElementById('gomTfLinha_' + idSeguro);
 
@@ -236,7 +262,8 @@
         contexto: contexto,
         situacao: statusMudou ? novoStatus : '',
         observacoes: obs,
-        temAnexo: temAnexo
+        temAnexo: temAnexo,
+        equipe: equipe
       };
       if (linha) linha.classList.add('gom-tf-alterada');
     } else {
@@ -301,6 +328,7 @@
       var anexosEl = document.getElementById('gomTfAnexos_' + idSeguro);
       var payload = { id: id };
       if (alteracao.situacao) payload.situacao = alteracao.situacao;
+      if (alteracao.equipe) payload.equipe = alteracao.equipe;
       if (alteracao.observacoes) payload.observacoes = alteracao.observacoes;
       if (dataGlobal) payload.dataAgendamentoVisita = dataGlobal;
       if (alteracao.temAnexo && anexosEl && anexosEl.files && anexosEl.files.length) {
