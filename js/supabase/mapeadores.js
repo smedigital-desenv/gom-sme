@@ -127,14 +127,19 @@ window.GomMap = (function () {
   function mapObra(row) {
     row = row || {};
     const escola = row.escola || row.escolas || {};
+    const tipoObra = row.tipo_obra || '';
+    const prazoFmt = fmtData(row.prazo_previsto);
     return {
-      id: row.id, codigo: row.id,
+      id: row.id, codigo: 'OBRA-' + row.id,
       unidade: (escola && escola.nome) || row.unidade_escolar || '',
-      tipo: row.tipo_obra || '', descricao: row.descricao || '',
-      status: row.status || 'Aguardando', prioridade: row.prioridade || '',
+      tipo: tipoObra, descricao: row.descricao || '',
+      status: row.status || 'Aguardando', prioridade: row.prioridade || 'P3',
       responsavel: row.responsavel || '', responsavel2: row.responsavel2 || '',
-      prazo: fmtData(row.prazo_previsto), dataTermino: '',
-      valorEstimado: row.valor_estimado != null ? row.valor_estimado : '',
+      prazo: prazoFmt || tipoObra,
+      dataTermino: fmtData(row.prazo_previsto),
+      valorEstimado: row.valor_estimado != null
+        ? 'R$ ' + Number(row.valor_estimado).toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+        : '',
       observacoes: row.observacoes || '', link: '',
       dataHoraUltimaAcao: fmtDataHora(row.data_hora_ultima_acao || row.updated_at),
       dataHoraUltimaAtualizacao: fmtDataHora(row.updated_at)
