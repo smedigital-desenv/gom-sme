@@ -265,11 +265,19 @@
         temAnexo: temAnexo,
         equipe: equipe
       };
-      if (linha) linha.classList.add('gom-tf-alterada');
+      if (linha) {
+        if (!linha.dataset.accentOriginal) linha.dataset.accentOriginal = linha.style.getPropertyValue('--card-accent') || 'var(--primary)';
+        linha.classList.add('gom-tf-alterada');
+        linha.style.setProperty('--card-accent', '#0ea5e9'); // azul = pendente
+      }
     } else {
       // Voltou ao estado original → remove do buffer
       delete window.gomTfAlteracoes[id];
-      if (linha) linha.classList.remove('gom-tf-alterada');
+      if (linha) {
+        linha.classList.remove('gom-tf-alterada');
+        if (linha.dataset.accentOriginal) linha.style.setProperty('--card-accent', linha.dataset.accentOriginal);
+        delete linha.dataset.accentOriginal;
+      }
     }
     gomTfAtualizarBarraV6(contexto);
   };
@@ -315,9 +323,11 @@
     var bar = document.getElementById('gomTfSaveBar_' + contexto);
     var btnSalvar = bar ? bar.querySelector('.btn-primary') : null;
 
-    // Data global pré-setada (opcional) — aplicada a quem mudou de status na fila
+    // Data global — sempre usa o valor do input (pré-preenchido com hoje)
     var inputData = document.getElementById('gomTfDataGlobal_' + contexto);
-    var dataGlobal = inputData && inputData.value ? inputData.value : '';
+    var dataGlobal = (inputData && inputData.value) ? inputData.value : (function(){
+      var h=new Date(); return h.getFullYear()+'-'+String(h.getMonth()+1).padStart(2,'0')+'-'+String(h.getDate()).padStart(2,'0');
+    })();
 
     // Monta os payloads e coleta anexos (anexos exigem await)
     var payloads = [];
@@ -343,9 +353,6 @@
       payloads.push(payload);
     }
 
-    if (typeof gomSetButtonLoading === 'function') gomSetButtonLoading(btnSalvar, 'Salvando ' + payloads.length + '...');
-    else if (btnSalvar) btnSalvar.disabled = true;
-
     // Aplica OTIMISTA antes da resposta — tela responde na hora
     function aplicarOtimista() {
       payloads.forEach(function(p) {
@@ -362,28 +369,69 @@
       });
     }
 
-    google.script.run
-      .withSuccessHandler(function(res) {
-        var retorno = (typeof res === 'string') ? JSON.parse(res) : res;
-        if (typeof gomMostrarSucessoBotao === 'function') gomMostrarSucessoBotao(btnSalvar, 'Salvo');
-        else if (btnSalvar) btnSalvar.disabled = false;
-        // Limpa buffer e aplica otimista
-        ids.forEach(function(id) { delete window.gomTfAlteracoes[id]; });
-        aplicarOtimista();
-        gomTfAtualizarBarraV6(contexto);
-        if (typeof window.renderizarTela === 'function') window.renderizarTela();
-        if (retorno && retorno.erros && retorno.erros.length) {
-          alert('Salvos: ' + (retorno.salvos || 0) + '. Falharam: ' + retorno.erros.length + '\n' +
-            retorno.erros.map(function(e) { return '#' + e.id + ': ' + e.erro; }).join('\n'));
-        }
-      })
-      .withFailureHandler(function(err) {
-        if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(btnSalvar);
-        else if (btnSalvar) btnSalvar.disabled = false;
-        if (typeof gomMostrarErroAcao === 'function') gomMostrarErroAcao(err, 'Não foi possível salvar as alterações.');
-        else alert((err && err.message) || err);
-      })
-      .gomAtualizarChamadosLoteV1(JSON.stringify(payloads));
+    function executarSave_() {
+      if (typeof gomSetButtonLoading === 'function') gomSetButtonLoading(btnSalvar, 'Salvando ' + payloads.length + '...');
+      else if (btnSalvar) btnSalvar.disabled = true;
+      google.script.run
+        .withSuccessHandler(function(res) {
+          var retorno = (typeof res === 'string') ? JSON.parse(res) : res;
+          if (typeof gomMostrarSucessoBotao === 'function') gomMostrarSucessoBotao(btnSalvar, 'Salvo');
+          else if (btnSalvar) btnSalvar.disabled = false;
+          ids.forEach(function(id) { delete window.gomTfAlteracoes[id]; });
+          aplicarOtimista();
+          gomTfAtualizarBarraV6(contexto);
+          if (typeof window.renderizarTela === 'function') window.renderizarTela();
+          if (retorno && retorno.erros && retorno.erros.length) {
+            alert('Salvos: ' + (retorno.salvos || 0) + '. Falharam: ' + retorno.erros.length + '\n' +
+              retorno.erros.map(function(e) { return '#' + e.id + ': ' + e.erro; }).join('\n'));
+          }
+        })
+        .withFailureHandler(function(err) {
+          if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(btnSalvar);
+          else if (btnSalvar) btnSalvar.disabled = false;
+          if (typeof gomMostrarErroAcao === 'function') gomMostrarErroAcao(err, 'Não foi possível salvar as alterações.');
+          else alert((err && err.message) || err);
+        })
+        .gomAtualizarChamadosLoteV1(JSON.stringify(payloads));
+    }
+
+    // Fila: mostra modal de confirmação (como empresa); Triagem: salva direto
+    if (contexto === 'fila') {
+      var dataFormatada = dataGlobal
+        ? (function(iso) { var m=iso.match(/^(\d{4})-(\d{2})-(\d{2})/); return m?m[3]+'/'+m[2]+'/'+m[1]:iso; })(dataGlobal)
+        : 'Hoje';
+      var linhasConf = payloads.map(function(p) {
+        var c = (window.listaChamadosGlobal||[]).find(function(x){return String(x.id||'')==p.id;})||{};
+        return '<li class="mb-2"><strong>'+escapeHtml(c.unidade||p.id)+'</strong><br>'
+          + '<span class="text-muted small">Equipe: </span><strong>'+(p.equipe?escapeHtml(p.equipe):'<em class="text-warning">Não selecionada</em>')+'</strong>'
+          + ' &nbsp;|&nbsp; <span class="text-muted small">Data: </span><strong>'+escapeHtml(dataFormatada)+'</strong>'
+          + '</li>';
+      }).join('');
+      var modalId = 'gomTfModalConfFilaV6';
+      var el = document.getElementById(modalId); if(el) el.remove();
+      document.body.insertAdjacentHTML('beforeend',
+        '<div class="modal fade" id="'+modalId+'" tabindex="-1" aria-hidden="true">'
+        +'<div class="modal-dialog modal-dialog-centered"><div class="modal-content">'
+        +'<div class="modal-header bg-primary text-white"><h5 class="modal-title fw-bold"><i class="bi bi-check2-circle me-2"></i>Confirmar encaminhamentos da fila</h5>'
+        +'<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>'
+        +'<div class="modal-body"><p class="mb-2">Salvando <strong>'+payloads.length+' encaminhamento(s)</strong>:</p>'
+        +'<ul class="list-unstyled ps-2">'+linhasConf+'</ul>'
+        +'<div class="alert alert-info mt-3 mb-0 py-2 px-3 small"><i class="bi bi-calendar-check-fill me-1"></i>Data de agendamento: <strong>'+escapeHtml(dataFormatada)+'</strong></div>'
+        +'</div>'
+        +'<div class="modal-footer"><button type="button" class="btn btn-light border fw-bold" data-bs-dismiss="modal"><i class="bi bi-x-circle me-1"></i>Cancelar</button>'
+        +'<button type="button" class="btn btn-primary fw-bold" id="gomTfBtnConfirmarFila"><i class="bi bi-check2-circle me-1"></i>Confirmar e salvar</button>'
+        +'</div></div></div></div>'
+      );
+      var modalEl = document.getElementById(modalId);
+      var bsModal = new bootstrap.Modal(modalEl);
+      document.getElementById('gomTfBtnConfirmarFila').addEventListener('click', function() {
+        bsModal.hide(); executarSave_();
+      });
+      modalEl.addEventListener('hidden.bs.modal', function() { modalEl.remove(); });
+      bsModal.show();
+    } else {
+      executarSave_();
+    }
   };
 
   // Mantém compatibilidade: o submit do form de uma linha agora só marca alteração.
