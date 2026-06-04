@@ -20,11 +20,14 @@ window.GomAnexos = (function () {
 
   // Recebe a lista de arquivos em base64 (mesmo formato do front: {nome/base64/mimeType}),
   // sobe pro Storage e grava em `anexos`. Sem arquivos, não toca em nada (saída rápida).
-  async function upload(chamadoId, categoria, arquivos) {
+  // upload(chamadoId, categoria, arquivos, escolaNome?)
+  // Path: escolas/{escola}/{chamado}/{categoria}/{ts}_{nome}
+  async function upload(chamadoId, categoria, arquivos, escolaNome) {
     const lista = Array.isArray(arquivos) ? arquivos.filter(a => a && a.base64) : [];
     if (!lista.length) return [];
     if (lista.length > LIMITE) throw new Error(`Limite de ${LIMITE} anexos por envio.`);
     const bucket = window.GOM_SUPABASE.BUCKET_ANEXOS;
+    const escolaSlug = escolaNome ? _slug(String(escolaNome)) : 'sem-escola';
     const salvos = [];
     for (let i = 0; i < lista.length; i++) {
       const arq = lista[i];
@@ -32,7 +35,7 @@ window.GomAnexos = (function () {
       const mime = arq.mimeType || arq.type || 'application/octet-stream';
       const blob = _b64ToBlob(arq.base64, mime);
       if (blob.size > MAX_MB * 1024 * 1024) throw new Error(`Arquivo ${nome} excede ${MAX_MB} MB.`);
-      const caminho = `chamado/${chamadoId}/${categoria}/${Date.now()}_${i}_${nome}`;
+      const caminho = `escolas/${escolaSlug}/chamado-${chamadoId}/${categoria}/${Date.now()}_${nome}`;
       const up = await window.SB.storage.from(bucket).upload(caminho, blob, { contentType: mime, upsert: false });
       if (up.error) throw new Error('Falha no upload: ' + up.error.message);
       const ins = await window.SB.from('anexos').insert({
