@@ -164,7 +164,11 @@ window.GomDados = (function () {
     if (['Aguardando visita', 'Em atendimento'].includes(stNovo) && !atual.data_hora_entrada_fila) u.data_hora_entrada_fila = _nowISO();
     if (['Solicitado Orçamento', 'Atendimento Emergencial', 'OS emitida', 'Aguardando visita'].includes(stNovo) && mudou) u.data_hora_encaminhamento = _nowISO();
     if (stNovo === 'Devolvido para a escola') u.data_conclusao_os = _nowISO();
-    if (Array.isArray(p.anexosAtualizacao) && p.anexosAtualizacao.length) await window.GomAnexos.upload(id, 'solicitacao', p.anexosAtualizacao);
+    const _anexosAtual = p.anexosAtualizacao || p.anexos || [];
+    if (Array.isArray(_anexosAtual) && _anexosAtual.length) {
+      const _esc = (atual.escola && atual.escola.nome) || atual.unidade_escolar || '';
+      await window.GomAnexos.upload(id, 'solicitacao', _anexosAtual, _esc);
+    }
 
     await _update(id, u);
     if (p.dataAgendamentoVisita) await _atendimento({ solicitacao_id: id, status: stNovo, numero_os: atual.numero_os || '', equipe: p.equipe || atual.equipe_responsavel || '', observacoes_dia: p.observacoes || '', data_atendimento: _date(p.dataAgendamentoVisita), tipo_registro: 'Agendamento de visita' });
@@ -183,7 +187,7 @@ window.GomDados = (function () {
     }).select('id').single();
     if (ins.error) _err('Criar solicitação', ins.error);
     const id = ins.data.id;
-    if (Array.isArray(p.anexos) && p.anexos.length) await window.GomAnexos.upload(id, 'solicitacao', p.anexos);
+    if (Array.isArray(p.anexos) && p.anexos.length) await window.GomAnexos.upload(id, 'solicitacao', p.anexos, p.unidade || '');
     await _log({ solicitacao_id: id, acao: 'Chamado criado', status_novo: situacao, observacao: p.observacoes || '', origem: 'cadastro interno' });
     return { ok: true, id };
   }
@@ -272,7 +276,11 @@ window.GomDados = (function () {
     if (stNovo === 'OS emitida') { const n = String(p.numeroOs || '').trim(); if (!n) throw new Error('Informe o número da OS para aprovar.'); u.numero_os = n; u.data_hora_encaminhamento = _nowISO(); if (p.dataPrevistaConclusao) u.data_prevista_conclusao = _date(p.dataPrevistaConclusao); }
     if (stNovo === 'Solicitado Orçamento') u.data_hora_encaminhamento = _nowISO();
     if (['A cargo da unidade escolar', 'Devolvido para a escola'].includes(stNovo)) u.data_conclusao_os = _nowISO();
-    if (Array.isArray(p.anexosAtualizacao) && p.anexosAtualizacao.length) await window.GomAnexos.upload(id, 'solicitacao', p.anexosAtualizacao);
+    const _anexosAtual = p.anexosAtualizacao || p.anexos || [];
+    if (Array.isArray(_anexosAtual) && _anexosAtual.length) {
+      const _esc = (atual.escola && atual.escola.nome) || atual.unidade_escolar || '';
+      await window.GomAnexos.upload(id, 'solicitacao', _anexosAtual, _esc);
+    }
     await _update(id, u);
     await _log({ solicitacao_id: id, acao: rotulo, status_anterior: stAnt, status_novo: stNovo, observacao: parecer });
     return { ok: true, id, status: stNovo };
