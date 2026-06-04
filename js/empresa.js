@@ -146,6 +146,17 @@ function salvarEncaminhamentosDiaEmpresa(botao) {
     return;
   }
 
+  // Usa a data do input como fallback para itens sem dataAtendimento explícita
+  var inputData = document.getElementById('gomEmpresaDataGlobal');
+  var dataFallback = inputData ? inputData.value : '';
+  if (dataFallback) {
+    lista.forEach(function(item) {
+      if (!item.dataAtendimento && !item.dataAgendamento) {
+        item.dataAtendimento = dataFallback;
+      }
+    });
+  }
+
   // Enriquecer lista com dados do listaChamadosGlobal (unidade e outros campos
   // que podem não estar no buffer caso o item tenha sido marcado antes da correção)
   lista = lista.map(function(item) {
@@ -290,19 +301,34 @@ function gomEmpresaAplicarDataGlobal() {
   var input = document.getElementById('gomEmpresaDataGlobal');
   if (!input || !input.value) { alert('Selecione uma data antes de aplicar.'); return; }
   var dataEscolhida = input.value;
+  var btn = document.querySelector('#gomDataGlobalWrap_empresa button');
 
-  // Marca a data no buffer de cada chamado que já tem equipe selecionada/alterada
   var ids = Object.keys(window.empresaDiaAlterados || {});
   if (!ids.length) {
-    alert('A data será salva com os encaminhamentos.\n\nSelecione a equipe de um ou mais chamados primeiro; ao salvar, esta data de atendimento vai junto.');
+    alert('Selecione a equipe de um ou mais chamados primeiro; ao salvar, esta data vai junto automaticamente.');
     return;
   }
   ids.forEach(function(id) {
     window.empresaDiaAlterados[id] = window.empresaDiaAlterados[id] || {};
     window.empresaDiaAlterados[id].dataAtendimento = dataEscolhida;
   });
-  var btn = document.querySelector('#gomDataGlobalWrap_empresa button');
-  if (btn && typeof gomMostrarSucessoBotao === 'function') gomMostrarSucessoBotao(btn, 'Aplicada a ' + ids.length, 1500);
+
+  if (btn) {
+    // Salva o HTML original para restaurar depois
+    if (!btn.dataset.gomOriginalHtml) btn.dataset.gomOriginalHtml = btn.innerHTML;
+    btn.classList.add('gom-btn-success');
+    btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Aplicada a ' + ids.length;
+    // Limpa timer anterior e cria novo
+    if (btn._gomTimer) clearTimeout(btn._gomTimer);
+    btn._gomTimer = setTimeout(function() {
+      btn.classList.remove('gom-btn-success');
+      if (btn.dataset.gomOriginalHtml) {
+        btn.innerHTML = btn.dataset.gomOriginalHtml;
+        delete btn.dataset.gomOriginalHtml;
+      }
+      btn._gomTimer = null;
+    }, 2000);
+  }
 }
 window.gomEmpresaAplicarDataGlobal = gomEmpresaAplicarDataGlobal;
 
@@ -312,6 +338,20 @@ function gomEmpresaPrePreencherDataHoje_() {
   if (input && !input.value) {
     var h = new Date();
     input.value = h.getFullYear() + '-' + String(h.getMonth()+1).padStart(2,'0') + '-' + String(h.getDate()).padStart(2,'0');
+  }
+  // Quando a data muda, reseta o botão para "Aplicar" (sai do estado "Aplicada")
+  if (input && !input._gomListenerAdded) {
+    input._gomListenerAdded = true;
+    input.addEventListener('change', function() {
+      var btn = document.querySelector('#gomDataGlobalWrap_empresa button');
+      if (!btn) return;
+      if (btn._gomTimer) { clearTimeout(btn._gomTimer); btn._gomTimer = null; }
+      btn.classList.remove('gom-btn-success');
+      if (btn.dataset.gomOriginalHtml) {
+        btn.innerHTML = btn.dataset.gomOriginalHtml;
+        delete btn.dataset.gomOriginalHtml;
+      }
+    });
   }
 }
 window.gomEmpresaPrePreencherDataHoje_ = gomEmpresaPrePreencherDataHoje_;
