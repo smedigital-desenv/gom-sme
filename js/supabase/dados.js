@@ -210,7 +210,9 @@ window.GomDados = (function () {
     const id = p.id; const atual = await _getChamado(id);
     const equipe = String(p.equipe || '').trim();
     if (!equipe) throw new Error('Selecione a equipe do dia.');
-    const u = { equipe_responsavel: equipe, data_equipe: _nowISO(), observacoes: M.appendObservacao(atual.observacoes, p.observacoes, 'Equipe do dia'), data_hora_ultima_acao: _nowISO() };
+    // data_equipe = data selecionada pelo usuário; fallback = hoje
+    const dataEquipe = _date(p.dataAtendimento || p.dataAgendamentoVisita) || M.todayKey();
+    const u = { equipe_responsavel: equipe, data_equipe: dataEquipe, observacoes: M.appendObservacao(atual.observacoes, p.observacoes, 'Equipe do dia'), data_hora_ultima_acao: _nowISO() };
     if (p.numeroOs !== undefined) u.numero_os = p.numeroOs || atual.numero_os || '';
     if (p.dataPrevistaConclusao) u.data_prevista_conclusao = _date(p.dataPrevistaConclusao);
     await _update(id, u);
