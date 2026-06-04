@@ -89,14 +89,44 @@ async function coletarAnexosModalAtualizacao_() {
 }
 
 function renderAnexosDetalhesChamadoModal_(chamado) {
-  var html = '';
-  if (typeof renderAnexosGrupo === 'function') {
-    html += renderAnexosGrupo('Anexos da solicitação', chamado.anexosSolicitacao || chamado.anexos);
-    html += renderAnexosGrupo('Anexos do orçamento', chamado.anexosOrcamento);
-    html += renderAnexosGrupo('Anexos do serviço realizado', chamado.anexosServico);
+  // Usa preview com miniaturas (imagens) + lightbox para o modal completo do chamado.
+  // Função renderAnexosGrupoVisual_ mostra thumb para imagens e link para outros tipos.
+  function renderAnexosGrupoVisual_(titulo, valor) {
+    if (typeof extrairLinksAnexos !== 'function') return '';
+    var anexos = extrairLinksAnexos(valor);
+    if (!anexos.length) return '';
+    var itens = anexos.map(function(a, i) {
+      var nome = escapeHtml(a.nome || ('Anexo ' + (i + 1)));
+      var url  = a.url || '';
+      var ehImg = typeof isImagemAnexo === 'function' && isImagemAnexo(a);
+      var preview = ehImg && typeof getPreviewUrlAnexo === 'function' ? getPreviewUrlAnexo(a, 280) : '';
+      if (ehImg && preview) {
+        return '<button type="button" class="gom-modal-thumb" title="'+nome+' — clique para ampliar"'
+          +' data-url="'+escapeHtml(url)+'" data-preview="'+escapeHtml(getPreviewUrlAnexo(a,1400)||preview)+'"'
+          +' data-nome="'+nome+'" data-grupo="'+escapeHtml(titulo)+'" data-imagem="SIM"'
+          +' onclick="abrirPreviewAnexoCard(event,this)">'
+          +'<img src="'+escapeHtml(preview)+'" alt="'+nome+'" loading="lazy"'
+          +' onerror="this.parentNode.classList.add(\'sem-prev\')">'
+          +'<span class="gom-modal-thumb-label">'+nome+'</span>'
+          +'</button>';
+      }
+      var icone = typeof getIconeAnexoCard_ === 'function' ? getIconeAnexoCard_(a) : 'bi-paperclip';
+      return '<a class="gom-modal-file-item" href="'+escapeHtml(url)+'" target="_blank" rel="noopener">'
+        +'<i class="bi '+icone+' me-2"></i>'+nome+'</a>';
+    }).join('');
+    return '<div class="anexo-grupo mb-3">'
+      +'<div class="modal-label"><i class="bi bi-paperclip me-1"></i>'+escapeHtml(titulo)+'</div>'
+      +'<div class="gom-modal-anexos-grid">'+itens+'</div>'
+      +'</div>';
   }
+
+  var html = '';
+  html += renderAnexosGrupoVisual_('Anexos da solicitação', chamado.anexosSolicitacao || chamado.anexos);
+  html += renderAnexosGrupoVisual_('Anexos do orçamento', chamado.anexosOrcamento);
+  html += renderAnexosGrupoVisual_('Anexos do serviço realizado', chamado.anexosServico);
   if (html) return html;
-  return '<div class="anexo-grupo mb-3"><div class="modal-label">Arquivos anexados</div><div class="anexo-empty"><i class="bi bi-inbox me-1"></i>Nenhum anexo cadastrado neste chamado.</div></div>';
+  return '<div class="anexo-grupo mb-3"><div class="modal-label">Arquivos anexados</div>'
+    +'<div class="anexo-empty"><i class="bi bi-inbox me-1"></i>Nenhum anexo cadastrado neste chamado.</div></div>';
 }
 
 
