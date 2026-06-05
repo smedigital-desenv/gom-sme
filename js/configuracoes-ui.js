@@ -334,7 +334,7 @@
           mostrarErroConfiguracoes(payload.erro || 'Não foi possível carregar as configurações.');
           return;
         }
-        const dados = payload.dados || {};
+        const dados = payload.dados || payload; // suporta {dados:{...}} (Apps Script) e {configuracoes:[...]} (Supabase)
         window.configuracoesGlobal = Array.isArray(dados.configuracoes) ? dados.configuracoes : [];
         window.configuracoesAlteradas = {};
         window.configuracoesCarregadas = true;
@@ -570,7 +570,7 @@
           return;
         }
         if (typeof antesRenderizar === 'function') antesRenderizar();
-        const dados = payload.dados || {};
+        const dados = payload.dados || payload; // suporta {dados:{...}} (Apps Script) e {configuracoes:[...]} (Supabase)
         window.configuracoesGlobal = Array.isArray(dados.configuracoes) ? dados.configuracoes : [];
         window.configuracoesCarregadas = true;
         renderizarConfiguracoes();
