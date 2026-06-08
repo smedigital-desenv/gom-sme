@@ -6206,3 +6206,108 @@ body {
 }
 .gom-data-global-empresa .gom-data-global-label { color: #0b7c91; }
 .gom-data-global-empresa .gom-data-global-input { border-color: rgba(13,202,240,.35) !important; }
+/* ==========================================================
+   GOM — Gerencial de equipes com integrantes
+   ========================================================== */
+.empresa-equipes-lock {
+  border: 1px solid rgba(0, 59, 115, .10);
+  color: #0f3358;
+}
+.equipes-page-title {
+  margin-top: .25rem;
+}
+
+.equipes-gerencial-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.equipes-gerencial-alert {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  padding: .85rem 1rem;
+  border-radius: 14px;
+  background: rgba(0, 229, 255, .08);
+  border: 1px solid rgba(0, 59, 115, .12);
+  color: #0f3358;
+  font-size: .92rem;
+  font-weight: 700;
+}
+.equipes-gerencial-alert i { color: var(--primary); font-size: 1.15rem; }
+.equipes-gerencial-lista {
+  display: grid;
+  gap: .85rem;
+}
+.equipe-gerencial-card {
+  border: 1px solid rgba(15, 51, 88, .12);
+  border-radius: 18px;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .06);
+}
+.equipe-gerencial-card.inativa {
+  opacity: .72;
+  background: #f8fafc;
+}
+.equipe-gerencial-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  border-left: 5px solid var(--primary);
+  background: linear-gradient(90deg, rgba(0,59,115,.06), rgba(255,255,255,1));
+}
+.equipe-gerencial-card-head strong {
+  display: block;
+  color: #0f172a;
+  font-size: 1rem;
+}
+.equipe-gerencial-card-head span {
+  display: block;
+  color: #64748b;
+  font-size: .82rem;
+  font-weight: 700;
+  margin-top: .2rem;
+}
+.equipe-gerencial-membros {
+  padding: .8rem 1rem 1rem;
+}
+.equipe-membro-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: .75rem;
+  padding: .72rem 0;
+  border-top: 1px solid rgba(148, 163, 184, .22);
+}
+.equipe-membro-row:first-child { border-top: 0; }
+.equipe-membro-row.inativo { opacity: .58; }
+.equipe-membro-info strong {
+  display: block;
+  color: #111827;
+  font-size: .92rem;
+}
+.equipe-membro-info span {
+  display: block;
+  color: #64748b;
+  font-size: .78rem;
+  margin-top: .12rem;
+}
+@media (max-width: 768px) {
+  .equipes-gerencial-head,
+  .equipe-gerencial-card-head,
+  .equipe-membro-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  #empresaEquipeTipoTabs {
+    border-radius: 18px !important;
+  }
+  #empresaEquipeTipoTabs .nav-item,
+  #empresaEquipeTipoTabs .nav-link {
+    width: 100%;
+  }
+}

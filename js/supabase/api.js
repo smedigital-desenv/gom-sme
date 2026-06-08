@@ -75,10 +75,19 @@
       case 'atualizarPrevisaoOsEmpresa': return D.atualizarPrevisaoOsEmpresa(p);
       case 'finalizarOsEmpresa': return D.finalizarOsEmpresa(p);
       case 'salvarNovaEquipe': return D.salvarNovaEquipe(args[0], args[1]);
+      case 'gomListarEquipesGerencialV1Json': return D.listarEquipesGerencial(p);
+      case 'gomSalvarEquipeGerencialV1Json': return D.salvarEquipeGerencial(p);
+      case 'gomSalvarMembroEquipeGerencialV1Json': return D.salvarMembroEquipeGerencial(p);
+      case 'gomAlterarStatusEquipeGerencialV1Json': return D.alterarStatusEquipeGerencial(p);
+      case 'gomAlterarStatusMembroEquipeGerencialV1Json': return D.alterarStatusMembroEquipeGerencial(p);
       case 'atualizarObra':
       case 'salvarObraModal': return D.atualizarObra(p);
       case 'gomSalvarConfiguracoesWebV1Json':
-      case 'salvarConfiguracoes': { const lista = typeof p === 'string' ? JSON.parse(p) : p; return D.salvarConfiguracoes(lista); }
+      case 'salvarConfiguracoes': {
+        const payload = typeof p === 'string' ? JSON.parse(p) : p;
+        const lista = Array.isArray(payload) ? payload : (payload && Array.isArray(payload.configuracoes) ? payload.configuracoes : []);
+        return D.salvarConfiguracoes(lista);
+      }
       case 'salvarConfiguracao': return D.salvarConfiguracoes([p]);
       case 'gomRegistrarComplementoEscolaV1Json':
       case 'registrarComplementoEscola': return D.registrarComplementoEscola(p);

@@ -130,7 +130,7 @@ window.GomDados = (function () {
 
   function usuarioAtual() {
     // Fase 4 (login) substitui isto. Hoje = modo ABERTO (acesso total), igual ao Apps Script.
-    const telas = ['dashboard', 'triagem', 'fila', 'aprovacao', 'empresa', 'campo', 'alertas', 'obras', 'historico', 'relatorios', 'cadastro', 'acompanhar', 'configuracoes'];
+    const telas = ['dashboard', 'triagem', 'fila', 'aprovacao', 'empresa', 'campo', 'alertas', 'obras', 'historico', 'relatorios', 'cadastro', 'equipes', 'acompanhar', 'configuracoes'];
     const acoes = {};
     ['criar_solicitacao', 'editar_chamado', 'empresa_editar', 'obras_editar', 'cobranca_empresa', 'configuracoes_editar', 'ver_dashboard', 'ver_relatorios'].forEach(a => acoes[a] = true);
     return JSON.stringify({ ok: true, usuario: { ok: true, email: '', perfil: 'ADMIN_GOM', perfilLabel: 'Administrador GOM', modo: 'ABERTO', restrito: false, telas, paginaInicial: 'dashboard', unidades: [], acoes } });
@@ -525,7 +525,131 @@ window.GomDados = (function () {
     return { ok: true, id: id || null };
   }
 
+  async function listarEquipesGerencial(filtro) {
+    filtro = filtro || {};
+    const tipo = String(filtro.tipo || 'empresa').trim() === 'secretaria' ? 'secretaria' : 'empresa';
+    const eq = await window.SB.from('equipes')
+      .select('id,nome,tipo,ativo,created_at')
+      .eq('tipo', tipo)
+      .order('ativo', { ascending: false })
+      .order('nome', { ascending: true });
+    if (eq.error) return JSON.stringify({ ok: false, tipo, equipes: [], erro: eq.error.message });
+
+    const ids = (eq.data || []).map(e => e.id);
+    let membros = [];
+    if (ids.length) {
+      const mem = await window.SB.from('equipe_membros')
+        .select('id,equipe_id,nome,funcao,telefone,email,ativo,created_at')
+        .in('equipe_id', ids)
+        .order('ativo', { ascending: false })
+        .order('nome', { ascending: true });
+      if (mem.error) {
+        const msg = String(mem.error.message || '');
+        return JSON.stringify({
+          ok: false,
+          tipo,
+          equipes: [],
+          erro: msg.indexOf('equipe_membros') >= 0 || msg.indexOf('relation') >= 0
+            ? 'A tabela equipe_membros ainda não existe no Supabase. Rode o arquivo sql/03_equipe_membros.sql no SQL Editor.'
+            : msg
+        });
+      }
+      membros = mem.data || [];
+    }
+
+    const mapa = {};
+    membros.forEach(m => {
+      const key = String(m.equipe_id);
+      if (!mapa[key]) mapa[key] = [];
+      mapa[key].push({
+        id: m.id,
+        equipeId: m.equipe_id,
+        nome: m.nome || '',
+        funcao: m.funcao || '',
+        telefone: m.telefone || '',
+        email: m.email || '',
+        ativo: m.ativo !== false,
+        criadoEm: M.fmtDataHora(m.created_at)
+      });
+    });
+
+    const equipes = (eq.data || []).map(e => ({
+      id: e.id,
+      nome: e.nome || '',
+      tipo: e.tipo || tipo,
+      ativo: e.ativo !== false,
+      criadoEm: M.fmtDataHora(e.created_at),
+      membros: mapa[String(e.id)] || []
+    }));
+    return JSON.stringify({ ok: true, tipo, total: equipes.length, equipes });
+  }
+
+  async function salvarEquipeGerencial(p) {
+    p = p || {};
+    const nome = String(p.nome || '').trim();
+    const tipo = String(p.tipo || 'empresa').trim() === 'secretaria' ? 'secretaria' : 'empresa';
+    if (!nome) return JSON.stringify({ ok: false, erro: 'Informe o nome da equipe.' });
+    const r = await window.SB.from('equipes')
+      .upsert({ nome, tipo, ativo: true }, { onConflict: 'nome,tipo' })
+      .select('id,nome,tipo,ativo')
+      .single();
+    if (r.error) return JSON.stringify({ ok: false, erro: r.error.message });
+    return JSON.stringify({ ok: true, equipe: r.data });
+  }
+
+  async function salvarMembroEquipeGerencial(p) {
+    p = p || {};
+    const equipeId = p.equipeId || p.equipe_id || p.idEquipe;
+    const nome = String(p.nome || '').trim();
+    if (!equipeId) return JSON.stringify({ ok: false, erro: 'Selecione a equipe.' });
+    if (!nome) return JSON.stringify({ ok: false, erro: 'Informe o nome do integrante.' });
+
+    const row = {
+      equipe_id: Number(equipeId),
+      nome,
+      funcao: String(p.funcao || '').trim(),
+      telefone: String(p.telefone || '').trim(),
+      email: String(p.email || '').trim().toLowerCase(),
+      ativo: true,
+      updated_at: _nowISO()
+    };
+
+    const r = await window.SB.from('equipe_membros')
+      .upsert(row, { onConflict: 'equipe_id,nome' })
+      .select('id,equipe_id,nome,funcao,telefone,email,ativo')
+      .single();
+    if (r.error) {
+      const msg = String(r.error.message || '');
+      return JSON.stringify({ ok: false, erro: msg.indexOf('equipe_membros') >= 0 || msg.indexOf('relation') >= 0 ? 'A tabela equipe_membros ainda não existe no Supabase. Rode o arquivo sql/03_equipe_membros.sql no SQL Editor.' : msg });
+    }
+    return JSON.stringify({ ok: true, membro: r.data });
+  }
+
+  async function alterarStatusEquipeGerencial(p) {
+    p = p || {};
+    const id = p.id;
+    if (!id) return JSON.stringify({ ok: false, erro: 'Equipe não informada.' });
+    const ativo = p.ativo === true || String(p.ativo).toLowerCase() === 'true';
+    const r = await window.SB.from('equipes').update({ ativo }).eq('id', id).select('id,nome,tipo,ativo').single();
+    if (r.error) return JSON.stringify({ ok: false, erro: r.error.message });
+    return JSON.stringify({ ok: true, equipe: r.data });
+  }
+
+  async function alterarStatusMembroEquipeGerencial(p) {
+    p = p || {};
+    const id = p.id;
+    if (!id) return JSON.stringify({ ok: false, erro: 'Integrante não informado.' });
+    const ativo = p.ativo === true || String(p.ativo).toLowerCase() === 'true';
+    const r = await window.SB.from('equipe_membros').update({ ativo, updated_at: _nowISO() }).eq('id', id).select('id,equipe_id,nome,ativo').single();
+    if (r.error) {
+      const msg = String(r.error.message || '');
+      return JSON.stringify({ ok: false, erro: msg.indexOf('equipe_membros') >= 0 || msg.indexOf('relation') >= 0 ? 'A tabela equipe_membros ainda não existe no Supabase. Rode o arquivo sql/03_equipe_membros.sql no SQL Editor.' : msg });
+    }
+    return JSON.stringify({ ok: true, membro: r.data });
+  }
+
   async function salvarConfiguracoes(lista) {
+    if (lista && !Array.isArray(lista) && Array.isArray(lista.configuracoes)) lista = lista.configuracoes;
     if (!Array.isArray(lista)) lista = [lista];
     const rows = lista.filter(i => i && i.chave).map(i => ({
       chave: String(i.chave).trim(), valor: i.valor == null ? '' : String(i.valor),
@@ -555,6 +679,8 @@ window.GomDados = (function () {
     consultarProtocoloEscola,
     atualizarChamado, criarSolicitacao, criarSolicitacaoEscola, salvarEquipeDiaEmpresa, salvarEquipesDiaEmpresaLote,
     salvarRespostaOrcamentoEmpresa, salvarServicoRealizadoEmpresa, aprovarOrcamento, salvarDecisaoAprovacao,
-    atualizarPrevisaoOsEmpresa, finalizarOsEmpresa, salvarNovaEquipe, atualizarObra, salvarConfiguracoes, registrarComplementoEscola
+    atualizarPrevisaoOsEmpresa, finalizarOsEmpresa, salvarNovaEquipe,
+    listarEquipesGerencial, salvarEquipeGerencial, salvarMembroEquipeGerencial, alterarStatusEquipeGerencial, alterarStatusMembroEquipeGerencial,
+    atualizarObra, salvarConfiguracoes, registrarComplementoEscola
   };
 })();

@@ -10,6 +10,7 @@ const ROTULOS_PAGINAS_GOM = {
   historico: 'Memorial',
   relatorios: 'Relatórios',
   cadastro: 'Cadastro',
+  equipes: 'Gerenciar Equipes',
   acompanhar: 'Acompanhar',
   configuracoes: 'Configurações'
 };
@@ -106,6 +107,11 @@ function loadPage(pageName, inicial=false) {
 
   if (pageName === 'configuracoes') {
     if (typeof inicializarConfiguracoes === 'function') inicializarConfiguracoes();
+    return;
+  }
+
+  if (pageName === 'equipes') {
+    if (typeof inicializarGerenciamentoEquipes === 'function') inicializarGerenciamentoEquipes();
     return;
   }
 

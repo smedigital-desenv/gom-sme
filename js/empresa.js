@@ -361,7 +361,7 @@ function renderEmpresaView(listaRender) {
   setTimeout(function() { gomEmpresaAtualizarVisibilidadeData_(); gomEmpresaPrePreencherDataHoje_(); }, 0);
   var listaBase = listaRender || [];
 
-  if (modo === 'equipes') return renderGestaoEquipes();
+  if (modo === 'equipes') return renderGestaoEquipes({ origem: 'empresa' });
 
   if (modo === 'orcamentos') {
     var listaOrc = listaBase.filter(function(i) {
@@ -416,27 +416,362 @@ function carregarHistoricoCampoEmpresaSePreciso(opcoes) {
     .gomListarCampoWebV3Json();
 }
 
-function renderGestaoEquipes() {
-  setTimeout(renderizarListaEquipes, 0);
+function usuarioPodeGerenciarEquipeSecretaria_() {
+  var usuario = (typeof getUsuarioGom === 'function') ? getUsuarioGom() : (window.usuarioAtualGom || {});
+  var perfil = String((usuario && (usuario.perfil || usuario.perfilLabel || usuario.modo)) || '').toUpperCase();
+  if (!usuario || usuario.restrito === false || usuario.modo === 'ABERTO') return true;
+  return perfil.indexOf('ADMIN') >= 0 || perfil.indexOf('GOM') >= 0 || perfil.indexOf('SECRETARIA') >= 0 || perfil.indexOf('CONFERENTE') >= 0;
+}
+
+function getOrigemEquipesGerencialAtual_() {
+  return window.equipesGerenciaisOrigemAtual === 'empresa' ? 'empresa' : 'admin';
+}
+
+function setOrigemEquipesGerencialAtual_(origem) {
+  window.equipesGerenciaisOrigemAtual = origem === 'empresa' ? 'empresa' : 'admin';
+}
+
+function getTipoEquipesGerencialAtual_() {
+  var origem = getOrigemEquipesGerencialAtual_();
+  if (origem === 'empresa') {
+    window.empresaEquipesTipoAtual = 'empresa';
+    window.adminEquipesTipoAtual = 'empresa';
+    return 'empresa';
+  }
+  var podeSecretaria = usuarioPodeGerenciarEquipeSecretaria_();
+  if (!podeSecretaria) {
+    window.adminEquipesTipoAtual = 'empresa';
+    return 'empresa';
+  }
+  window.adminEquipesTipoAtual = window.adminEquipesTipoAtual || 'empresa';
+  return window.adminEquipesTipoAtual === 'secretaria' ? 'secretaria' : 'empresa';
+}
+
+function setTipoEquipesGerencial(tipo, botao) {
+  var origem = getOrigemEquipesGerencialAtual_();
+  if (origem === 'empresa') {
+    window.empresaEquipesTipoAtual = 'empresa';
+    alert('No Painel da Empresa, esta aba gerencia somente equipes da empresa. Para visualizar/alterar equipes da Secretaria/GOM, use a tela Mais > Gerenciar Equipes.');
+    tipo = 'empresa';
+  }
+  if (tipo === 'secretaria' && !usuarioPodeGerenciarEquipeSecretaria_()) {
+    alert('Seu perfil pode gerenciar somente equipes da empresa.');
+    tipo = 'empresa';
+  }
+  if (origem === 'empresa') window.empresaEquipesTipoAtual = 'empresa';
+  else window.adminEquipesTipoAtual = tipo === 'secretaria' ? 'secretaria' : 'empresa';
+  document.querySelectorAll('#empresaEquipeTipoTabs .nav-link').forEach(function(btn) { btn.classList.remove('active'); });
+  if (botao) botao.classList.add('active');
+  carregarEquipesGerenciais({ forcar: true });
+}
+
+function parseJsonEquipes_(res) {
+  if (!res) return { ok: false, erro: 'Resposta vazia.' };
+  if (typeof res === 'string') {
+    try { return JSON.parse(res); }
+    catch (e) { return { ok: false, erro: 'JSON inválido: ' + e.message }; }
+  }
+  return res;
+}
+
+function renderGestaoEquipes(opcoes) {
+  opcoes = opcoes || {};
+  var origem = opcoes.origem === 'empresa' ? 'empresa' : 'admin';
+  setOrigemEquipesGerencialAtual_(origem);
+
+  if (origem === 'empresa') {
+    window.empresaEquipesTipoAtual = 'empresa';
+    window.adminEquipesTipoAtual = window.adminEquipesTipoAtual || 'empresa';
+  }
+
+  setTimeout(function() { carregarEquipesGerenciais(); }, 0);
+  var tipo = getTipoEquipesGerencialAtual_();
+  var podeSecretaria = origem === 'admin' && usuarioPodeGerenciarEquipeSecretaria_();
+  var tituloTipo = tipo === 'secretaria' ? 'Secretaria/GOM' : 'Empresa';
+  var tituloTela = origem === 'empresa' ? 'Equipes da Empresa' : 'Gerenciamento de Equipes';
+  var descricaoTela = origem === 'empresa'
+    ? 'A empresa cadastra e mantém somente as próprias equipes e seus integrantes. Equipes da Secretaria/GOM ficam em Mais > Gerenciar Equipes.'
+    : 'Tela administrativa para visualizar e manter separadamente equipes da empresa e equipes internas da Secretaria/GOM.';
+  var alertaTela = origem === 'empresa'
+    ? 'Painel da Empresa: esta aba mostra somente equipes da empresa. A equipe não visualiza nem altera equipes da Secretaria/GOM por aqui.'
+    : (podeSecretaria ? 'Perfil administrativo: você pode alternar entre equipes da empresa e equipes internas da Secretaria/GOM.' : 'Perfil restrito: você pode gerenciar somente equipes da empresa.');
+
   return [
-    '<div class="row align-items-start mt-2">',
-      '<div class="col-md-5">',
-        '<div class="bg-white p-4 rounded shadow-sm border-top border-4 border-info">',
-          '<h5 class="fw-bold text-dark mb-3"><i class="bi bi-person-plus-fill text-info me-2"></i>Cadastrar Equipe</h5>',
-          '<form onsubmit="salvarEquipeForm(event)">',
-            '<div class="mb-3"><label class="form-label text-muted small fw-bold">NOME DA EQUIPE OU TÉCNICO</label><input type="text" id="nomeNovaEquipe" class="form-control form-control-lg bg-light" placeholder="Ex: Equipe Alfa" required></div>',
-            '<button type="submit" class="btn btn-info text-white w-100 fw-bold shadow-sm">ADICIONAR EQUIPE</button>',
-          '</form>',
+    '<div class="equipes-gerencial-page">',
+      '<div class="equipes-gerencial-head bg-white rounded shadow-sm border-start border-4 border-info p-3 mb-3">',
+        '<div>',
+          '<h5 class="fw-bold text-primary mb-1"><i class="bi bi-diagram-3-fill me-2"></i>' + escapeHtml(tituloTela) + '</h5>',
+          '<p class="text-muted small mb-0">' + escapeHtml(descricaoTela) + '</p>',
         '</div>',
+        '<button type="button" class="btn btn-light border fw-bold btn-sm" onclick="carregarEquipesGerenciais({forcar:true, botao:this})"><i class="bi bi-arrow-clockwise me-1"></i>Atualizar</button>',
       '</div>',
-      '<div class="col-md-7">',
-        '<div class="bg-white p-4 rounded shadow-sm h-100 border-top border-4 border-secondary">',
-          '<h5 class="fw-bold text-dark mb-3"><i class="bi bi-card-checklist text-secondary me-2"></i>Equipes Disponíveis</h5>',
-          '<div id="listaEquipesCadastradasHtml" class="d-flex flex-wrap gap-2"></div>',
+      (origem === 'admin' ? '<ul class="nav nav-pills bg-white shadow-sm p-2 rounded-pill d-inline-flex mb-3" id="empresaEquipeTipoTabs">' +
+        '<li class="nav-item"><button type="button" class="nav-link rounded-pill px-4 fw-bold ' + (tipo === 'empresa' ? 'active' : '') + '" onclick="setTipoEquipesGerencial(\'empresa\', this)"><i class="bi bi-building-check me-2"></i>Equipes da empresa</button></li>' +
+        (podeSecretaria ? '<li class="nav-item"><button type="button" class="nav-link rounded-pill px-4 fw-bold ' + (tipo === 'secretaria' ? 'active' : '') + '" onclick="setTipoEquipesGerencial(\'secretaria\', this)"><i class="bi bi-person-badge-fill me-2"></i>Equipes da Secretaria/GOM</button></li>' : '') +
+      '</ul>' : '<div class="empresa-equipes-lock bg-white shadow-sm rounded-pill d-inline-flex align-items-center gap-2 px-3 py-2 mb-3"><i class="bi bi-building-check text-primary"></i><strong>Equipes da empresa</strong><span class="text-muted small">visualização restrita a este tipo</span></div>'),
+      '<div class="equipes-gerencial-alert mb-3">',
+        '<i class="bi bi-shield-check"></i>',
+        '<span>' + escapeHtml(alertaTela) + '</span>',
+      '</div>',
+      '<div class="row g-3 align-items-start">',
+        '<div class="col-lg-4">',
+          '<div class="bg-white p-4 rounded shadow-sm border-top border-4 border-info mb-3">',
+            '<h5 class="fw-bold text-dark mb-3"><i class="bi bi-plus-circle-fill text-info me-2"></i>Cadastrar equipe</h5>',
+            '<form onsubmit="salvarEquipeGerencialForm(event)">',
+              '<input type="hidden" id="tipoNovaEquipeGerencial" value="' + escapeHtml(tipo) + '">',
+              '<div class="mb-2"><label class="form-label text-muted small fw-bold">TIPO</label><input type="text" class="form-control bg-light" value="' + escapeHtml(tituloTipo) + '" disabled></div>',
+              '<div class="mb-3"><label class="form-label text-muted small fw-bold">NOME DA EQUIPE</label><input type="text" id="nomeNovaEquipeGerencial" class="form-control form-control-lg bg-light" placeholder="Ex: Equipe Elétrica" required></div>',
+              '<button type="submit" class="btn btn-info text-white w-100 fw-bold shadow-sm"><i class="bi bi-check2-circle me-1"></i>Salvar equipe</button>',
+            '</form>',
+          '</div>',
+          '<div class="bg-white p-4 rounded shadow-sm border-top border-4 border-primary">',
+            '<h5 class="fw-bold text-dark mb-3"><i class="bi bi-person-plus-fill text-primary me-2"></i>Adicionar integrante</h5>',
+            '<form onsubmit="salvarMembroEquipeGerencialForm(event)">',
+              '<div class="mb-2"><label class="form-label text-muted small fw-bold">EQUIPE</label><select id="selectEquipeMembroGerencial" class="form-select bg-light" required><option value="">Carregando equipes...</option></select></div>',
+              '<div class="mb-2"><label class="form-label text-muted small fw-bold">NOME DO INTEGRANTE</label><input type="text" id="nomeMembroGerencial" class="form-control bg-light" placeholder="Nome da pessoa" required></div>',
+              '<div class="mb-2"><label class="form-label text-muted small fw-bold">FUNÇÃO</label><input type="text" id="funcaoMembroGerencial" class="form-control bg-light" placeholder="Ex: Encanador, eletricista, ajudante"></div>',
+              '<div class="row g-2 mb-3"><div class="col-md-6"><label class="form-label text-muted small fw-bold">TELEFONE</label><input type="text" id="telefoneMembroGerencial" class="form-control bg-light" placeholder="Opcional"></div><div class="col-md-6"><label class="form-label text-muted small fw-bold">E-MAIL</label><input type="email" id="emailMembroGerencial" class="form-control bg-light" placeholder="Opcional"></div></div>',
+              '<button type="submit" class="btn btn-primary w-100 fw-bold shadow-sm"><i class="bi bi-person-check me-1"></i>Adicionar integrante</button>',
+            '</form>',
+          '</div>',
+        '</div>',
+        '<div class="col-lg-8">',
+          '<div class="bg-white p-4 rounded shadow-sm h-100 border-top border-4 border-secondary">',
+            '<div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-3">',
+              '<h5 class="fw-bold text-dark mb-0"><i class="bi bi-card-checklist text-secondary me-2"></i>Equipes e integrantes</h5>',
+              '<span class="badge bg-primary px-3 py-2" id="contadorEquipesGerenciais">0 equipes</span>',
+            '</div>',
+            '<div class="input-group mb-3"><span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span><input type="text" id="buscaEquipesGerenciais" class="form-control border-start-0" placeholder="Buscar equipe, integrante, função, telefone ou e-mail..." oninput="renderizarListaEquipesGerenciais()"></div>',
+            '<div id="listaEquipesGerenciaisHtml" class="equipes-gerencial-lista"><div class="text-center text-muted py-4"><div class="spinner-border text-primary mb-3"></div><div class="fw-bold">Carregando equipes...</div></div></div>',
+          '</div>',
         '</div>',
       '</div>',
     '</div>'
   ].join('');
+}
+
+function inicializarGerenciamentoEquipes() {
+  setOrigemEquipesGerencialAtual_('admin');
+  window.adminEquipesTipoAtual = window.adminEquipesTipoAtual || 'empresa';
+  var painel = document.getElementById('painelEquipesGerencial');
+  if (painel) painel.innerHTML = renderGestaoEquipes({ origem: 'admin' });
+}
+
+function carregarEquipesGerenciais(opcoes) {
+  opcoes = opcoes || {};
+  var tipo = getTipoEquipesGerencialAtual_();
+  if (window.equipesGerenciaisCarregando && !opcoes.forcar) return;
+  if (!opcoes.forcar && Array.isArray(window.equipesGerenciaisGlobal) && window.equipesGerenciaisTipo === tipo) {
+    renderizarListaEquipesGerenciais();
+    return;
+  }
+  window.equipesGerenciaisCarregando = true;
+  window.equipesGerenciaisTipo = tipo;
+  var botao = opcoes.botao || null;
+  if (botao && typeof gomSetButtonLoading === 'function') gomSetButtonLoading(botao, 'Atualizando...');
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      window.equipesGerenciaisCarregando = false;
+      if (botao && typeof gomResetButtonLoading === 'function') gomResetButtonLoading(botao);
+      var payload = parseJsonEquipes_(res);
+      if (!payload.ok) {
+        var box = document.getElementById('listaEquipesGerenciaisHtml');
+        if (box) box.innerHTML = '<div class="alert alert-danger"><strong>Erro:</strong> ' + escapeHtml(payload.erro || 'Não foi possível carregar equipes.') + '</div>';
+        return;
+      }
+      window.equipesGerenciaisGlobal = payload.equipes || [];
+      window.equipesGerenciaisTipo = payload.tipo || tipo;
+      renderizarListaEquipesGerenciais();
+    })
+    .withFailureHandler(function(err) {
+      window.equipesGerenciaisCarregando = false;
+      if (botao && typeof gomResetButtonLoading === 'function') gomResetButtonLoading(botao);
+      var box = document.getElementById('listaEquipesGerenciaisHtml');
+      if (box) box.innerHTML = '<div class="alert alert-danger"><strong>Erro:</strong> ' + escapeHtml((err && err.message) || err || 'Falha ao carregar equipes.') + '</div>';
+    })
+    .gomListarEquipesGerencialV1Json({ tipo: tipo });
+}
+
+function atualizarSelectEquipesGerenciais_() {
+  var select = document.getElementById('selectEquipeMembroGerencial');
+  if (!select) return;
+  var equipes = Array.isArray(window.equipesGerenciaisGlobal) ? window.equipesGerenciaisGlobal.filter(function(eq) { return eq.ativo !== false; }) : [];
+  if (!equipes.length) {
+    select.innerHTML = '<option value="">Cadastre uma equipe primeiro</option>';
+    return;
+  }
+  select.innerHTML = '<option value="">Selecione...</option>' + equipes.map(function(eq) {
+    return '<option value="' + escapeHtml(eq.id) + '">' + escapeHtml(eq.nome) + '</option>';
+  }).join('');
+}
+
+function renderizarListaEquipesGerenciais() {
+  var container = document.getElementById('listaEquipesGerenciaisHtml');
+  if (!container) return;
+  var buscaInput = document.getElementById('buscaEquipesGerenciais');
+  var termo = typeof normalizarTextoBase === 'function' ? normalizarTextoBase(buscaInput ? buscaInput.value : '') : String(buscaInput ? buscaInput.value : '').toLowerCase();
+  var equipes = Array.isArray(window.equipesGerenciaisGlobal) ? window.equipesGerenciaisGlobal.slice() : [];
+
+  var filtradas = equipes.filter(function(eq) {
+    var membros = Array.isArray(eq.membros) ? eq.membros : [];
+    var texto = [eq.nome, eq.tipo, eq.ativo ? 'ativo' : 'inativo'].concat(membros.map(function(m) {
+      return [m.nome, m.funcao, m.telefone, m.email, m.ativo ? 'ativo' : 'inativo'].join(' ');
+    })).join(' ');
+    texto = typeof normalizarTextoBase === 'function' ? normalizarTextoBase(texto) : texto.toLowerCase();
+    return !termo || texto.indexOf(termo) >= 0;
+  });
+
+  var contador = document.getElementById('contadorEquipesGerenciais');
+  if (contador) contador.textContent = filtradas.length + ' equipe' + (filtradas.length === 1 ? '' : 's');
+  atualizarSelectEquipesGerenciais_();
+
+  if (!filtradas.length) {
+    container.innerHTML = '<div class="empty-state"><h5>Nenhuma equipe encontrada.</h5><p>Cadastre uma equipe para começar a vincular integrantes.</p></div>';
+    return;
+  }
+
+  container.innerHTML = filtradas.map(renderCardEquipeGerencial_).join('');
+}
+
+function renderCardEquipeGerencial_(eq) {
+  var membros = Array.isArray(eq.membros) ? eq.membros : [];
+  var ativos = membros.filter(function(m) { return m.ativo !== false; }).length;
+  var id = escapeJsAttr(eq.id);
+  var tipoLabel = eq.tipo === 'secretaria' ? 'Secretaria/GOM' : 'Empresa';
+  return [
+    '<div class="equipe-gerencial-card ' + (eq.ativo === false ? 'inativa' : '') + '">',
+      '<div class="equipe-gerencial-card-head">',
+        '<div><strong>' + escapeHtml(eq.nome || 'Equipe sem nome') + '</strong><span>' + escapeHtml(tipoLabel) + ' · ' + ativos + ' integrante(s) ativo(s)</span></div>',
+        '<div class="d-flex align-items-center gap-2 flex-wrap">',
+          '<span class="badge ' + (eq.ativo === false ? 'bg-secondary' : 'bg-success') + '">' + (eq.ativo === false ? 'Inativa' : 'Ativa') + '</span>',
+          '<button type="button" class="btn btn-light border btn-sm fw-bold" onclick="alterarStatusEquipeGerencial(\'' + id + '\',' + (eq.ativo === false ? 'true' : 'false') + ', this)">' + (eq.ativo === false ? '<i class="bi bi-toggle-on me-1"></i>Reativar' : '<i class="bi bi-toggle-off me-1"></i>Inativar') + '</button>',
+        '</div>',
+      '</div>',
+      '<div class="equipe-gerencial-membros">',
+        (membros.length ? membros.map(function(m) { return renderLinhaMembroEquipeGerencial_(m); }).join('') : '<div class="text-muted small py-2"><i class="bi bi-person-dash me-1"></i>Nenhum integrante cadastrado nesta equipe.</div>'),
+      '</div>',
+    '</div>'
+  ].join('');
+}
+
+function renderLinhaMembroEquipeGerencial_(m) {
+  var id = escapeJsAttr(m.id);
+  var contato = [m.telefone, m.email].filter(Boolean).join(' · ');
+  return [
+    '<div class="equipe-membro-row ' + (m.ativo === false ? 'inativo' : '') + '">',
+      '<div class="equipe-membro-info">',
+        '<strong><i class="bi bi-person-fill me-1"></i>' + escapeHtml(m.nome || 'Sem nome') + '</strong>',
+        '<span>' + escapeHtml([m.funcao || 'Função não informada', contato].filter(Boolean).join(' · ')) + '</span>',
+      '</div>',
+      '<button type="button" class="btn btn-light border btn-sm fw-bold" onclick="alterarStatusMembroEquipeGerencial(\'' + id + '\',' + (m.ativo === false ? 'true' : 'false') + ', this)">' + (m.ativo === false ? '<i class="bi bi-person-check me-1"></i>Reativar' : '<i class="bi bi-person-x me-1"></i>Inativar') + '</button>',
+    '</div>'
+  ].join('');
+}
+
+function salvarEquipeGerencialForm(e) {
+  e.preventDefault();
+  var form = e.target;
+  var botao = typeof gomEncontrarBotaoSubmit === 'function' ? gomEncontrarBotaoSubmit(form) : form.querySelector('button[type="submit"], button');
+  var input = document.getElementById('nomeNovaEquipeGerencial');
+  var tipoInput = document.getElementById('tipoNovaEquipeGerencial');
+  var nome = input ? input.value.trim() : '';
+  var tipo = tipoInput ? tipoInput.value : getTipoEquipesGerencialAtual_();
+  if (!nome) return;
+  if (tipo === 'secretaria' && !usuarioPodeGerenciarEquipeSecretaria_()) {
+    alert('Seu perfil pode gerenciar somente equipes da empresa.');
+    return;
+  }
+  if (typeof gomSetButtonLoading === 'function') gomSetButtonLoading(botao, 'Salvando...');
+  else if (botao) botao.disabled = true;
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(botao);
+      else if (botao) botao.disabled = false;
+      var payload = parseJsonEquipes_(res);
+      if (!payload.ok) { alert(payload.erro || 'Não foi possível salvar a equipe.'); return; }
+      if (input) input.value = '';
+      carregarEquipesGerenciais({ forcar: true });
+    })
+    .withFailureHandler(function(err) {
+      if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(botao);
+      else if (botao) botao.disabled = false;
+      if (typeof gomMostrarErroAcao === 'function') gomMostrarErroAcao(err, 'Não foi possível salvar a equipe.');
+      else alert((err && err.message) || err);
+    })
+    .gomSalvarEquipeGerencialV1Json({ nome: nome, tipo: tipo });
+}
+
+function salvarMembroEquipeGerencialForm(e) {
+  e.preventDefault();
+  var form = e.target;
+  var botao = typeof gomEncontrarBotaoSubmit === 'function' ? gomEncontrarBotaoSubmit(form) : form.querySelector('button[type="submit"], button');
+  var equipeId = (document.getElementById('selectEquipeMembroGerencial') || {}).value || '';
+  var nome = ((document.getElementById('nomeMembroGerencial') || {}).value || '').trim();
+  var funcao = ((document.getElementById('funcaoMembroGerencial') || {}).value || '').trim();
+  var telefone = ((document.getElementById('telefoneMembroGerencial') || {}).value || '').trim();
+  var email = ((document.getElementById('emailMembroGerencial') || {}).value || '').trim();
+  if (!equipeId || !nome) { alert('Selecione a equipe e informe o nome do integrante.'); return; }
+  if (typeof gomSetButtonLoading === 'function') gomSetButtonLoading(botao, 'Salvando...');
+  else if (botao) botao.disabled = true;
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(botao);
+      else if (botao) botao.disabled = false;
+      var payload = parseJsonEquipes_(res);
+      if (!payload.ok) { alert(payload.erro || 'Não foi possível salvar o integrante.'); return; }
+      ['nomeMembroGerencial','funcaoMembroGerencial','telefoneMembroGerencial','emailMembroGerencial'].forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
+      carregarEquipesGerenciais({ forcar: true });
+    })
+    .withFailureHandler(function(err) {
+      if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(botao);
+      else if (botao) botao.disabled = false;
+      if (typeof gomMostrarErroAcao === 'function') gomMostrarErroAcao(err, 'Não foi possível salvar o integrante.');
+      else alert((err && err.message) || err);
+    })
+    .gomSalvarMembroEquipeGerencialV1Json({ equipeId: equipeId, nome: nome, funcao: funcao, telefone: telefone, email: email });
+}
+
+function alterarStatusEquipeGerencial(id, ativo, botao) {
+  if (!id) return;
+  if (!ativo && !confirm('Inativar esta equipe? Ela deixará de aparecer nas listas de seleção.')) return;
+  if (typeof gomSetButtonLoading === 'function') gomSetButtonLoading(botao, ativo ? 'Reativando...' : 'Inativando...');
+  else if (botao) botao.disabled = true;
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(botao);
+      else if (botao) botao.disabled = false;
+      var payload = parseJsonEquipes_(res);
+      if (!payload.ok) { alert(payload.erro || 'Não foi possível alterar a equipe.'); return; }
+      carregarEquipesGerenciais({ forcar: true });
+    })
+    .withFailureHandler(function(err) {
+      if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(botao);
+      else if (botao) botao.disabled = false;
+      alert((err && err.message) || err);
+    })
+    .gomAlterarStatusEquipeGerencialV1Json({ id: id, ativo: ativo });
+}
+
+function alterarStatusMembroEquipeGerencial(id, ativo, botao) {
+  if (!id) return;
+  if (!ativo && !confirm('Inativar este integrante?')) return;
+  if (typeof gomSetButtonLoading === 'function') gomSetButtonLoading(botao, ativo ? 'Reativando...' : 'Inativando...');
+  else if (botao) botao.disabled = true;
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(botao);
+      else if (botao) botao.disabled = false;
+      var payload = parseJsonEquipes_(res);
+      if (!payload.ok) { alert(payload.erro || 'Não foi possível alterar o integrante.'); return; }
+      carregarEquipesGerenciais({ forcar: true });
+    })
+    .withFailureHandler(function(err) {
+      if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(botao);
+      else if (botao) botao.disabled = false;
+      alert((err && err.message) || err);
+    })
+    .gomAlterarStatusMembroEquipeGerencialV1Json({ id: id, ativo: ativo });
 }
 
 function renderCardOrcamentoEmpresa(item) {
@@ -1021,42 +1356,13 @@ async function finalizarOsEmpresaFront(e, id) {
 }
 
 function renderizarListaEquipes() {
-  var container = document.getElementById('listaEquipesCadastradasHtml');
-  if(!container) return;
-  if (!(window.listaEquipesGlobal || []).length) {
-    container.innerHTML = '<span class="text-muted small">Nenhuma equipe cadastrada ainda.</span>';
-    return;
-  }
-  container.innerHTML = (window.listaEquipesGlobal || []).map(function(eq) {
-    var nome = escapeHtml(eq && eq.nome ? eq.nome : eq);
-    return '<span class="badge bg-light border border-info text-dark p-2 fs-6"><i class="bi bi-person-workspace text-info me-1"></i> ' + nome + '</span>';
-  }).join('');
+  // Compatibilidade com a versão antiga da aba Equipes.
+  renderizarListaEquipesGerenciais();
 }
 
 function salvarEquipeForm(e) {
-  e.preventDefault();
-  var form = e.target;
-  var botao = typeof gomEncontrarBotaoSubmit === 'function' ? gomEncontrarBotaoSubmit(form) : form.querySelector('button[type="submit"], button');
-  if (typeof gomSetButtonLoading === 'function') gomSetButtonLoading(botao, 'Adicionando equipe...');
-  else if (botao) botao.disabled = true;
-  var input = document.getElementById('nomeNovaEquipe');
-  var nome = input ? input.value : '';
-  google.script.run
-    .withSuccessHandler(function() {
-      window.listaEquipesGlobal = window.listaEquipesGlobal || [];
-      window.listaEquipesGlobal.push(nome);
-      if (input) input.value = '';
-      renderizarListaEquipes();
-      if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(botao);
-      else if (botao) botao.disabled = false;
-    })
-    .withFailureHandler(function(err) {
-      if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(botao);
-      else if (botao) botao.disabled = false;
-      if (typeof gomMostrarErroAcao === 'function') gomMostrarErroAcao(err, 'Não foi possível salvar a equipe.');
-      else alert((err && err.message) || err);
-    })
-    .salvarNovaEquipe(nome);
+  // Compatibilidade com a versão antiga da aba Equipes.
+  return salvarEquipeGerencialForm(e);
 }
 
 function formatarInputDateEmpresa(valor) {
@@ -1099,3 +1405,11 @@ window.finalizarOsEmpresaFront = finalizarOsEmpresaFront;
 window.finalizarOsEmpresa = finalizarOsEmpresaFront;
 window.renderizarListaEquipes = renderizarListaEquipes;
 window.salvarEquipeForm = salvarEquipeForm;
+window.setTipoEquipesGerencial = setTipoEquipesGerencial;
+window.carregarEquipesGerenciais = carregarEquipesGerenciais;
+window.renderizarListaEquipesGerenciais = renderizarListaEquipesGerenciais;
+window.inicializarGerenciamentoEquipes = inicializarGerenciamentoEquipes;
+window.salvarEquipeGerencialForm = salvarEquipeGerencialForm;
+window.salvarMembroEquipeGerencialForm = salvarMembroEquipeGerencialForm;
+window.alterarStatusEquipeGerencial = alterarStatusEquipeGerencial;
+window.alterarStatusMembroEquipeGerencial = alterarStatusMembroEquipeGerencial;

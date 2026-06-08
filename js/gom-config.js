@@ -105,7 +105,7 @@ var empresaDetalheAberto = window.empresaDetalheAberto = window.empresaDetalheAb
 var usuarioAtualGom = window.usuarioAtualGom = window.usuarioAtualGom || null;
 var permissoesCarregadas = window.permissoesCarregadas = Boolean(window.permissoesCarregadas);
 
-var TELAS_WEB = window.TELAS_WEB = ['dashboard','triagem','fila','aprovacao','empresa','campo','alertas','obras','historico','relatorios','cadastro','acompanhar','configuracoes'];
+var TELAS_WEB = window.TELAS_WEB = ['dashboard','triagem','fila','aprovacao','empresa','campo','alertas','obras','historico','relatorios','cadastro','equipes','acompanhar','configuracoes'];
 var TELAS_CHAMADOS = window.TELAS_CHAMADOS = ['triagem','fila','aprovacao','empresa','historico'];
 
 var STATUS_TRIAGEM = window.STATUS_TRIAGEM = ['Em análise'];

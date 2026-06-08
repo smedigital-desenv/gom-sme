@@ -43,6 +43,7 @@
         <li><button id="btn-historico" class="dropdown-item nav-more-item" data-page="historico" onclick="loadPage('historico')"><i class="bi bi-archive"></i><span>Memorial</span></button></li>
         <li><button id="btn-relatorios" class="dropdown-item nav-more-item" data-page="relatorios" onclick="loadPage('relatorios')"><i class="bi bi-bar-chart-line"></i><span>Relatórios</span></button></li>
         <li><button id="btn-cadastro" class="dropdown-item nav-more-item" data-page="cadastro" onclick="loadPage('cadastro')"><i class="bi bi-plus-circle"></i><span>Cadastro</span></button></li>
+        <li><button id="btn-equipes" class="dropdown-item nav-more-item" data-page="equipes" onclick="loadPage('equipes')"><i class="bi bi-diagram-3"></i><span>Gerenciar Equipes</span></button></li>
         <li><button id="btn-acompanhar" class="dropdown-item nav-more-item" data-page="acompanhar" onclick="loadPage('acompanhar')"><i class="bi bi-search-heart"></i><span>Acompanhar</span></button></li>
         <li><hr class="dropdown-divider"></li>
         <li><button id="btn-configuracoes" class="dropdown-item nav-more-item" data-page="configuracoes" onclick="loadPage('configuracoes')"><i class="bi bi-sliders"></i><span>Configurações</span></button></li>
@@ -78,6 +79,7 @@
         <button class="mobile-more-item" data-page="historico" onclick="loadPage('historico')"><i class="bi bi-archive"></i><span>Memorial</span></button>
         <button class="mobile-more-item" data-page="relatorios" onclick="loadPage('relatorios')"><i class="bi bi-bar-chart-line"></i><span>Relatórios</span></button>
         <button class="mobile-more-item" data-page="cadastro" onclick="loadPage('cadastro')"><i class="bi bi-plus-circle"></i><span>Cadastro</span></button>
+        <button class="mobile-more-item" data-page="equipes" onclick="loadPage('equipes')"><i class="bi bi-diagram-3"></i><span>Gerenciar Equipes</span></button>
         <button class="mobile-more-item" data-page="acompanhar" onclick="loadPage('acompanhar')"><i class="bi bi-search-heart"></i><span>Acompanhar</span></button>
         <button class="mobile-more-item" data-page="configuracoes" onclick="loadPage('configuracoes')"><i class="bi bi-sliders"></i><span>Configurações</span></button>
       </div>
@@ -748,6 +750,18 @@
   </div>
 </div>
 
+  </template>
+
+
+  <template id="tpl-equipes">
+<div class="page-title equipes-page-title d-flex justify-content-between align-items-start gap-3 mb-3">
+  <div>
+    <h4 class="text-primary fw-bold mb-1"><i class="bi bi-diagram-3 me-2"></i>Gerenciamento de Equipes</h4>
+    <p class="text-muted small mb-0">Tela administrativa para visualizar e manter equipes da Secretaria/GOM e equipes da empresa, com seus respectivos integrantes.</p>
+  </div>
+  <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2"><i class="bi bi-shield-check me-1"></i>Administrativo</span>
+</div>
+<div id="painelEquipesGerencial"></div>
   </template>
 
   <template id="tpl-acompanhar">
