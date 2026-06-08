@@ -10,6 +10,43 @@ window.GomDados = (function () {
   const M = window.GomMap;
   const SEL_CHAMADO = '*, escola:escolas(nome,tipo)';
 
+  const CONFIGS_PADRAO = [
+    ['PERMISSOES_MODO','ABERTO','Permissões','ABERTO mantém acesso total para configuração/homologação. RESTRITO aplica perfis por e-mail.',true],
+    ['EMAILS_ADMIN_GOM','','Permissões','E-mails administradores com acesso total.',true],
+    ['EMAILS_GOM_OPERACIONAL','','Permissões','E-mails da equipe GOM operacional. Acesso às telas de operação, sem Configurações.',true],
+    ['EMAILS_EMPRESA_ADICIONAIS','','Permissões','E-mails adicionais da empresa, além de EMAIL_EMPRESA.',true],
+    ['EMAILS_CAMPO','','Permissões','E-mails de usuários de campo. Acesso à tela Campo e Acompanhar.',true],
+    ['EMAILS_CONFERENTE','','Permissões','E-mails de conferentes. Leitura de dashboard, obras, memorial e relatórios.',true],
+    ['PERFIL_SEM_LOGIN','PUBLICO','Permissões','Perfil usado quando não há e-mail identificado. Sugestão: PUBLICO.',true],
+    ['EMAIL_EMPRESA','','Empresa','E-mail da empresa que receberá cobranças e avisos operacionais.',true],
+    ['NOME_EMPRESA','','Empresa','Nome da empresa responsável pelos atendimentos.',true],
+    ['EMAIL_RESPONSAVEL_GOM','','Empresa','E-mail interno da GOM para cópias, avisos e alertas.',true],
+    ['HORARIO_LIMITE_CAMPO','11:00','Empresa','Horário limite para a empresa registrar as equipes do dia.',true],
+    ['SLA_ANALISE_DIAS','3','Prazos/SLA','Prazo máximo desejado para chamados novos/em análise sem movimentação.',true],
+    ['SLA_VISITA_DIAS','3','Prazos/SLA','Prazo máximo desejado para chamados aguardando visita.',true],
+    ['SLA_ORCAMENTO_DIAS','5','Prazos/SLA','Prazo máximo desejado para retorno de orçamento solicitado.',true],
+    ['SLA_APROVACAO_DIAS','2','Prazos/SLA','Prazo máximo desejado para análise de orçamento realizado.',true],
+    ['SLA_OS_DIAS','7','Prazos/SLA','Prazo de referência para execução de OS emitida.',true],
+    ['SLA_FINALIZACAO_DIAS','2','Prazos/SLA','Prazo para validação interna após serviço realizado.',true],
+    ['ALERTA_COBRANCA_CAMPO_ATIVO','SIM','Alertas','Ativa cobrança automática quando não houver preenchimento diário da empresa.',true],
+    ['ALERTA_EMAIL_EMPRESA_ATIVO','SIM','Alertas','Permite envio de e-mails de alerta para a empresa.',true],
+    ['ALERTA_OS_SEM_NUMERO_ATIVO','SIM','Alertas','Destaca OS emitida sem numeração preenchida.',true],
+    ['ALERTA_ORCAMENTO_SEM_RETORNO_ATIVO','SIM','Alertas','Destaca orçamentos solicitados sem retorno dentro do prazo.',true],
+    ['ALERTA_ANALISE_PARADA_ATIVO','SIM','Alertas','Destaca chamados em análise sem interação acima do SLA.',true],
+    ['ALERTA_VISITA_ATRASADA_ATIVO','SIM','Alertas','Destaca chamados aguardando visita acima do prazo configurado.',true],
+    ['ALERTA_APROVACAO_PARADA_ATIVO','SIM','Alertas','Destaca orçamentos realizados aguardando decisão acima do SLA.',true],
+    ['ALERTA_PREVISAO_VENCIDA_ATIVO','SIM','Alertas','Destaca OS com data prevista de conclusão vencida.',true],
+    ['ALERTA_OS_SEM_PREVISAO_ATIVO','SIM','Alertas','Destaca OS em campo sem data prevista de conclusão.',true],
+    ['ALERTA_SERVICO_SEM_FINALIZACAO_ATIVO','SIM','Alertas','Destaca serviço realizado ainda não finalizado no prazo.',true],
+    ['NOME_SISTEMA','Gestão GOM','Sistema','Nome exibido nos e-mails e telas públicas.',true],
+    ['SETOR_RESPONSAVEL','GOM | SME','Sistema','Identificação institucional do setor responsável.',true],
+    ['TIMEZONE','America/Sao_Paulo','Sistema','Fuso horário utilizado nos registros e alertas.',true],
+    ['LIMITE_ANEXOS','5','Anexos','Quantidade máxima de arquivos por envio.',true],
+    ['TAMANHO_MAX_MB','8','Anexos','Tamanho máximo de cada anexo em MB.',true],
+    ['STATUS_PADRAO_NOVO_CHAMADO','Em análise','Status','Status inicial padrão para novos chamados.',true],
+    ['STATUS_DEVOLVIDO_MEMORIAL','Devolvido para a escola','Status','Status usado quando a solicitação é devolvida para a unidade e encerrada no Memorial.',true]
+  ];
+
   // ── Helpers ─────────────────────────────────────────────────────────────────
   function _err(ctx, e) { const msg = (e && e.message) ? e.message : String(e); throw new Error(ctx + ': ' + msg); }
   function _nowISO() { return new Date().toISOString(); }
@@ -50,6 +87,21 @@ window.GomDados = (function () {
     if (!nome) return null;
     const r = await window.SB.from('escolas').select('id,tipo').ilike('nome', String(nome).trim()).maybeSingle();
     return r.data || null;
+  }
+
+  function _configPadraoRows() {
+    return CONFIGS_PADRAO.map(c => ({
+      chave: c[0], valor: c[1], grupo: c[2], descricao: c[3], ativo: c[4] !== false
+    }));
+  }
+
+  async function _garantirConfiguracoesPadrao() {
+    const rows = _configPadraoRows();
+    const up = await window.SB.from('configuracoes').upsert(rows, { onConflict: 'chave' }).select('*');
+    if (up.error) _err('Criar configurações padrão', up.error);
+    const r = await window.SB.from('configuracoes').select('*').order('grupo', { ascending: true }).order('chave', { ascending: true });
+    if (r.error) _err('Listar configurações padrão', r.error);
+    return r.data || [];
   }
 
   /* ══════════════════════════ LEITURAS ══════════════════════════ */
@@ -122,9 +174,21 @@ window.GomDados = (function () {
   }
 
   async function listarConfiguracoes() {
-    const r = await window.SB.from('configuracoes').select('*');
+    const r = await window.SB.from('configuracoes').select('*').order('grupo', { ascending: true }).order('chave', { ascending: true });
     if (r.error) return JSON.stringify({ ok: false, total: 0, grupos: [], configuracoes: [], erro: r.error.message });
-    const lista = (r.data || []).map((d, i) => ({
+
+    let dados = r.data || [];
+    if (!dados.length) {
+      try {
+        console.warn('[GOM] Tabela configuracoes vazia. Criando configurações padrão de homologação...');
+        dados = await _garantirConfiguracoesPadrao();
+      } catch (e) {
+        console.error('[GOM] Falha ao criar configurações padrão:', e);
+        return JSON.stringify({ ok: false, total: 0, grupos: [], configuracoes: [], erro: e && e.message ? e.message : String(e) });
+      }
+    }
+
+    const lista = dados.map((d, i) => ({
       ordem: i + 1, chave: d.chave, valor: d.valor == null ? '' : String(d.valor),
       grupo: d.grupo || 'Sistema', descricao: d.descricao || '', ativo: d.ativo === false ? 'NÃO' : 'SIM', padrao: ''
     })).sort((a, b) => String(a.grupo).localeCompare(String(b.grupo)) || String(a.chave).localeCompare(String(b.chave)));
@@ -141,6 +205,135 @@ window.GomDados = (function () {
       observacao: x.observacao || '', equipe: x.equipe || '', valorOrcamento: x.valor_orcamento || ''
     }));
     return JSON.stringify({ ok: true, id, total: eventos.length, eventos, timeline: eventos });
+  }
+
+
+  function _mensagemPublicaStatus(status) {
+    const st = M.normalizarStatus(status);
+    const mensagens = {
+      'Em análise': 'A solicitação foi recebida e está em análise pela equipe da GOM.',
+      'Aguardando visita': 'A solicitação está aguardando visita técnica da equipe responsável.',
+      'Em atendimento': 'A solicitação está na fila de atendimento da equipe responsável.',
+      'Solicitado Orçamento': 'A solicitação foi encaminhada para orçamento da empresa responsável.',
+      'Orçamento Realizado': 'O orçamento retornou da empresa e está aguardando decisão interna.',
+      'OS emitida': 'A ordem de serviço foi emitida e o atendimento será acompanhado pela equipe responsável.',
+      'Atendimento Emergencial': 'A solicitação foi classificada como emergencial e está em atendimento prioritário.',
+      'Garantia de Obra': 'A solicitação está relacionada à garantia de obra e está em acompanhamento.',
+      'Serviço Realizado': 'A empresa informou a realização do serviço. A equipe interna fará a validação final.',
+      'Devolvido para a escola': 'A solicitação foi devolvida para complementação da unidade escolar.',
+      'Concluído': 'A solicitação foi concluída pela equipe responsável.',
+      'A cargo da unidade escolar': 'A solicitação ficou a cargo da unidade escolar.',
+      'Encaminhado para outra gerência ou Unidade escolar.': 'A solicitação foi encaminhada para outra gerência ou unidade escolar.',
+      'Duplicado': 'A solicitação foi identificada como duplicada.'
+    };
+    return mensagens[st] || 'A solicitação está em acompanhamento pela equipe responsável.';
+  }
+
+  function _timelinePublicaChamado(row, logs) {
+    const eventos = [];
+    if (row && row.data_abertura) {
+      eventos.push({
+        data: M.fmtDataHora(row.data_abertura),
+        titulo: 'Protocolo aberto',
+        descricao: 'Solicitação registrada no sistema.'
+      });
+    }
+    (logs || []).forEach(x => {
+      const stNovo = x.status_novo ? M.normalizarStatus(x.status_novo) : '';
+      eventos.push({
+        data: M.fmtDataHora(x.registrado_em),
+        titulo: stNovo ? ('Status: ' + stNovo) : (x.acao || 'Movimentação do protocolo'),
+        descricao: stNovo ? _mensagemPublicaStatus(stNovo) : 'Houve uma nova movimentação no protocolo.'
+      });
+    });
+    if (!eventos.length) {
+      eventos.push({ data: '', titulo: 'Protocolo em acompanhamento', descricao: _mensagemPublicaStatus(row && row.situacao) });
+    }
+    return eventos;
+  }
+
+  async function _logsPorChamado(ids) {
+    const mapa = {};
+    if (!Array.isArray(ids) || !ids.length) return mapa;
+    const r = await window.SB.from('log_acoes').select('*').in('solicitacao_id', ids).order('registrado_em', { ascending: true });
+    if (r.error) return mapa;
+    (r.data || []).forEach(x => {
+      const id = String(x.solicitacao_id || '');
+      mapa[id] = mapa[id] || [];
+      mapa[id].push(x);
+    });
+    return mapa;
+  }
+
+  function _mapChamadoAcompanhar(row, anexosMap, logsMap) {
+    const c = M.mapChamado(row, anexosMap || {});
+    const logs = (logsMap && logsMap[String(row.id)]) || [];
+    const status = M.normalizarStatus(c.situacao || row.situacao);
+    return {
+      id: c.id,
+      unidade: c.unidade || '',
+      descricao: c.detalhamento || 'Sem descrição pública informada.',
+      tipo: c.tipo || '',
+      status: status,
+      situacao: status,
+      corStatus: c.corStatus || (M.CORES && M.CORES[status]) || '#002b5e',
+      dataAbertura: c.dataHora || c.data || '',
+      ultimaAtualizacao: c.dataHoraUltimaAcao || c.dataHora || c.data || '',
+      dataPrevistaConclusao: c.dataPrevistaConclusao || '',
+      dataConclusao: c.dataConclusaoOs || c.dataConclusao || '',
+      numeroOs: c.numeroOs || '',
+      mensagemPublica: _mensagemPublicaStatus(status),
+      podeComplementar: status === 'Devolvido para a escola',
+      observacoesPublicas: [],
+      timeline: _timelinePublicaChamado(row, logs)
+    };
+  }
+
+  async function _escolaPorEmail(email) {
+    const e = String(email || '').trim();
+    if (!e) return null;
+    const r = await window.SB.from('escolas').select('id,nome,tipo,email').ilike('email', '%' + e + '%').limit(1).maybeSingle();
+    if (r.error) return null;
+    return r.data || null;
+  }
+
+  async function consultarProtocoloEscola(p) {
+    p = p || {};
+    const id = String(p.id || '').trim();
+    const unidade = String(p.unidade || '').trim();
+    const email = String(p.email || '').trim();
+
+    let query = window.SB.from('solicitacoes').select(SEL_CHAMADO).order('data_abertura', { ascending: false }).limit(50);
+    let unidadeLabel = unidade;
+
+    if (id) {
+      query = query.eq('id', id).limit(1);
+    } else if (unidade) {
+      const esc = await _escolaIdPorNome(unidade);
+      if (!esc) return JSON.stringify({ ok: false, erro: 'Unidade escolar não localizada.' });
+      query = query.eq('escola_id', esc.id);
+    } else if (email) {
+      const esc = await _escolaPorEmail(email);
+      if (!esc) return JSON.stringify({ ok: false, erro: 'E-mail não localizado em nenhuma unidade escolar.' });
+      unidadeLabel = esc.nome || '';
+      query = query.eq('escola_id', esc.id);
+    } else {
+      return JSON.stringify({ ok: false, erro: 'Informe protocolo, unidade escolar ou e-mail.' });
+    }
+
+    const r = await query;
+    if (r.error) return JSON.stringify({ ok: false, erro: r.error.message });
+    const rows = r.data || [];
+    if (!rows.length) return JSON.stringify({ ok: false, erro: 'Nenhum chamado encontrado para os dados informados.' });
+
+    const ids = rows.map(x => x.id);
+    let anexosMap = {};
+    try { anexosMap = await window.GomAnexos.mapaPorChamado(ids); } catch (e) { anexosMap = {}; }
+    const logsMap = await _logsPorChamado(ids);
+    const chamados = rows.map(row => _mapChamadoAcompanhar(row, anexosMap, logsMap));
+
+    if (id) return JSON.stringify({ ok: true, modo: 'detalhe', chamado: chamados[0] });
+    return JSON.stringify({ ok: true, modo: 'lista', unidade: unidadeLabel || (chamados[0] && chamados[0].unidade) || '', total: chamados.length, chamados });
   }
 
   /* ══════════════════════════ ESCRITAS ══════════════════════════ */
@@ -345,21 +538,16 @@ window.GomDados = (function () {
 
   async function registrarComplementoEscola(p) {
     const id = p.id; const atual = await _getChamado(id);
+    const stAnt = M.normalizarStatus(atual.situacao);
+    const complemento = p.complemento || p.observacoes || p.observacao || '';
     if (Array.isArray(p.anexos) && p.anexos.length) await window.GomAnexos.upload(id, 'solicitacao', p.anexos);
-    await _update(id, { observacoes: M.appendObservacao(atual.observacoes, p.complemento || p.observacoes, 'Complemento da escola') });
-    await _log({ solicitacao_id: id, acao: 'Complemento registrado pela escola', observacao: p.complemento || p.observacoes || '', origem: 'portal escola' });
-    return { ok: true, id };
-  }
-
-  async function consultarProtocoloEscola(p) {
-    const protocolo = String(p.protocolo || p.id || '').trim();
-    if (!protocolo) return JSON.stringify({ ok: false, chamado: null });
-    const r = await window.SB.from('solicitacoes')
-      .select('*, escola:escolas(nome,tipo)')
-      .eq('id', protocolo)
-      .maybeSingle();
-    if (r.error || !r.data) return JSON.stringify({ ok: false, chamado: null });
-    return JSON.stringify({ ok: true, chamado: M.mapChamado(r.data, {}) });
+    await _update(id, {
+      situacao: 'Em análise',
+      observacoes: M.appendObservacao(atual.observacoes, complemento, 'Complemento da escola'),
+      data_hora_ultima_acao: _nowISO()
+    });
+    await _log({ solicitacao_id: id, acao: 'Complemento registrado pela escola', status_anterior: stAnt, status_novo: 'Em análise', observacao: complemento || '', origem: 'portal escola' });
+    return JSON.stringify({ ok: true, id, status: 'Em análise' });
   }
 
   return {
