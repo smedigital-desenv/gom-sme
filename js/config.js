@@ -22,7 +22,7 @@ const GOM_SUPABASE = {
     return;
   }
   window.SB = supabase.createClient(GOM_SUPABASE.URL, GOM_SUPABASE.ANON_KEY, {
-    auth: { persistSession: false } // login entra na Fase 4; por ora sem sessão
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } // login entra na Fase 4; por ora sem sessão
   });
   window.GOM_SUPABASE = GOM_SUPABASE;
   console.log('%c[GOM] Supabase conectado', 'background:#075f82;color:#fff;padding:2px 6px;border-radius:4px;');
