@@ -1912,6 +1912,15 @@
   color: #ffffff !important;
   box-shadow: 0 6px 14px rgba(4, 120, 87, .18) !important;
 }
+.campo-lista-legenda .badge.bg-secondary,
+.campo-status-dia-cell .badge.bg-secondary,
+.campo-acao-cell .badge.bg-secondary,
+.equipe-gerencial-card .badge.bg-secondary {
+  background: #6b7280 !important;
+  border: 1px solid #4b5563 !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 14px rgba(107, 114, 128, .18) !important;
+}
 .campo-lista-legenda .badge.bg-warning,
 .campo-status-dia-cell .badge.bg-warning,
 .campo-acao-cell .badge.bg-warning {
@@ -6249,7 +6258,7 @@ body {
   box-shadow: 0 8px 24px rgba(15, 23, 42, .06);
 }
 .equipe-gerencial-card.inativa {
-  opacity: .72;
+  opacity: 1;
   background: #f8fafc;
 }
 .equipe-gerencial-card-head {
@@ -6311,4 +6320,58 @@ body {
   #empresaEquipeTipoTabs .nav-link {
     width: 100%;
   }
+}
+
+/* ==========================================================
+   v15.4 - Correção definitiva de contraste dos badges da tela Gerenciar Equipes
+   Motivo: a regra .equipe-gerencial-card-head span deixava o texto dos badges cinza.
+   Este bloco fica no final do arquivo para vencer regras anteriores.
+   ========================================================== */
+.equipes-gerencial-lista .equipe-gerencial-card .equipe-gerencial-card-head span.badge,
+.equipes-gerencial-lista .equipe-gerencial-card .equipe-gerencial-card-head .badge,
+#main-content .equipes-gerencial-lista .equipe-gerencial-card .equipe-gerencial-card-head span.badge,
+#main-content .equipes-gerencial-lista .equipe-gerencial-card .equipe-gerencial-card-head .badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: auto !important;
+  min-width: 62px !important;
+  padding: 7px 10px !important;
+  border-radius: 9px !important;
+  font-size: .72rem !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  letter-spacing: .01em !important;
+  text-transform: none !important;
+  opacity: 1 !important;
+}
+
+.equipes-gerencial-lista .equipe-gerencial-card .equipe-gerencial-card-head span.badge.bg-success,
+.equipes-gerencial-lista .equipe-gerencial-card .equipe-gerencial-card-head .badge.bg-success,
+#main-content .equipes-gerencial-lista .equipe-gerencial-card .equipe-gerencial-card-head span.badge.bg-success,
+#main-content .equipes-gerencial-lista .equipe-gerencial-card .equipe-gerencial-card-head .badge.bg-success {
+  background-color: #047857 !important;
+  background: #047857 !important;
+  border: 1px solid #065f46 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  box-shadow: 0 6px 14px rgba(4, 120, 87, .18) !important;
+}
+
+.equipes-gerencial-lista .equipe-gerencial-card .equipe-gerencial-card-head span.badge.bg-secondary,
+.equipes-gerencial-lista .equipe-gerencial-card .equipe-gerencial-card-head .badge.bg-secondary,
+#main-content .equipes-gerencial-lista .equipe-gerencial-card .equipe-gerencial-card-head span.badge.bg-secondary,
+#main-content .equipes-gerencial-lista .equipe-gerencial-card .equipe-gerencial-card-head .badge.bg-secondary {
+  background-color: #475569 !important;
+  background: #475569 !important;
+  border: 1px solid #334155 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  box-shadow: 0 6px 14px rgba(71, 85, 105, .18) !important;
+}
+
+.equipes-gerencial-lista .equipe-gerencial-card.inativa,
+#main-content .equipes-gerencial-lista .equipe-gerencial-card.inativa {
+  opacity: 1 !important;
+  background: #f8fafc !important;
 }
