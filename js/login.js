@@ -1,11 +1,12 @@
 /* ============================================================================
  * GOM | SME — Login híbrido: Google OAuth + PIN Empresa
- * Ajuste de produção v4:
+ * Ajuste de produção v5:
  * - Corrige o bug de sair e entrar novamente de forma imediata.
- * - Exibe uma tela visual de saída para evitar sensação de travamento.
+ * - Exibe uma tela visual de saída sem recarregar a página, evitando tela em branco/travada.
  * - Remove corrida entre o callback automático do Supabase e o callback manual.
  * - Usa troca manual do code OAuth com detectSessionInUrl: false no config.js.
  * - Mantém um pequeno intervalo técnico interno após logout, sem exigir ação do usuário.
+ * - Mostra a transição também em recarregamentos com ?gom_logout de versões anteriores.
  * - Mantém PIN da empresa funcionando.
  * ========================================================================== */
 (function () {
@@ -46,6 +47,7 @@
   let authListenerRegistrado = false;
   let loginFinalizando = false;
   let loginGoogleIniciando = false;
+  let logoutEmAndamento = false;
 
   window.GomAuth = {
     perfil: null,
@@ -350,9 +352,14 @@
   };
 
   window.gomLogout = async function () {
+    if (logoutEmAndamento) return;
+    logoutEmAndamento = true;
+
+    var inicioSaida = Date.now();
     var ate = Date.now() + LOGOUT_GRACE_MS;
 
-    _mostrarTelaSaindo();
+    _mostrarTelaSaindo('Saindo do sistema...', 'Aguarde um instante enquanto encerramos sua sessão com segurança.');
+    _ocultarApp();
 
     sessionStorage.removeItem('gomPinPerfil');
     sessionStorage.removeItem('gomOauthStart');
@@ -372,15 +379,19 @@
     _limparStorageAuthSupabase();
     sessionStorage.setItem('gomLogoutAte', String(ate));
 
+    var passado = Date.now() - inicioSaida;
+    if (passado < 900) {
+      await _esperar(900 - passado);
+    }
+
     _atualizarTelaSaindo('Saída concluída', 'Abrindo a tela de login...');
+    await _esperar(250);
 
     try {
-      var limpa = window.location.origin + window.location.pathname + '?gom_logout=' + Date.now();
-      window.location.replace(limpa);
-    } catch (e) {
       _limparUrlOAuth();
-      _removerTelaSaindo();
       _mostrarTelaLogin();
+    } finally {
+      logoutEmAndamento = false;
     }
   };
 
@@ -421,19 +432,19 @@
     nav.parentElement.appendChild(btn);
   }
 
-  function _mostrarTelaSaindo() {
+  function _mostrarTelaSaindo(titulo, texto) {
     var old = document.getElementById('gomTelaSaindo');
     if (old) old.remove();
 
     var div = document.createElement('div');
     div.id = 'gomTelaSaindo';
     div.setAttribute('aria-live', 'polite');
-    div.style.cssText = 'position:fixed;inset:0;z-index:10050;background:rgba(0,43,94,.72);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px;';
+    div.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:rgba(0,43,94,.84);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px;';
     div.innerHTML = `
       <div style="width:min(420px,92vw);background:#fff;border-radius:20px;box-shadow:0 24px 70px rgba(0,0,0,.35);padding:34px 30px;text-align:center;">
         <div class="spinner-border text-primary" role="status" style="width:2.6rem;height:2.6rem;"></div>
-        <h3 id="gomSaindoTitulo" style="font-weight:900;color:#002b5e;margin:18px 0 6px;font-size:1.25rem;">Saindo do sistema...</h3>
-        <p id="gomSaindoTexto" style="color:#64748b;margin:0;font-size:.94rem;line-height:1.45;">Aguarde um instante enquanto encerramos sua sessão com segurança.</p>
+        <h3 id="gomSaindoTitulo" style="font-weight:900;color:#002b5e;margin:18px 0 6px;font-size:1.25rem;">${titulo || 'Saindo do sistema...'}</h3>
+        <p id="gomSaindoTexto" style="color:#64748b;margin:0;font-size:.94rem;line-height:1.45;">${texto || 'Aguarde um instante enquanto encerramos sua sessão com segurança.'}</p>
       </div>`;
     document.body.appendChild(div);
 
@@ -627,6 +638,12 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
+    var veioDeLogout = (window.location.search || '').indexOf('gom_logout=') >= 0 || _msLogoutRestante() > 0;
+    if (veioDeLogout) {
+      _mostrarTelaSaindo('Preparando acesso...', 'Estamos finalizando a saída anterior e abrindo a tela de login.');
+      _ocultarApp();
+    }
+
     setTimeout(async function () {
       try {
         _registrarListenerAuth();
