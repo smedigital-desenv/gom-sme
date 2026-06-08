@@ -1,8 +1,8 @@
 /* ============================================================================
  * GOM | SME — Login híbrido: Google OAuth + PIN Empresa
- * Ajuste de produção v5:
+ * Ajuste de produção v6:
  * - Corrige o bug de sair e entrar novamente de forma imediata.
- * - Exibe uma tela visual de saída sem recarregar a página, evitando tela em branco/travada.
+ * - Usa overlay único de autenticação para evitar tela congelada entre logout e login.
  * - Remove corrida entre o callback automático do Supabase e o callback manual.
  * - Usa troca manual do code OAuth com detectSessionInUrl: false no config.js.
  * - Mantém um pequeno intervalo técnico interno após logout, sem exigir ação do usuário.
@@ -372,7 +372,10 @@
 
     try {
       if (window.SB && window.SB.auth) {
-        await window.SB.auth.signOut({ scope: 'local' });
+        await Promise.race([
+          window.SB.auth.signOut({ scope: 'local' }),
+          _esperar(1200)
+        ]);
       }
     } catch (e) {}
 
@@ -432,27 +435,28 @@
     nav.parentElement.appendChild(btn);
   }
 
-  function _mostrarTelaSaindo(titulo, texto) {
-    var old = document.getElementById('gomTelaSaindo');
-    if (old) old.remove();
+  function _obterOverlayAuth() {
+    var overlay = document.getElementById('gomAuthOverlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'gomAuthOverlay';
+      overlay.setAttribute('aria-live', 'polite');
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:linear-gradient(135deg,#002b5e,#075f82);display:flex;align-items:center;justify-content:center;padding:20px;';
+      document.body.appendChild(overlay);
+    }
+    overlay.style.display = 'flex';
+    return overlay;
+  }
 
-    var div = document.createElement('div');
-    div.id = 'gomTelaSaindo';
-    div.setAttribute('aria-live', 'polite');
-    div.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:rgba(0,43,94,.84);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px;';
-    div.innerHTML = `
-      <div style="width:min(420px,92vw);background:#fff;border-radius:20px;box-shadow:0 24px 70px rgba(0,0,0,.35);padding:34px 30px;text-align:center;">
+  function _mostrarTelaSaindo(titulo, texto) {
+    var overlay = _obterOverlayAuth();
+    overlay.style.background = 'linear-gradient(135deg,#002b5e,#075f82)';
+    overlay.innerHTML = `
+      <div style="width:min(430px,92vw);background:#fff;border-radius:20px;box-shadow:0 24px 70px rgba(0,0,0,.35);padding:34px 30px;text-align:center;">
         <div class="spinner-border text-primary" role="status" style="width:2.6rem;height:2.6rem;"></div>
         <h3 id="gomSaindoTitulo" style="font-weight:900;color:#002b5e;margin:18px 0 6px;font-size:1.25rem;">${titulo || 'Saindo do sistema...'}</h3>
         <p id="gomSaindoTexto" style="color:#64748b;margin:0;font-size:.94rem;line-height:1.45;">${texto || 'Aguarde um instante enquanto encerramos sua sessão com segurança.'}</p>
       </div>`;
-    document.body.appendChild(div);
-
-    document.querySelectorAll('button,a,input,select,textarea').forEach(function (el) {
-      if (!el.closest || !el.closest('#gomTelaSaindo')) {
-        try { el.setAttribute('data-gom-bloqueado-saida', '1'); } catch (e) {}
-      }
-    });
   }
 
   function _atualizarTelaSaindo(titulo, texto) {
@@ -462,28 +466,19 @@
     if (p && texto) p.textContent = texto;
   }
 
-  function _removerTelaSaindo() {
-    var el = document.getElementById('gomTelaSaindo');
+  function _removerOverlayAuth() {
+    var el = document.getElementById('gomAuthOverlay');
     if (el) el.remove();
   }
 
   function _mostrarTelaLogin() {
-    _removerTelaSaindo();
     _ocultarApp();
     _registrarListenerAuth();
 
-    var old = document.getElementById('gomTelaLogin');
-    if (old) {
-      old.style.display = 'flex';
-      _prepararBotaoGooglePosLogout();
-      return;
-    }
-
-    var div = document.createElement('div');
-    div.id = 'gomTelaLogin';
-    div.style.cssText = 'position:fixed;inset:0;background:linear-gradient(135deg,#002b5e,#075f82);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;';
-    div.innerHTML = `
-      <div style="background:#fff;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.4);padding:40px 36px;max-width:420px;width:100%;">
+    var overlay = _obterOverlayAuth();
+    overlay.style.background = 'linear-gradient(135deg,#002b5e,#075f82)';
+    overlay.innerHTML = `
+      <div id="gomTelaLogin" style="background:#fff;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.4);padding:40px 36px;max-width:420px;width:100%;">
         <div style="text-align:center;margin-bottom:24px;">
           <i class="bi bi-gear-wide-connected" style="font-size:2.8rem;color:#075f82;"></i>
           <h2 style="font-weight:900;color:#002b5e;margin:8px 0 4px;">GOM | SME</h2>
@@ -521,7 +516,6 @@
         </div>
       </div>`;
 
-    document.body.appendChild(div);
     _prepararBotaoGooglePosLogout();
   }
 
@@ -536,7 +530,7 @@
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Preparando acesso...';
 
     setTimeout(function () {
-      if (!document.getElementById('gomTelaLogin')) return;
+      if (!document.getElementById('gomAuthOverlay')) return;
       var b = document.getElementById('gomBtnGoogle');
       if (!b) return;
       b.disabled = false;
@@ -593,8 +587,7 @@
   }
 
   function _loginSucesso() {
-    var el = document.getElementById('gomTelaLogin');
-    if (el) el.remove();
+    _removerOverlayAuth();
     _mostrarApp();
     window.gomAplicarPerfil();
   }
