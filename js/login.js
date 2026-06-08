@@ -1,12 +1,11 @@
 /* ============================================================================
  * GOM | SME — Login híbrido: Google OAuth + PIN Empresa
- * Ajuste de produção v2:
- * - Corrige loop do OAuth quando volta do Google.
- * - Corrige bug específico: sair do sistema e tentar entrar novamente.
- * - Faz logout duro: limpa estado OAuth antigo e recarrega a aplicação.
- * - Mantém sessão persistida pelo Supabase.
- * - Usa mensagens neutras de acesso.
- * - Limita tentativas do PIN no navegador.
+ * Ajuste de produção v3:
+ * - Corrige o bug de sair e entrar novamente de forma imediata.
+ * - Remove corrida entre o callback automático do Supabase e o callback manual.
+ * - Usa troca manual do code OAuth com detectSessionInUrl: false no config.js.
+ * - Mantém um pequeno intervalo técnico interno após logout, sem exigir ação do usuário.
+ * - Mantém PIN da empresa funcionando.
  * ========================================================================== */
 (function () {
   'use strict';
@@ -40,8 +39,12 @@
 
   const MAX_TENTATIVAS_PIN = 5;
   const BLOQUEIO_PIN_MS = 10 * 60 * 1000;
+  const LOGOUT_GRACE_MS = 1800;
+  const AUTH_READY_TIMEOUT_MS = 6000;
+
   let authListenerRegistrado = false;
   let loginFinalizando = false;
+  let loginGoogleIniciando = false;
 
   window.GomAuth = {
     perfil: null,
@@ -58,16 +61,15 @@
   window.gomAuthInit = async function () {
     await _aguardarSupabaseAuthPronto();
 
-    var sessao = null;
-
     if (_temCallbackOAuth()) {
-      sessao = await _resolverCallbackOAuthManual();
+      var sessaoCallback = await _resolverCallbackOAuthManual();
+      if (sessaoCallback && sessaoCallback.user) {
+        await _finalizarLoginComSessao(sessaoCallback);
+        return true;
+      }
     }
 
-    if (!sessao) {
-      sessao = await _obterSessaoComTentativas(_temCallbackOAuth() ? 12000 : 1800);
-    }
-
+    var sessao = await _obterSessaoComTentativas(_temCallbackOAuth() ? 12000 : 2200);
     if (sessao && sessao.user) {
       await _finalizarLoginComSessao(sessao);
       return true;
@@ -85,7 +87,8 @@
   };
 
   async function _aguardarSupabaseAuthPronto() {
-    for (var i = 0; i < 40; i++) {
+    var inicio = Date.now();
+    while (Date.now() - inicio <= AUTH_READY_TIMEOUT_MS) {
       if (window.SB && window.SB.auth && typeof window.SB.auth.getSession === 'function') return;
       await _esperar(100);
     }
@@ -94,39 +97,57 @@
   async function _resolverCallbackOAuthManual() {
     try {
       var params = new URLSearchParams(window.location.search || '');
+      var erro = params.get('error');
       var code = params.get('code');
+
+      if (erro) {
+        _limparUrlOAuth();
+        return null;
+      }
+
       if (!code || !window.SB || !window.SB.auth || typeof window.SB.auth.exchangeCodeForSession !== 'function') {
         return null;
       }
 
       var resp = await window.SB.auth.exchangeCodeForSession(code);
+      if (resp && resp.error) throw resp.error;
+
       if (resp && resp.data && resp.data.session && resp.data.session.user) {
+        sessionStorage.removeItem('gomOauthStart');
+        _limparUrlOAuth();
         return resp.data.session;
       }
     } catch (e) {
       if (window.gomWarn) window.gomWarn('[GOM] Callback OAuth manual não finalizado. Tentando sessão persistida.', e);
     }
+
+    var sessao = await _obterSessaoComTentativas(8000);
+    if (sessao && sessao.user) {
+      sessionStorage.removeItem('gomOauthStart');
+      _limparUrlOAuth();
+      return sessao;
+    }
+
     return null;
   }
 
   async function _finalizarLoginComSessao(sessao) {
     if (!sessao || !sessao.user) return false;
-
-    if (loginFinalizando) {
-      // Outro fluxo já está finalizando o login. Evita tela piscando ou duplo loadPage.
-      return true;
-    }
+    if (loginFinalizando) return true;
 
     loginFinalizando = true;
     try {
       sessionStorage.removeItem('gomPinPerfil');
+      sessionStorage.removeItem('gomLogoutAte');
+      sessionStorage.removeItem('gomOauthStart');
+
       GomAuth.session = sessao;
       GomAuth.email = sessao.user.email || '';
       await _carregarPerfil(GomAuth.email);
       _limparUrlOAuth();
       return true;
     } finally {
-      setTimeout(function () { loginFinalizando = false; }, 600);
+      setTimeout(function () { loginFinalizando = false; }, 500);
     }
   }
 
@@ -163,11 +184,29 @@
   }
 
   function _limparUrlOAuth() {
-    if (!_temCallbackOAuth()) return;
     try {
       var limpa = window.location.origin + window.location.pathname;
       window.history.replaceState({}, document.title, limpa);
     } catch (e) {}
+  }
+
+  function _msLogoutRestante() {
+    var ate = Number(sessionStorage.getItem('gomLogoutAte') || 0);
+    if (!ate) return 0;
+    var restante = ate - Date.now();
+    if (restante <= 0) {
+      sessionStorage.removeItem('gomLogoutAte');
+      return 0;
+    }
+    return restante;
+  }
+
+  async function _aguardarLogoutRecente() {
+    var restante = _msLogoutRestante();
+    if (restante > 0) {
+      await _esperar(restante + 100);
+      sessionStorage.removeItem('gomLogoutAte');
+    }
   }
 
   function _limparStorageAuthSupabase() {
@@ -208,15 +247,28 @@
   }
 
   window.gomEntrarGoogle = async function () {
+    if (loginGoogleIniciando) return;
+    loginGoogleIniciando = true;
+
     var btn = document.getElementById('gomBtnGoogle');
     if (btn) {
       btn.disabled = true;
-      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Redirecionando...';
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Preparando acesso...';
     }
 
     try {
+      await _aguardarLogoutRecente();
+
+      if (btn) {
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Redirecionando...';
+      }
+
       sessionStorage.removeItem('gomPinPerfil');
+      sessionStorage.setItem('gomOauthStart', String(Date.now()));
+
       _limparStorageAuthSupabase();
+      sessionStorage.setItem('gomOauthStart', String(Date.now()));
+
       var resp = await window.SB.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -229,6 +281,8 @@
 
       if (resp && resp.error) throw resp.error;
     } catch (e) {
+      loginGoogleIniciando = false;
+      sessionStorage.removeItem('gomOauthStart');
       if (btn) {
         btn.disabled = false;
         btn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" style="margin-right:8px;">Entrar com Google Institucional';
@@ -281,7 +335,8 @@
       }
 
       _limparFalhasPin();
-      try { await window.SB.auth.signOut(); } catch (e) {}
+      try { await window.SB.auth.signOut({ scope: 'local' }); } catch (e) {}
+      _limparStorageAuthSupabase();
       sessionStorage.setItem('gomPinPerfil', 'EMPRESA');
       GomAuth.perfil = 'EMPRESA';
       GomAuth.email = 'empresa@pin';
@@ -294,10 +349,13 @@
   };
 
   window.gomLogout = async function () {
-    // Logout duro: evita o bug de sair e, ao entrar novamente com Google,
-    // o navegador reaproveitar estado antigo de OAuth/Supabase e voltar para o login.
+    var ate = Date.now() + LOGOUT_GRACE_MS;
+
     sessionStorage.removeItem('gomPinPerfil');
+    sessionStorage.removeItem('gomOauthStart');
+    sessionStorage.setItem('gomLogoutAte', String(ate));
     _limparFalhasPin();
+
     GomAuth.perfil = null;
     GomAuth.email = null;
     GomAuth.session = null;
@@ -309,6 +367,7 @@
     } catch (e) {}
 
     _limparStorageAuthSupabase();
+    sessionStorage.setItem('gomLogoutAte', String(ate));
 
     try {
       var limpa = window.location.origin + window.location.pathname + '?gom_logout=' + Date.now();
@@ -363,6 +422,7 @@
     var old = document.getElementById('gomTelaLogin');
     if (old) {
       old.style.display = 'flex';
+      _prepararBotaoGooglePosLogout();
       return;
     }
 
@@ -409,6 +469,27 @@
       </div>`;
 
     document.body.appendChild(div);
+    _prepararBotaoGooglePosLogout();
+  }
+
+  function _prepararBotaoGooglePosLogout() {
+    var restante = _msLogoutRestante();
+    if (restante <= 0) return;
+
+    var btn = document.getElementById('gomBtnGoogle');
+    if (!btn) return;
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Preparando acesso...';
+
+    setTimeout(function () {
+      if (!document.getElementById('gomTelaLogin')) return;
+      var b = document.getElementById('gomBtnGoogle');
+      if (!b) return;
+      b.disabled = false;
+      b.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" style="margin-right:10px;vertical-align:middle;">Entrar com Google Institucional';
+      sessionStorage.removeItem('gomLogoutAte');
+    }, restante + 120);
   }
 
   function _registrarListenerAuth() {
@@ -416,7 +497,7 @@
     authListenerRegistrado = true;
 
     window.SB.auth.onAuthStateChange(async function (event, session) {
-      if (event === 'SIGNED_IN' && session && session.user) {
+      if (event === 'SIGNED_IN' && session && session.user && !_temCallbackOAuth()) {
         var ok = await _finalizarLoginComSessao(session);
         if (ok) _loginSucesso();
       }
