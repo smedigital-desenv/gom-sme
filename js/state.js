@@ -1,4 +1,4 @@
-// Tela aparece primeiro; os dados carregam em seguida no painel.
+// Login aparece primeiro; dados podem carregar em segundo plano sem expor telas internas.
 document.addEventListener('DOMContentLoaded', iniciarSistema);
 
 function iniciarSistema() {
@@ -59,7 +59,7 @@ function carregarBasesIniciais() {
       window.listaEquipesEmpresaGlobal = Array.isArray(res?.equipesEmpresa) ? res.equipesEmpresa : [];
       if (res && res.usuario) { window.usuarioAtualGom = res.usuario; aplicarPermissoesInterface(); }
       basesCarregadas = true;
-      console.log('[GOM] Bases carregadas:', { escolas: listaEscolasGlobal.length, equipes: listaEquipesGlobal.length });
+      (window.gomLog || console.log)('[GOM] Bases carregadas:', { escolas: listaEscolasGlobal.length, equipes: listaEquipesGlobal.length });
       if (telaAtual === 'cadastro' && typeof inicializarTelaCadastro === 'function') inicializarTelaCadastro();
       if (telaAtual === 'empresa' && typeof renderizarTela === 'function') renderizarTela();
       if (telaAtual === 'dashboard' && typeof renderDashboard === 'function') renderDashboard();
@@ -82,7 +82,7 @@ function carregarChamados(opcoes = {}) {
       listaChamadosGlobal = normalizarRespostaChamadosFrontend_(res);
       dadosCarregados = true;
       carregandoChamados = false;
-      console.log('[GOM] Chamados carregados via gomListarChamadosWebV3Json:', listaChamadosGlobal.length, listaChamadosGlobal.slice(0, 3));
+      (window.gomLog || console.log)('[GOM] Chamados carregados via gomListarChamadosWebV3Json:', listaChamadosGlobal.length, listaChamadosGlobal.slice(0, 3));
       if (opcoes.callback) opcoes.callback(listaChamadosGlobal);
       if (opcoes.renderizar !== false && typeof renderizarTela === 'function') renderizarTela();
     })
@@ -147,7 +147,7 @@ function carregarObras(opcoes = {}) {
       listaObrasGlobal = normalizarRespostaObrasFrontend_(res);
       obrasCarregadas = true;
       carregandoObras = false;
-      console.log('[GOM] Obras carregadas via gomListarObrasWebV3Json:', listaObrasGlobal.length, listaObrasGlobal.slice(0, 3));
+      (window.gomLog || console.log)('[GOM] Obras carregadas via gomListarObrasWebV3Json:', listaObrasGlobal.length, listaObrasGlobal.slice(0, 3));
       if (opcoes.callback) opcoes.callback(listaObrasGlobal);
       if (opcoes.renderizar !== false && telaAtual === 'obras' && typeof renderizarTela === 'function') renderizarTela();
     })

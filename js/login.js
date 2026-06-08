@@ -1,8 +1,8 @@
 /* ============================================================================
  * GOM | SME — Login híbrido: Google OAuth + PIN Empresa
- * Ajuste de produção v6:
+ * Ajuste de produção v7:
  * - Corrige o bug de sair e entrar novamente de forma imediata.
- * - Usa overlay único de autenticação para evitar tela congelada entre logout e login.
+ * - Usa bloqueio visual imediato para impedir que telas/dados apareçam antes do login.
  * - Remove corrida entre o callback automático do Supabase e o callback manual.
  * - Usa troca manual do code OAuth com detectSessionInUrl: false no config.js.
  * - Mantém um pequeno intervalo técnico interno após logout, sem exigir ação do usuário.
@@ -60,6 +60,13 @@
       return PAGINA[this.perfil] || 'dashboard';
     }
   };
+
+  // Bloqueio visual imediato: evita que qualquer tela interna apareça antes da autenticação.
+  // O carregamento de dados pode continuar em segundo plano, mas a interface fica protegida.
+  try {
+    _ocultarApp();
+    _mostrarTelaVerificando();
+  } catch (e) {}
 
   window.gomAuthInit = async function () {
     await _aguardarSupabaseAuthPronto();
@@ -448,6 +455,17 @@
     return overlay;
   }
 
+  function _mostrarTelaVerificando() {
+    var overlay = _obterOverlayAuth();
+    overlay.style.background = 'linear-gradient(135deg,#002b5e,#075f82)';
+    overlay.innerHTML = `
+      <div style="width:min(430px,92vw);background:#fff;border-radius:20px;box-shadow:0 24px 70px rgba(0,0,0,.35);padding:34px 30px;text-align:center;">
+        <div class="spinner-border text-primary" role="status" style="width:2.6rem;height:2.6rem;"></div>
+        <h3 style="font-weight:900;color:#002b5e;margin:18px 0 6px;font-size:1.25rem;">Verificando acesso...</h3>
+        <p style="color:#64748b;margin:0;font-size:.94rem;line-height:1.45;">Aguarde um instante. A tela de login será exibida antes das informações do sistema.</p>
+      </div>`;
+  }
+
   function _mostrarTelaSaindo(titulo, texto) {
     var overlay = _obterOverlayAuth();
     overlay.style.background = 'linear-gradient(135deg,#002b5e,#075f82)';
@@ -609,6 +627,8 @@
   }
 
   function _ocultarApp() {
+    try { document.documentElement.classList.add('gom-auth-gate'); } catch (e) {}
+    try { if (document.body) document.body.classList.add('gom-auth-gate'); } catch (e) {}
     ['nav-header','mobile-topbar','main','mobile-bottom-nav'].forEach(function (classe) {
       var e = document.querySelector('.' + classe) || document.querySelector(classe);
       if (e) e.style.display = 'none';
@@ -618,6 +638,8 @@
   }
 
   function _mostrarApp() {
+    try { document.documentElement.classList.remove('gom-auth-gate'); } catch (e) {}
+    try { if (document.body) document.body.classList.remove('gom-auth-gate'); } catch (e) {}
     ['nav-header','mobile-topbar','mobile-bottom-nav'].forEach(function (classe) {
       var e = document.querySelector('.' + classe);
       if (e) e.style.display = '';
@@ -676,6 +698,6 @@
         _mostrarTelaLogin();
         _msg('Não foi possível carregar o acesso. Atualize a página e tente novamente.', 'erro');
       }
-    }, 300);
+    }, 30);
   });
 })();
