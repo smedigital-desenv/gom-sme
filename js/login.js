@@ -1,7 +1,8 @@
 /* ============================================================================
  * GOM | SME — Login híbrido: Google OAuth + PIN Empresa
- * Ajuste de produção v3:
+ * Ajuste de produção v4:
  * - Corrige o bug de sair e entrar novamente de forma imediata.
+ * - Exibe uma tela visual de saída para evitar sensação de travamento.
  * - Remove corrida entre o callback automático do Supabase e o callback manual.
  * - Usa troca manual do code OAuth com detectSessionInUrl: false no config.js.
  * - Mantém um pequeno intervalo técnico interno após logout, sem exigir ação do usuário.
@@ -351,6 +352,8 @@
   window.gomLogout = async function () {
     var ate = Date.now() + LOGOUT_GRACE_MS;
 
+    _mostrarTelaSaindo();
+
     sessionStorage.removeItem('gomPinPerfil');
     sessionStorage.removeItem('gomOauthStart');
     sessionStorage.setItem('gomLogoutAte', String(ate));
@@ -369,11 +372,14 @@
     _limparStorageAuthSupabase();
     sessionStorage.setItem('gomLogoutAte', String(ate));
 
+    _atualizarTelaSaindo('Saída concluída', 'Abrindo a tela de login...');
+
     try {
       var limpa = window.location.origin + window.location.pathname + '?gom_logout=' + Date.now();
       window.location.replace(limpa);
     } catch (e) {
       _limparUrlOAuth();
+      _removerTelaSaindo();
       _mostrarTelaLogin();
     }
   };
@@ -415,7 +421,43 @@
     nav.parentElement.appendChild(btn);
   }
 
+  function _mostrarTelaSaindo() {
+    var old = document.getElementById('gomTelaSaindo');
+    if (old) old.remove();
+
+    var div = document.createElement('div');
+    div.id = 'gomTelaSaindo';
+    div.setAttribute('aria-live', 'polite');
+    div.style.cssText = 'position:fixed;inset:0;z-index:10050;background:rgba(0,43,94,.72);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px;';
+    div.innerHTML = `
+      <div style="width:min(420px,92vw);background:#fff;border-radius:20px;box-shadow:0 24px 70px rgba(0,0,0,.35);padding:34px 30px;text-align:center;">
+        <div class="spinner-border text-primary" role="status" style="width:2.6rem;height:2.6rem;"></div>
+        <h3 id="gomSaindoTitulo" style="font-weight:900;color:#002b5e;margin:18px 0 6px;font-size:1.25rem;">Saindo do sistema...</h3>
+        <p id="gomSaindoTexto" style="color:#64748b;margin:0;font-size:.94rem;line-height:1.45;">Aguarde um instante enquanto encerramos sua sessão com segurança.</p>
+      </div>`;
+    document.body.appendChild(div);
+
+    document.querySelectorAll('button,a,input,select,textarea').forEach(function (el) {
+      if (!el.closest || !el.closest('#gomTelaSaindo')) {
+        try { el.setAttribute('data-gom-bloqueado-saida', '1'); } catch (e) {}
+      }
+    });
+  }
+
+  function _atualizarTelaSaindo(titulo, texto) {
+    var t = document.getElementById('gomSaindoTitulo');
+    var p = document.getElementById('gomSaindoTexto');
+    if (t && titulo) t.textContent = titulo;
+    if (p && texto) p.textContent = texto;
+  }
+
+  function _removerTelaSaindo() {
+    var el = document.getElementById('gomTelaSaindo');
+    if (el) el.remove();
+  }
+
   function _mostrarTelaLogin() {
+    _removerTelaSaindo();
     _ocultarApp();
     _registrarListenerAuth();
 
