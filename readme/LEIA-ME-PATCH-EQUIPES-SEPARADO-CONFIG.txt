@@ -1,0 +1,48 @@
+GOM | Patch — Gerenciamento de Equipes separado + Configurações
+
+O que muda:
+1) A aba Empresa > Equipes agora fica restrita às equipes da empresa.
+   - Não aparece alternância para Secretaria/GOM dentro do Painel da Empresa.
+   - A empresa gerencia somente as equipes dela e seus integrantes.
+
+2) Foi criada a tela separada Mais > Gerenciar Equipes.
+   - Essa tela é administrativa.
+   - Permite alternar entre Equipes da empresa e Equipes da Secretaria/GOM.
+   - Permite cadastrar equipe, adicionar integrantes, inativar/reativar equipe e inativar/reativar integrante.
+
+3) Mantém a correção do salvamento da tela Configurações.
+   - api.js aceita payload { configuracoes: [...] }.
+   - dados.js faz upsert corretamente na tabela configuracoes.
+
+Arquivos alterados:
+- index.html
+- css/styles.css
+- js/gom-config.js
+- js/router.js
+- js/empresa.js
+- js/supabase/api.js
+- js/supabase/dados.js
+- sql/01_schema.sql
+- sql/02_seed_configuracoes_padrao.sql
+- sql/03_equipe_membros.sql
+
+Passo obrigatório no Supabase:
+- Rode o arquivo sql/03_equipe_membros.sql no SQL Editor, caso ainda não tenha rodado.
+- Se a tela Configurações estiver vazia, rode também sql/02_seed_configuracoes_padrao.sql.
+
+Como aplicar:
+1) Copie os arquivos deste patch para a pasta principal do projeto.
+2) Substitua os arquivos existentes.
+3) Rode:
+
+cd /d "C:\Users\DNMCPEREZ\Documents\Projetos\Obras\gom-sme-main"
+git status
+git add .
+git commit -m "Separa gerenciamento de equipes e corrige configuracoes"
+git push origin main
+
+Depois:
+- Aguardar 1 a 3 minutos.
+- Abrir o sistema.
+- Pressionar Ctrl + F5.
+- Testar Empresa > Equipes e Mais > Gerenciar Equipes.

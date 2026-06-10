@@ -1,0 +1,19 @@
+GOM | SME - Patch v8 - Login mais rápido após Google
+
+Arquivos para substituir:
+- js/config.js
+- js/login.js
+
+Correções:
+- Reduz a permanência na tela “Verificando acesso...” após o retorno do Google.
+- Usa cache curto do perfil já validado para liberar a interface mais rápido no relogin.
+- Mantém confirmação do perfil no Supabase em segundo plano.
+- Mostra a tela de login rapidamente quando não há sessão ativa, sem esperar consulta demorada de configuração.
+- Preserva login Google, PIN da empresa, saída visual e proteção contra exibição das telas antes do login.
+
+Depois de aplicar:
+1. git status
+2. git add js/config.js js/login.js
+3. git commit -m "Otimiza verificacao de acesso apos login Google"
+4. git push origin main
+5. Abrir o sistema com Ctrl + F5

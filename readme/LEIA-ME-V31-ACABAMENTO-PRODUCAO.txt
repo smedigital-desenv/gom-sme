@@ -1,0 +1,33 @@
+GOM | SME - Patch v31 - Acabamento produção
+
+Arquivos alterados/adicionados:
+- index.html
+- css/styles.css
+- js/producao.js
+- js/acessibilidade.js
+- js/ui-feedback.js
+
+O que faz:
+1. Reduz logs internos [GOM] no console em produção.
+2. Mantém erros reais visíveis no console.
+3. Permite ativar debug temporário com window.gomSetDebug(true) ou ?debug=1.
+4. Cria labels invisíveis para campos de formulário sem label associado.
+5. Corrige labels soltos quando houver label sem for antes de um input/select/textarea.
+6. Adiciona feedback visual padrão via window.gomToast().
+7. Adiciona helper window.gomMarcarBotaoSalvando() para botões de salvamento.
+8. Ajusta acabamento visual/foco dos KPIs clicáveis.
+
+Comandos sugeridos:
+cd /d "C:\Users\DNMCPEREZ\Documents\Projetos\Obras\gom-sme-main"
+git status
+git add index.html css/styles.css js/producao.js js/acessibilidade.js js/ui-feedback.js
+git commit -m "Acabamento de producao console labels e feedback visual"
+git push origin main
+
+Teste:
+1. Abrir o sistema com Ctrl+F5.
+2. Confirmar login Google e PIN empresa.
+3. Confirmar que logs comuns [GOM] não aparecem mais no console.
+4. Confirmar que erros reais continuam aparecendo.
+5. Rodar no console window.gomSetDebug(true) para ativar logs temporariamente.
+6. Testar formulários de Login, Fila, Empresa, Cadastro e Configurações.

@@ -1,0 +1,34 @@
+GOM | SME - Patch v9
+
+Correções incluídas:
+
+1. Sidebar da Secretaria no formato solicitado
+- Ao clicar em Secretaria, abre o Dashboard Operacional GOM.
+- A sidebar fica fixa na lateral esquerda apenas nas telas da Secretaria.
+- Fechada: mostra hamburguer e ícones das telas.
+- Aberta: expande por cima do conteúdo, sem empurrar os dados.
+- Recolhe automaticamente ao clicar em uma tela, clicar fora ou tirar o mouse de cima.
+- Empresa e Cadastro continuam no topo, fora do menu da Secretaria.
+
+2. Correção da tela de verificação de acesso
+- A tela “Verificando acesso...” foi encurtada.
+- O callback do Google agora tem limite de espera.
+- A consulta do perfil no Supabase também tem limite de espera.
+- Se houver cache curto do perfil, o sistema abre praticamente instantâneo.
+- Se o Google/Supabase não responder dentro do limite, o usuário volta para a tela de login com mensagem clara, sem ficar preso por minutos.
+
+Arquivos para substituir:
+- index.html
+- css/styles.css
+- js/login.js
+- js/router.js
+
+Comandos sugeridos:
+cd /d "C:\Users\DNMCPEREZ\Documents\Projetos\Obras\gom-sme-main"
+
+git status
+git add index.html css/styles.css js/login.js js/router.js
+git commit -m "Ajusta sidebar da secretaria e otimiza verificacao de acesso"
+git push origin main
+
+Depois abrir com Ctrl + F5.

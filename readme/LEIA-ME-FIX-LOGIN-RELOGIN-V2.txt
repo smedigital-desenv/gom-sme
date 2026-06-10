@@ -1,0 +1,39 @@
+GOM | SME — Patch v2 do login Google
+
+Arquivos deste pacote:
+- js/config.js
+- js/login.js
+
+Correção principal:
+- Corrige o bug específico de: entrar com Google, clicar em Sair do sistema e tentar entrar novamente.
+
+O que foi ajustado:
+1. Logout duro: ao sair, o sistema remove o estado antigo do Supabase/OAuth e recarrega a página limpa.
+2. Remove resíduos de PKCE/OAuth/localStorage/sessionStorage relacionados ao Supabase.
+3. Ao voltar do Google, tenta finalizar o callback OAuth manualmente com exchangeCodeForSession antes de desistir.
+4. Aumenta o tempo de espera do callback do Google para até 12 segundos.
+5. Evita finalização dupla do login, que podia deixar a tela piscando ou voltar para login.
+6. Mantém PIN da empresa funcionando.
+7. Mantém GOM_DEBUG=false no config.js.
+
+Como aplicar:
+1. Substitua no projeto:
+   - js/config.js
+   - js/login.js
+
+2. Rode:
+   cd /d "C:\Users\DNMCPEREZ\Documents\Projetos\Obras\gom-sme-main"
+   git status
+   git add js/config.js js/login.js
+   git commit -m "Corrige relogin Google apos sair do sistema"
+   git push origin main
+
+3. Abra o sistema e pressione Ctrl + F5.
+
+Teste obrigatório:
+1. Entrar com Google.
+2. Confirmar window.GomAuth.perfil e window.GomAuth.email.
+3. Clicar em Sair.
+4. Entrar novamente com Google.
+5. Confirmar que não voltou para loop.
+6. Testar PIN da empresa novamente.

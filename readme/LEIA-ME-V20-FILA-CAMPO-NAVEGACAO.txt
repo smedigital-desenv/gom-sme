@@ -1,0 +1,21 @@
+GOM SME - Patch v20
+
+Ajustes incluídos:
+1. Fila: volta a ter data individual por card.
+2. Fila: data global no topo agora preenche os cards visíveis, mas não sobrescreve automaticamente datas individuais.
+3. Fila: salvar usa a data individual de cada card.
+4. Fila: observações/anexos ficam escondidos no agendamento de visita e aparecem somente quando o status exigir encaminhamento com documentação, como orçamento/emergencial/OS.
+5. Modal do chamado: datas em formato brasileiro e conversão segura para ISO no envio.
+6. Campo: Acompanhamento diário passa a usar um seletor de data e mostra somente registros do dia selecionado.
+7. Navegação: preserva a tela atual em recarregamento/restauração de aba, evitando voltar ao Dashboard sem o usuário escolher.
+
+Arquivos do patch:
+index.html
+css/styles.css
+js/date-br.js
+js/modal-chamados.js
+js/triagem-fila-inline.js
+js/fila-secretaria.js
+js/campo.js
+js/router.js
+js/state.js

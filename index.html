@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GOM | SME</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23004b8d'/%3E%3Ctext x='50%25' y='56%25' text-anchor='middle' font-size='34' fill='white'%3E%E2%9A%99%3C/text%3E%3C/svg%3E">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="css/styles.css">
+
+  <style id="gom-auth-gate-style">
+    body.gom-auth-gate .nav-header,
+    body.gom-auth-gate .mobile-topbar,
+    body.gom-auth-gate main,
+    body.gom-auth-gate .mobile-bottom-nav,
+    body.gom-auth-gate .mobile-more-backdrop,
+    body.gom-auth-gate .gom-secretaria-backdrop,
+    body.gom-auth-gate .gom-secretaria-sidebar {
+      display: none !important;
+      visibility: hidden !important;
+    }
+    body.gom-auth-gate #loader {
+      display: flex !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+      pointer-events: auto !important;
+    }
+    body.gom-auth-gate #gomAuthOverlay {
+      display: flex !important;
+    }
+  </style>
+</head>
+<body class="gom-auth-gate">
+
+  <div id="loader" class="loader-overlay">
+    <div class="loader-card">
+      <div class="spinner-border text-primary"></div>
+      <div class="mt-3 fw-bold">Carregando acesso...</div>
+      <div class="text-muted small mt-2">Aguarde um instante.</div>
+    </div>
+  </div>
+
+  <header class="nav-header nav-desktop gom-top-nav">
+    <div class="brand">
+      <i class="bi bi-gear-wide-connected text-info"></i>
+      <span>GOM | SME</span>
+      <div id="perfilUsuarioBadge" class="perfil-usuario-badge"></div>
+    </div>
+
+    <nav class="nav-actions nav-actions-primary gom-top-actions" aria-label="Menu principal">
+      <button id="btn-secretaria" class="btn-nav gom-top-secretaria active" data-page="dashboard" onclick="loadSecretariaHome()">
+        <i class="bi bi-layout-sidebar-inset"></i><span>Secretaria</span>
+      </button>
+      <button id="btn-empresa" class="btn-nav gom-top-empresa" data-page="empresa" onclick="loadPage('empresa')">
+        <i class="bi bi-building-check"></i><span>Empresa</span>
+      </button>
+      <button id="btn-cadastro" class="btn-nav gom-top-cadastro" data-page="cadastro" onclick="loadPage('cadastro')">
+        <i class="bi bi-plus-circle"></i><span>Cadastro</span>
+      </button>
+    </nav>
+  </header>
+
+  <aside class="gom-secretaria-sidebar" id="gomSecretariaSidebar" aria-label="Menu lateral da Secretaria" onmouseleave="fecharMenuSecretaria()">
+    <button type="button" class="gom-secretaria-hamb" onclick="toggleMenuSecretaria(event)" aria-label="Abrir menu da Secretaria" title="Menu da Secretaria">
+      <i class="bi bi-list gom-secretaria-hamb-icon" aria-hidden="true"></i>
+      <span class="gom-secretaria-label">Secretaria</span>
+    </button>
+    <div class="gom-secretaria-sidebar-items">
+      <button type="button" class="gom-secretaria-iconbtn active" data-page="dashboard" onclick="loadSecretariaPage('dashboard')" title="Dashboard"><i class="bi bi-speedometer2"></i><span>Dashboard</span></button>
+      <button type="button" class="gom-secretaria-iconbtn" data-page="triagem" onclick="loadSecretariaPage('triagem')" title="Triagem"><i class="bi bi-funnel"></i><span>Triagem</span></button>
+      <button type="button" class="gom-secretaria-iconbtn" data-page="fila" onclick="loadSecretariaPage('fila')" title="Fila"><i class="bi bi-list-check"></i><span>Fila</span></button>
+      <button type="button" class="gom-secretaria-iconbtn" data-page="aprovacao" onclick="loadSecretariaPage('aprovacao')" title="Aprovação"><i class="bi bi-clipboard2-check"></i><span>Aprovação</span></button>
+      <button type="button" class="gom-secretaria-iconbtn" data-page="campo" onclick="loadSecretariaPage('campo')" title="Campo"><i class="bi bi-geo-alt"></i><span>Campo</span></button>
+      <button type="button" class="gom-secretaria-iconbtn" data-page="alertas" onclick="loadSecretariaPage('alertas')" title="Alertas"><i class="bi bi-exclamation-triangle"></i><span>Alertas</span></button>
+      <button type="button" class="gom-secretaria-iconbtn" data-page="obras" onclick="loadSecretariaPage('obras')" title="Obras"><i class="bi bi-buildings"></i><span>Obras</span></button>
+      <button type="button" class="gom-secretaria-iconbtn" data-page="historico" onclick="loadSecretariaPage('historico')" title="Memorial"><i class="bi bi-archive"></i><span>Memorial</span></button>
+      <button type="button" class="gom-secretaria-iconbtn" data-page="relatorios" onclick="loadSecretariaPage('relatorios')" title="Relatórios"><i class="bi bi-bar-chart-line"></i><span>Relatórios</span></button>
+      <button type="button" class="gom-secretaria-iconbtn" data-page="equipes" onclick="loadSecretariaPage('equipes')" title="Gerenciar Equipes"><i class="bi bi-diagram-3"></i><span>Gerenciar Equipes</span></button>
+      <button type="button" class="gom-secretaria-iconbtn" data-page="acompanhar" onclick="loadSecretariaPage('acompanhar')" title="Acompanhar"><i class="bi bi-search-heart"></i><span>Acompanhar</span></button>
+      <button type="button" class="gom-secretaria-iconbtn" data-page="configuracoes" onclick="loadSecretariaPage('configuracoes')" title="Configurações"><i class="bi bi-sliders"></i><span>Configurações</span></button>
+    </div>
+  </aside>
+
+  <header class="mobile-topbar">
+    <div class="mobile-brand">
+      <i class="bi bi-gear-wide-connected"></i>
+      <div>
+        <strong>GOM | SME</strong>
+        <small id="mobileCurrentPage">Dashboard</small>
+        <small id="mobilePerfilUsuarioBadge" class="mobile-perfil-badge">Carregando perfil...</small>
+      </div>
+    </div>
+    <button class="mobile-topbar-btn" type="button" onclick="abrirMobileMais()">
+      <i class="bi bi-grid-3x3-gap"></i>
+    </button>
+  </header>
+
+  <div class="mobile-more-backdrop" id="mobileMoreBackdrop" onclick="fecharMobileMais(event)">
+    <div class="mobile-more-panel" role="dialog" aria-modal="true" aria-label="Mais opções">
+      <div class="mobile-more-head">
+        <div><strong>Mais opções</strong><small>Escolha uma área do sistema</small></div>
+        <button type="button" onclick="fecharMobileMais()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="mobile-more-grid">
+        <button class="mobile-more-item" data-page="fila" onclick="loadPage('fila')"><i class="bi bi-list-check"></i><span>Fila</span></button>
+        <button class="mobile-more-item" data-page="aprovacao" onclick="loadPage('aprovacao')"><i class="bi bi-clipboard2-check"></i><span>Aprovação</span></button>
+        <button class="mobile-more-item" data-page="alertas" onclick="loadPage('alertas')"><i class="bi bi-exclamation-triangle"></i><span>Alertas</span></button>
+        <button class="mobile-more-item" data-page="obras" onclick="loadPage('obras')"><i class="bi bi-buildings"></i><span>Obras</span></button>
+        <button class="mobile-more-item" data-page="historico" onclick="loadPage('historico')"><i class="bi bi-archive"></i><span>Memorial</span></button>
+        <button class="mobile-more-item" data-page="relatorios" onclick="loadPage('relatorios')"><i class="bi bi-bar-chart-line"></i><span>Relatórios</span></button>
+        <button class="mobile-more-item" data-page="cadastro" onclick="loadPage('cadastro')"><i class="bi bi-plus-circle"></i><span>Cadastro</span></button>
+        <button class="mobile-more-item" data-page="equipes" onclick="loadPage('equipes')"><i class="bi bi-diagram-3"></i><span>Gerenciar Equipes</span></button>
+        <button class="mobile-more-item" data-page="acompanhar" onclick="loadPage('acompanhar')"><i class="bi bi-search-heart"></i><span>Acompanhar</span></button>
+        <button class="mobile-more-item" data-page="configuracoes" onclick="loadPage('configuracoes')"><i class="bi bi-sliders"></i><span>Configurações</span></button>
+      </div>
+    </div>
+  </div>
+
+  <nav class="mobile-bottom-nav" aria-label="Menu mobile">
+    <button class="mobile-nav-item active" data-page="dashboard" onclick="loadSecretariaHome()"><i class="bi bi-layout-sidebar-inset"></i><span>Secretaria</span></button>
+    <button class="mobile-nav-item" data-page="empresa" onclick="loadPage('empresa')"><i class="bi bi-building-check"></i><span>Empresa</span></button>
+    <button class="mobile-nav-item" data-page="cadastro" onclick="loadPage('cadastro')"><i class="bi bi-plus-circle"></i><span>Cadastro</span></button>
+    <button class="mobile-nav-item mobile-nav-more" data-page="mais" onclick="abrirMobileMais()"><i class="bi bi-grid-3x3-gap"></i><span>Mais</span></button>
+  </nav>
+
+  <main class="container-fluid px-4 pb-5">
+    <div id="main-content"></div>
+  </main>
+
+  <div class="modal fade" id="modalAnalise" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title fw-bold"><i class="bi bi-info-circle me-2"></i>Detalhes do Chamado</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4 bg-light">
+        <div class="row">
+          <div class="col-md-9"><div class="modal-label">Unidade</div><div class="modal-data fs-5" id="mdlUnidade"></div></div>
+          <div class="col-md-3 text-end"><div class="modal-label">ID</div><div class="modal-data"><span class="badge bg-secondary fs-6" id="mdlId"></span></div></div>
+        </div>
+        <div class="row">
+          <div class="col-md-6"><div class="modal-label">Origem</div><div class="modal-data" id="mdlSistema"></div></div>
+          <div class="col-md-6"><div class="modal-label">Data</div><div class="modal-data" id="mdlData"></div></div>
+        </div>
+        <div class="modal-label">Detalhamento</div>
+        <div class="bg-white p-3 border rounded mb-3" id="mdlDetalhe" style="min-height:80px; white-space:pre-line;"></div>
+        <div id="mdlAnexosBox"></div>
+        <div class="modal-label">Observações</div>
+        <div class="bg-white p-3 border rounded mb-3 text-muted" id="mdlObservacoes" style="min-height:70px; white-space:pre-line;"></div>
+        <div class="modal-label d-flex align-items-center justify-content-between">
+          <span>Linha do tempo</span>
+          <button type="button" class="btn btn-light border btn-sm fw-bold" onclick="recarregarTimelineModal()"><i class="bi bi-arrow-clockwise me-1"></i>Atualizar</button>
+        </div>
+        <div id="mdlTimelineBox" class="timeline-chamado-box mb-3">
+          <div class="timeline-loading"><span class="spinner-border spinner-border-sm me-2"></span>Carregando histórico...</div>
+        </div>
+        <div id="mdlWorkflowBox" class="row g-3 align-items-end">
+          <div class="col-md-5"><label class="modal-label text-primary" id="mdlStatusLabel">Alterar situação</label><select class="form-select fw-bold" id="mdlSelectStatus"></select></div>
+          <div class="col-md-7"><label class="modal-label text-primary" id="mdlObsLabel">Nova observação</label><input class="form-control" id="mdlNovaObservacao" placeholder="Registrar observação do trâmite..."></div>
+          <div class="col-md-6 modal-extra-aprovacao"><label class="modal-label text-primary" id="mdlNumeroOsLabel">Nº da OS</label><input class="form-control" id="mdlNumeroOs" placeholder="Obrigatório ao aprovar orçamento"></div>
+          <div class="col-md-6 modal-extra-aprovacao"><label class="modal-label text-primary">Previsão de conclusão</label><input class="form-control gom-date-br-input" type="date" id="mdlDataPrevistaConclusao" onchange="gomNormalizarDataBrInput(this)"></div>
+          <div class="col-md-6 modal-extra-fila" style="display:none;"><label class="modal-label text-primary"><i class="bi bi-calendar-check me-1"></i>Agendamento da visita</label><input class="form-control gom-date-br-input" type="date" id="mdlDataAgendamentoVisita" onchange="gomNormalizarDataBrInput(this)"></div>
+          <div class="col-12">
+            <div class="modal-anexo-upload-box">
+              <label class="modal-label text-primary" for="mdlAnexosAtualizacao"><i class="bi bi-paperclip me-1"></i>Adicionar anexos ao chamado</label>
+              <input class="form-control" type="file" id="mdlAnexosAtualizacao" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx">
+              <small>Opcional: envie fotos, PDFs ou documentos para complementar esta atualização. Limite: até 5 arquivos de 8 MB cada.</small>
+            </div>
+          </div>
+          <div class="col-12 text-end d-flex justify-content-end gap-2">
+            <button id="mdlBtnSalvarObs" class="btn btn-outline-primary fw-bold px-3" onclick="salvarApenasObservacao(this)" title="Salva a observação sem alterar o status do chamado"><i class="bi bi-chat-left-text me-1"></i>Salvar observação</button>
+            <button id="mdlBtnAtualizar" class="btn btn-primary fw-bold px-4" onclick="salvarStatusDoModal(this)">ATUALIZAR STATUS</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <template id="tpl-dashboard">
+<div class="dashboard-page">
+  <div class="dashboard-hero mb-3">
+    <div>
+      <span class="dashboard-eyebrow"><i class="bi bi-speedometer2 me-1"></i>Painel geral</span>
+      <h4>Dashboard Operacional GOM</h4>
+      <p>Visão rápida para gestão acompanhar chamados novos, fila, orçamentos, OS, campo, pendências e produtividade do mês.</p>
+    </div>
+    <div class="dashboard-hero-actions">
+      <button class="btn btn-light border fw-bold" onclick="refreshDashboard()"><i class="bi bi-arrow-clockwise me-1"></i>Atualizar</button>
+      <button class="btn btn-primary fw-bold" onclick="loadPage('alertas')"><i class="bi bi-exclamation-diamond me-1"></i>Ver alertas</button>
+    </div>
+  </div>
+
+  <div id="dashboardResumo" class="dashboard-kpi-grid"></div>
+
+  <div class="dashboard-layout">
+    <section class="dashboard-main-col">
+      <div class="dashboard-card">
+        <div class="dashboard-card-head">
+          <div>
+            <h5><i class="bi bi-activity me-2"></i>Situação geral</h5>
+            <p>Distribuição dos chamados por etapa do fluxo.</p>
+          </div>
+        </div>
+        <div id="dashboardStatusBars" class="dashboard-bars"></div>
+      </div>
+
+      <div class="dashboard-card">
+        <div class="dashboard-card-head">
+          <div>
+            <h5><i class="bi bi-exclamation-triangle me-2"></i>Pendências prioritárias</h5>
+            <p>Itens que podem travar o fluxo operacional.</p>
+          </div>
+          <button class="btn btn-sm btn-light border fw-bold" onclick="loadPage('alertas')">Abrir radar</button>
+        </div>
+        <div id="dashboardPendencias" class="dashboard-pendencias"></div>
+      </div>
+    </section>
+
+    <aside class="dashboard-side-col">
+      <div class="dashboard-card dashboard-card-compact">
+        <div class="dashboard-card-head">
+          <div>
+            <h5><i class="bi bi-lightning-charge me-2"></i>Ações rápidas</h5>
+            <p>Atalhos para as telas operacionais.</p>
+          </div>
+        </div>
+        <div class="dashboard-quick-actions">
+          <button onclick="irDashboardPara('triagem','Em análise')"><i class="bi bi-funnel"></i><span>Triagem</span></button>
+          <button onclick="irDashboardPara('fila','Aguardando visita')"><i class="bi bi-hourglass-split"></i><span>Fila de visita</span></button>
+          <button onclick="irDashboardPara('empresa','Solicitado Orçamento','orcamentos')"><i class="bi bi-cash-coin"></i><span>Orçamentos</span></button>
+          <button onclick="irDashboardPara('aprovacao','Orçamento Realizado')"><i class="bi bi-clipboard2-check"></i><span>Aprovação</span></button>
+          <button onclick="irDashboardPara('empresa',null,'gerencial')"><i class="bi bi-clipboard-data"></i><span>Gerencial OS</span></button>
+          <button onclick="loadPage('campo')"><i class="bi bi-geo-alt"></i><span>Campo</span></button>
+        </div>
+      </div>
+
+      <div class="dashboard-card dashboard-card-compact">
+        <div class="dashboard-card-head">
+          <div>
+            <h5><i class="bi bi-buildings me-2"></i>Unidades em destaque</h5>
+            <p>Unidades com maior volume ativo.</p>
+          </div>
+        </div>
+        <div id="dashboardRankingUnidades" class="dashboard-ranking"></div>
+      </div>
+
+      <div class="dashboard-card dashboard-card-compact">
+        <div class="dashboard-card-head">
+          <div>
+            <h5><i class="bi bi-check-circle me-2"></i>Produtividade</h5>
+            <p>Finalizações do mês atual.</p>
+          </div>
+        </div>
+        <div id="dashboardProdutividade" class="dashboard-prod"></div>
+      </div>
+    </aside>
+  </div>
+
+  <div id="painelDados" class="dashboard-hidden-panel"></div>
+</div>
+  </template>
+
+  <template id="tpl-triagem">
+<h4 class="text-primary fw-bold mb-1"><i class="bi bi-funnel me-2"></i>Triagem Operacional GOM</h4>
+<p class="text-muted small mb-3">Chamados sem interação inicial aguardando definição da equipe interna.</p>
+<div id="kpiGrid" class="kpi-grid"></div>
+<div class="fila-help"><i class="bi bi-info-circle-fill"></i><span>Na triagem inicial, os encaminhamentos permitidos são: emergencial, orçamento, aguardando visita ou devolvido para a escola.</span></div>
+<div class="gom-tela-toolbar p-3 bg-white rounded shadow-sm border-start border-4 border-primary mb-3">
+  <div class="d-flex align-items-center gap-3 flex-wrap flex-grow-1">
+    <div class="input-group" style="max-width:480px;min-width:200px;">
+      <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
+      <input type="text" id="pesquisa" class="form-control border-start-0" placeholder="Filtrar chamados na triagem..." onkeyup="renderizarTela()">
+    </div>
+    <div class="gom-data-global-wrap" id="gomDataGlobalWrap_triagem">
+      <label class="gom-data-global-label"><i class="bi bi-calendar-check me-1"></i>Encaminhar todos para:</label>
+      <input type="date" class="form-control form-control-sm gom-data-global-input" id="gomTfDataGlobal_triagem">
+      <button type="button" class="btn btn-outline-primary btn-sm fw-bold" onclick="gomTfAplicarDataGlobal_('triagem')" title="Aplica esta data de encaminhamento em todos os chamados visíveis">
+        <i class="bi bi-calendar-fill me-1"></i>Aplicar a todos
+      </button>
+    </div>
+  </div>
+  <span class="badge bg-primary px-3 py-2 ms-auto" id="contador">0 Resultados</span>
+</div>
+<div id="painelDados" class="operacional-lista-shell"></div>
+  </template>
+
+  <template id="tpl-fila">
+<h4 class="text-primary fw-bold mb-1"><i class="bi bi-hourglass-split me-2"></i>Fila de Visita</h4>
+<p class="text-muted small mb-3">Chamados aguardando visita técnica, organizados pela data e horário de encaminhamento.</p>
+<div class="gom-submenu-tela gom-submenu-fila" id="filaSubmenu">
+  <button type="button" class="gom-submenu-btn active" data-fila-modo="fila" onclick="setFilaSubmodo('fila', this)"><i class="bi bi-list-check"></i><span>Fila</span></button>
+  <button type="button" class="gom-submenu-btn" data-fila-modo="agenda" onclick="setFilaSubmodo('agenda', this)"><i class="bi bi-calendar2-week"></i><span>Agenda / Acompanhamento</span></button>
+  <button type="button" class="gom-submenu-btn gom-submenu-refresh ms-auto" onclick="gomAtualizarFilaAgora(this)"><i class="bi bi-arrow-clockwise"></i><span>Atualizar agora</span></button>
+</div>
+<div id="kpiGrid" class="kpi-grid"></div>
+<div class="fila-help"><i class="bi bi-info-circle-fill"></i><span>Da fila de visita, o chamado pode ser devolvido para a escola, encaminhado como emergencial ou enviado para orçamento.</span></div>
+<div class="gom-tela-toolbar p-3 bg-white rounded shadow-sm border-start border-4 border-primary mb-3">
+  <div class="d-flex align-items-center gap-3 flex-wrap flex-grow-1">
+    <div class="input-group" style="max-width:480px;min-width:200px;">
+      <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
+      <input type="text" id="pesquisa" class="form-control border-start-0" placeholder="Buscar unidade, ID, solicitação ou observação..." onkeyup="renderizarTela()">
+    </div>
+    <div class="gom-data-global-wrap" id="gomDataGlobalWrap_fila">
+      <label class="gom-data-global-label"><i class="bi bi-calendar-check me-1"></i>Agendar visita para todos:</label>
+      <input type="date" class="form-control form-control-sm gom-data-global-input" id="gomTfDataGlobal_fila">
+      <button type="button" class="btn btn-outline-primary btn-sm fw-bold" onclick="gomTfAplicarDataGlobal_('fila')" title="Aplica esta data de agendamento em todos os chamados visíveis na fila">
+        <i class="bi bi-calendar-fill me-1"></i>Aplicar a todos
+      </button>
+    </div>
+  </div>
+  <span class="badge bg-primary px-3 py-2 ms-auto" id="contador">0 na fila</span>
+</div>
+<div id="painelDados" class="operacional-lista-shell"></div>
+  </template>
+
+  <template id="tpl-aprovacao">
+<h4 class="text-primary fw-bold mb-1"><i class="bi bi-clipboard2-check me-2"></i>Aprovação de Orçamentos</h4>
+<p class="text-muted small mb-3">Orçamentos devolvidos pela empresa aguardando decisão interna. Ao aprovar, informe obrigatoriamente o número da OS; a previsão pode vir da empresa no orçamento e pode ser ajustada aqui.</p>
+
+<div id="kpiGrid" class="kpi-grid"></div>
+
+<div class="aprovacao-help mb-3">
+  <i class="bi bi-info-circle-fill"></i>
+  <span><strong>Fluxo correto:</strong> a empresa devolve o orçamento, a GOM analisa, registra parecer interno e decide: aprovar, devolver para ajuste, negar ou devolver para a escola.</span>
+</div>
+
+<div class="p-3 bg-white rounded shadow-sm d-flex justify-content-between align-items-center border-start border-4 border-warning mb-3 flex-wrap gap-3">
+  <div class="input-group" style="max-width: 680px; min-width: 280px;">
+    <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
+    <input type="text" id="pesquisa" class="form-control border-start-0" placeholder="Buscar por unidade, ID, valor, observação ou descrição..." onkeyup="renderizarTela()">
+  </div>
+  <span class="badge bg-warning text-dark px-3 py-2" id="contador">0 orçamentos</span>
+</div>
+
+<div id="painelDados" class="aprovacao-lista"></div>
+
+  </template>
+
+  <template id="tpl-empresa">
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="text-primary fw-bold mb-1"><i class="bi bi-buildings me-2"></i>Painel da Empresa</h4>
+    <p class="text-muted small mb-0">Orçamentos, execução diária das equipes e acompanhamento gerencial das OS.</p>
+  </div>
+</div>
+
+<ul class="nav nav-pills mb-4 bg-white shadow-sm p-2 rounded-pill d-inline-flex" id="empresaModoTabs" role="tablist">
+  <li class="nav-item"><button class="nav-link active rounded-pill px-4 fw-bold" onclick="setEmpresaModo('diario', this)"><i class="bi bi-calendar-check me-2"></i>Execução diária</button></li>
+  <li class="nav-item"><button class="nav-link rounded-pill px-4 fw-bold" onclick="setEmpresaModo('orcamentos', this)"><i class="bi bi-cash-coin me-2"></i>Orçamentos</button></li>
+  <li class="nav-item"><button class="nav-link rounded-pill px-4 fw-bold" onclick="setEmpresaModo('gerencial', this)"><i class="bi bi-clipboard-data me-2"></i>Gerencial OS</button></li>
+  <li class="nav-item"><button class="nav-link rounded-pill px-4 fw-bold" onclick="setEmpresaModo('agenda', this)"><i class="bi bi-calendar2-week me-2"></i>Agenda / Acompanhamento</button></li>
+  <li class="nav-item"><button class="nav-link rounded-pill px-4 fw-bold" onclick="setEmpresaModo('equipes', this)"><i class="bi bi-people-fill me-2"></i>Equipes</button></li>
+</ul>
+
+<div id="empresaConteudoDinamico">
+  <div id="kpiGrid" class="kpi-grid"></div>
+  <div class="empresa-help mb-3">
+    <i class="bi bi-info-circle-fill"></i>
+    <span>Em <strong>Execução diária</strong>, a empresa informa a equipe do dia. Em <strong>Orçamentos</strong>, devolve valor, observações e anexos. Em <strong>Gerencial OS</strong>, acompanha histórico e finaliza a OS. Em <strong>Agenda/Acompanhamento</strong>, visualiza apenas as responsabilidades da empresa.</span>
+  </div>
+  <div class="gom-tela-toolbar p-3 bg-white rounded shadow-sm border-start border-4 border-info mb-3">
+    <div class="d-flex align-items-center gap-3 flex-wrap flex-grow-1">
+      <div class="input-group" style="max-width:440px;min-width:200px;">
+        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
+        <input type="text" id="pesquisa" class="form-control border-start-0" placeholder="Buscar unidade, problema, OS, orçamento ou observação..." onkeyup="renderizarTela()">
+      </div>
+      <div class="gom-data-global-wrap gom-data-global-empresa" id="gomDataGlobalWrap_empresa" style="display:none;">
+        <label class="gom-data-global-label"><i class="bi bi-calendar-check me-1"></i><span id="gomDataGlobalLabel_empresa">Data de atendimento para todos:</span></label>
+        <input type="date" class="form-control form-control-sm gom-data-global-input" id="gomEmpresaDataGlobal">
+        <button type="button" class="btn btn-info text-white btn-sm fw-bold" onclick="gomEmpresaAplicarDataGlobal()" title="Aplica esta data em todos os registros da lista">
+          <i class="bi bi-calendar-fill me-1"></i>Aplicar a todos
+        </button>
+      </div>
+    </div>
+    <span class="badge bg-primary px-3 py-2 ms-auto" id="contador">0 Resultados</span>
+  </div>
+  <div id="painelDados"></div>
+</div>
+  </template>
+
+  <template id="tpl-campo">
+<div class="campo-page-head d-flex justify-content-between align-items-start gap-3 mb-3">
+  <div>
+    <h4 class="text-primary fw-bold mb-1"><i class="bi bi-geo-alt me-2"></i>Campo - Acompanhamento</h4>
+    <p class="text-muted small mb-0">Visualização das equipes em atendimento, pendências de preenchimento da empresa e histórico operacional das unidades em campo.</p>
+  </div>
+  <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2"><i class="bi bi-eye me-1"></i>Somente visualização</span>
+</div>
+
+<div id="campoKpis" class="kpi-grid"></div>
+
+<div class="campo-help mb-3">
+  <i class="bi bi-info-circle-fill"></i>
+  <span><strong>Como usar:</strong> esta tela é somente para acompanhamento. A empresa registra equipe do dia e observações na tela <strong>Empresa</strong>; aqui a GOM acompanha o que foi preenchido, o que está pendente e o histórico por dia.</span>
+</div>
+
+<div class="campo-actions mb-3">
+  <button class="btn btn-primary fw-bold active" onclick="loadCampoTab('dia', this)"><i class="bi bi-list-check me-2"></i>Acompanhamento diário</button>
+  <button class="btn btn-outline-primary fw-bold" onclick="loadCampoTab('historico', this)"><i class="bi bi-graph-up me-2"></i>Histórico 30 dias</button>
+  <button class="btn btn-outline-primary fw-bold" onclick="loadCampoTab('pendencias', this)"><i class="bi bi-exclamation-triangle me-2"></i>Pendências de hoje</button>
+</div>
+
+<div class="campo-filtros-card bg-white rounded shadow-sm border-start border-4 border-info mb-3">
+  <div class="campo-filtro-principal">
+    <div class="input-group campo-busca-input">
+      <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
+      <input type="text" id="pesquisa" class="form-control border-start-0" placeholder="Buscar escola, equipe, OS, status ou observação..." onkeyup="filtrarCampo()">
+    </div>
+
+    <div class="campo-filtro-escola-box">
+      <label for="campoSelectEscola" class="campo-filtro-label"><i class="bi bi-buildings me-1"></i>Filtrar por escola</label>
+      <select id="campoSelectEscola" class="form-select campo-filtro-escola" onchange="filtrarCampo()">
+        <option value="">Todas as escolas</option>
+      </select>
+    </div>
+
+    <div class="campo-filtro-data-box">
+      <label for="campoDataAcompanhamento" class="campo-filtro-label"><i class="bi bi-calendar3 me-1"></i>Dia do acompanhamento</label>
+      <input type="date" id="campoDataAcompanhamento" class="form-control gom-date-br-input campo-filtro-data" onchange="gomNormalizarDataBrInput(this);setCampoDataAcompanhamento(this.value)">
+    </div>
+  </div>
+
+  <div class="campo-filtro-acoes">
+    <button class="btn btn-light border fw-bold btn-sm" onclick="limparFiltrosCampo()" title="Limpar busca, escola e KPI selecionado"><i class="bi bi-eraser me-1"></i>Limpar filtros</button>
+    <button class="btn btn-light border fw-bold btn-sm" onclick="refreshCampo()" title="Recarregar campo"><i class="bi bi-arrow-clockwise me-1"></i>Atualizar</button>
+    <span class="badge bg-primary px-3 py-2" id="contadorCampo">0 registros</span>
+  </div>
+</div>
+
+<div id="painelDados" class="campo-area"></div>
+
+  </template>
+
+  <template id="tpl-alertas">
+<h4 class="text-primary fw-bold mb-1"><i class="bi bi-exclamation-diamond me-2"></i>Pendências e Alertas</h4>
+<p class="text-muted small mb-3">Radar operacional do sistema: mostra o que está parado, incompleto ou precisa de ação da GOM ou da empresa.</p>
+
+<div class="alertas-help mb-3">
+  <i class="bi bi-info-circle-fill"></i>
+  <span>Esta tela não substitui Triagem, Campo ou Empresa. Ela reúne automaticamente as pendências que podem travar o fluxo: OS sem número, orçamento sem retorno, visitas atrasadas, equipe do dia não preenchida e aprovações paradas.</span>
+</div>
+
+<div id="alertasSlaResumo" class="alertas-sla-resumo mb-3"></div>
+
+<div class="alertas-cobranca-panel mb-3">
+  <div class="alertas-cobranca-head">
+    <div>
+      <strong><i class="bi bi-envelope-exclamation me-1"></i>Central de cobranças da empresa</strong>
+      <span>Gere uma prévia ou envie cobrança consolidada das pendências críticas para o e-mail configurado da empresa.</span>
+    </div>
+    <div class="alertas-cobranca-actions">
+      <button class="btn btn-light border fw-bold btn-sm" onclick="prepararCobrancaEmpresaAlertas(this)"><i class="bi bi-eye me-1"></i>Ver prévia</button>
+      <button class="btn btn-warning fw-bold btn-sm" onclick="enviarCobrancaEmpresaAlertas(this)"><i class="bi bi-send-check me-1"></i>Enviar cobrança</button>
+      <button class="btn btn-outline-light fw-bold btn-sm" onclick="ativarCobrancaDiariaEmpresa(this)"><i class="bi bi-alarm me-1"></i>Ativar 11h</button>
+    </div>
+  </div>
+  <div id="alertasCobrancaPreview" class="alertas-cobranca-preview"></div>
+</div>
+
+
+<div id="alertasKpis" class="kpi-grid"></div>
+
+<div class="alertas-toolbar p-3 bg-white rounded shadow-sm d-flex justify-content-between align-items-center border-start border-4 border-danger mb-3 flex-wrap gap-3">
+  <div class="input-group" style="max-width: 640px; min-width: 280px;">
+    <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
+    <input type="text" id="pesquisaAlertas" class="form-control border-start-0" placeholder="Buscar por escola, ID, tipo de alerta, status ou descrição..." onkeyup="renderizarAlertas()">
+  </div>
+  <div class="d-flex align-items-center gap-2 flex-wrap">
+    <button class="btn btn-light border fw-bold btn-sm" onclick="inicializarAlertas(true)"><i class="bi bi-arrow-clockwise me-1"></i>Atualizar</button>
+    <span class="badge bg-primary px-3 py-2" id="contadorAlertas">0 alertas</span>
+  </div>
+</div>
+
+<div id="alertasFiltros" class="alertas-filtros mb-3"></div>
+<div id="painelDados" class="alertas-lista"></div>
+
+  </template>
+
+  <template id="tpl-obras">
+<div class="page-title">
+  <div>
+    <h4><i class="bi bi-buildings-fill me-2"></i>Obras e Ampliações</h4>
+    <p>Acompanhamento de ampliações, construções e intervenções estruturais nas unidades.</p>
+  </div>
+</div>
+<div id="kpiGrid" class="kpi-grid"></div>
+<div class="toolbar panel">
+  <div class="input-group"><span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span><input type="text" id="pesquisa" class="form-control border-start-0" placeholder="Buscar obras..." onkeyup="renderizarTela()"></div>
+  <span class="badge bg-primary px-3 py-2" id="contador">0 Resultados</span>
+</div>
+<div id="painelDados" class="grid-cards"></div>
+
+<div class="modal fade" id="modalObra" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content border-0 shadow-lg">
+    <div class="modal-header bg-primary text-white"><h5 class="modal-title fw-bold">Detalhes da Obra</h5><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body p-4 bg-light">
+      <input type="hidden" id="obraId">
+      <div class="row"><div class="col-md-9"><div class="modal-label">Unidade</div><div id="obraUnidade" class="modal-data fs-5"></div></div><div class="col-md-3 text-end"><div class="modal-label">ID</div><span id="obraIdBadge" class="badge bg-secondary fs-6"></span></div></div>
+      <div class="modal-label">Descrição</div><div id="obraDescricao" class="bg-white p-3 border rounded mb-3"></div>
+      <div class="row g-3">
+        <div class="col-md-4"><label class="modal-label">Status</label><select id="obraStatus" class="form-select"></select></div>
+        <div class="col-md-4"><label class="modal-label">Prioridade</label><select id="obraPrioridade" class="form-select"><option>P0</option><option>P1</option><option>P2</option><option>P3</option></select></div>
+        <div class="col-md-4"><label class="modal-label">Responsável</label><input id="obraResponsavel" class="form-control"></div>
+        <div class="col-md-6"><label class="modal-label">Responsável 2</label><input id="obraResponsavel2" class="form-control"></div>
+        <div class="col-md-6"><label class="modal-label">Observações</label><input id="obraObservacoes" class="form-control"></div>
+        <div class="col-12 text-end"><button class="btn btn-primary fw-bold px-4" onclick="salvarObraModal(this)">SALVAR OBRA</button></div>
+      </div>
+    </div>
+  </div></div>
+</div>
+
+  </template>
+
+  <template id="tpl-historico">
+<div class="page-title memorial-title">
+  <div>
+    <h4><i class="bi bi-archive-fill me-2"></i>Memorial de Atendimentos</h4>
+    <p>Prontuário dos chamados encerrados, com filtros por escola, OS, mês, tipo, status final, anexos e tempo total.</p>
+  </div>
+  <div class="memorial-title-actions">
+    <button class="btn btn-light border fw-bold btn-sm" onclick="limparFiltrosMemorial()"><i class="bi bi-x-circle me-1"></i>Limpar filtros</button>
+    <select id="memorialFormatoExportacao" class="form-select form-select-sm memorial-export-select"><option value="csv">CSV</option><option value="xlsx">XLSX</option></select><button class="btn btn-success fw-bold btn-sm" onclick="exportarMemorialArquivo(this)"><i class="bi bi-download me-1"></i>Exportar</button>
+  </div>
+</div>
+
+<div id="kpiGrid" class="kpi-grid"></div>
+
+<div class="memorial-toolbar panel">
+  <div class="input-group memorial-search">
+    <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
+    <input type="text" id="pesquisa" class="form-control border-start-0" placeholder="Buscar por escola, ID, OS, descrição, equipe ou observação..." onkeyup="renderizarTela()">
+  </div>
+
+  <select id="memorialMes" class="form-select" onchange="renderizarTela()">
+    <option value="">Todos os meses</option>
+  </select>
+
+  <select id="memorialStatus" class="form-select" onchange="renderizarTela()">
+    <option value="">Todos os status</option>
+  </select>
+
+  <select id="memorialTipo" class="form-select" onchange="renderizarTela()">
+    <option value="">Todos os tipos</option>
+  </select>
+
+  <span class="badge bg-success px-3 py-2" id="contador">0 registros</span>
+</div>
+
+<div class="memorial-help">
+  <i class="bi bi-info-circle-fill"></i>
+  <span>Use o Memorial como prontuário: abra o chamado para ver a linha do tempo completa ou exporte os registros filtrados para conferência.</span>
+</div>
+
+<div id="painelDados" class="memorial-container"></div>
+
+  </template>
+
+  <template id="tpl-relatorios">
+<div class="page-title relatorios-title">
+  <div>
+    <h4><i class="bi bi-bar-chart-line-fill me-2"></i>Relatórios e Gráficos</h4>
+    <p>Painel gerencial com gráficos, indicadores e exportação para análise da operação.</p>
+  </div>
+  <div class="relatorios-title-actions">
+    <button class="btn btn-light border fw-bold btn-sm" onclick="inicializarRelatorios(true)"><i class="bi bi-arrow-clockwise me-1"></i>Atualizar</button>
+    <button class="btn btn-success fw-bold btn-sm" onclick="exportarRelatoriosCsv(this)"><i class="bi bi-filetype-csv me-1"></i>Exportar CSV</button>
+  </div>
+</div>
+
+<div class="relatorios-toolbar panel">
+  <div class="input-group relatorios-search">
+    <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
+    <input type="text" id="relatorioBusca" class="form-control border-start-0" placeholder="Buscar por escola, OS, descrição, status ou tipo..." onkeyup="renderRelatorios()">
+  </div>
+
+  <select id="relatorioMes" class="form-select" onchange="renderRelatorios()">
+    <option value="">Todos os meses</option>
+  </select>
+
+  <select id="relatorioStatus" class="form-select" onchange="renderRelatorios()">
+    <option value="">Todos os status</option>
+  </select>
+
+  <select id="relatorioTipo" class="form-select" onchange="renderRelatorios()">
+    <option value="">Todos os tipos</option>
+  </select>
+
+  <button class="btn btn-light border fw-bold" onclick="limparFiltrosRelatorios()"><i class="bi bi-x-circle me-1"></i>Limpar</button>
+</div>
+
+<div class="relatorios-tabs">
+  <button class="relatorio-tab active" data-rel-tab="visao" onclick="setRelatorioTab('visao', this)"><i class="bi bi-speedometer2 me-1"></i>Visão geral</button>
+  <button class="relatorio-tab" data-rel-tab="graficos" onclick="setRelatorioTab('graficos', this)"><i class="bi bi-graph-up-arrow me-1"></i>Gráficos</button>
+  <button class="relatorio-tab" data-rel-tab="tabelas" onclick="setRelatorioTab('tabelas', this)"><i class="bi bi-table me-1"></i>Tabelas</button>
+</div>
+
+<div id="relatoriosKpis" class="relatorios-kpi-grid"></div>
+
+<section id="relatorioTabVisao" class="relatorio-tab-pane active">
+  <div class="relatorios-grid">
+    <section class="relatorio-card relatorio-card-wide">
+      <div class="relatorio-card-head">
+        <div><h5>Chamados por status</h5><span>Distribuição geral do fluxo atual.</span></div>
+        <i class="bi bi-pie-chart-fill"></i>
+      </div>
+      <div id="relatorioStatusBars" class="relatorio-bars"></div>
+    </section>
+
+    <section class="relatorio-card">
+      <div class="relatorio-card-head">
+        <div><h5>Funil operacional</h5><span>Onde está o gargalo do atendimento.</span></div>
+        <i class="bi bi-funnel-fill"></i>
+      </div>
+      <div id="relatorioFunil" class="relatorio-funnel"></div>
+    </section>
+
+    <section class="relatorio-card">
+      <div class="relatorio-card-head">
+        <div><h5>Top unidades</h5><span>Escolas com mais demandas filtradas.</span></div>
+        <i class="bi bi-buildings-fill"></i>
+      </div>
+      <div id="relatorioRankingUnidades" class="relatorio-ranking"></div>
+    </section>
+  </div>
+</section>
+
+<section id="relatorioTabGraficos" class="relatorio-tab-pane">
+  <div class="relatorios-chart-grid">
+    <section class="relatorio-card chart-card">
+      <div class="relatorio-card-head">
+        <div><h5>Status dos chamados</h5><span>Visão proporcional por status.</span></div>
+        <i class="bi bi-pie-chart-fill"></i>
+      </div>
+      <div class="chart-shell"><canvas id="chartStatusChamados"></canvas></div>
+    </section>
+
+    <section class="relatorio-card chart-card">
+      <div class="relatorio-card-head">
+        <div><h5>Atendimento por tipo</h5><span>Distribuição por tipo de unidade/classificação.</span></div>
+        <i class="bi bi-tags-fill"></i>
+      </div>
+      <div class="chart-shell"><canvas id="chartTiposChamados"></canvas></div>
+    </section>
+
+    <section class="relatorio-card chart-card chart-card-wide">
+      <div class="relatorio-card-head">
+        <div><h5>Top unidades com demanda</h5><span>Ranking das unidades com mais chamados filtrados.</span></div>
+        <i class="bi bi-bar-chart-fill"></i>
+      </div>
+      <div class="chart-shell chart-shell-wide"><canvas id="chartTopUnidades"></canvas></div>
+    </section>
+
+    <section class="relatorio-card chart-card">
+      <div class="relatorio-card-head">
+        <div><h5>Orçamentos por mês</h5><span>Registros com orçamento informado.</span></div>
+        <i class="bi bi-cash-coin"></i>
+      </div>
+      <div class="chart-shell"><canvas id="chartOrcamentosMes"></canvas></div>
+    </section>
+
+    <section class="relatorio-card chart-card">
+      <div class="relatorio-card-head">
+        <div><h5>Finalizações por mês</h5><span>Produtividade de encerramento.</span></div>
+        <i class="bi bi-check-circle-fill"></i>
+      </div>
+      <div class="chart-shell"><canvas id="chartFinalizadosMes"></canvas></div>
+    </section>
+
+    <section class="relatorio-card chart-card chart-card-wide">
+      <div class="relatorio-card-head">
+        <div><h5>Obras por status</h5><span>Painel estrutural das obras cadastradas.</span></div>
+        <i class="bi bi-building-fill-gear"></i>
+      </div>
+      <div class="chart-shell chart-shell-wide"><canvas id="chartObrasStatus"></canvas></div>
+    </section>
+  </div>
+
+  <div id="relatoriosChartFallback" class="relatorio-chart-fallback"></div>
+</section>
+
+<section id="relatorioTabTabelas" class="relatorio-tab-pane">
+  <div class="relatorios-grid">
+    <section class="relatorio-card">
+      <div class="relatorio-card-head">
+        <div><h5>Tempo médio por etapa</h5><span>Estimativa por status com base na data de referência.</span></div>
+        <i class="bi bi-stopwatch-fill"></i>
+      </div>
+      <div id="relatorioTempoEtapa" class="relatorio-ranking compact"></div>
+    </section>
+
+    <section class="relatorio-card">
+      <div class="relatorio-card-head">
+        <div><h5>Orçamentos por mês</h5><span>Quantidade de registros com orçamento informado.</span></div>
+        <i class="bi bi-cash-coin"></i>
+      </div>
+      <div id="relatorioOrcamentosMes" class="relatorio-bars"></div>
+    </section>
+
+    <section class="relatorio-card">
+      <div class="relatorio-card-head">
+        <div><h5>Finalizações por mês</h5><span>Produtividade de encerramento.</span></div>
+        <i class="bi bi-check-circle-fill"></i>
+      </div>
+      <div id="relatorioFinalizadosMes" class="relatorio-bars"></div>
+    </section>
+
+    <section class="relatorio-card">
+      <div class="relatorio-card-head">
+        <div><h5>Atendimento por tipo</h5><span>CEI, EMEI, EMEF e demais classificações.</span></div>
+        <i class="bi bi-tags-fill"></i>
+      </div>
+      <div id="relatorioTipos" class="relatorio-bars"></div>
+    </section>
+
+    <section class="relatorio-card relatorio-card-wide">
+      <div class="relatorio-card-head">
+        <div><h5>Obras por status</h5><span>Painel estrutural das obras cadastradas.</span></div>
+        <i class="bi bi-building-fill-gear"></i>
+      </div>
+      <div id="relatorioObrasStatus" class="relatorio-bars"></div>
+    </section>
+  </div>
+</section>
+  </template>
+
+  <template id="tpl-cadastro">
+<div class="page-title">
+  <div>
+    <h4><i class="bi bi-journal-plus me-2"></i>Cadastro de Solicitações</h4>
+    <p>Use a visualização da escola para solicitações externas e o cadastro interno para registros da equipe GOM.</p>
+  </div>
+</div>
+
+<ul class="nav nav-pills mb-4 bg-white shadow-sm p-2 rounded-pill d-inline-flex" role="tablist">
+  <li class="nav-item"><button class="nav-link active rounded-pill px-4 fw-bold" data-bs-toggle="pill" data-bs-target="#cad-escola" type="button">Preenchimento da escola</button></li>
+  <li class="nav-item"><button class="nav-link rounded-pill px-4 fw-bold" data-bs-toggle="pill" data-bs-target="#cad-interno" type="button">Cadastro interno</button></li>
+</ul>
+
+<div class="tab-content">
+  <div class="tab-pane fade show active" id="cad-escola">
+    <form class="form-card" id="formCadastroEscola" onsubmit="enviarCadastroEscola(event)">
+      <div class="row g-3">
+        <div class="col-md-8"><label class="form-label">Unidade escolar</label><select class="form-select" name="unidade" id="selectUnidadeEscola" required></select></div>
+        <div class="col-md-4"><label class="form-label">Telefone / WhatsApp</label><input class="form-control" name="telefone" required></div>
+        <div class="col-md-8"><label class="form-label">Nome do responsável pelo preenchimento</label><input class="form-control" name="nome_responsavel" required></div>
+        <div class="col-md-4"><label class="form-label">Cargo/Função</label><select class="form-select" name="cargo" required><option>Diretor(a)</option><option>Vice-diretor(a)</option><option>Secretário(a) escolar</option><option>Coordenador(a)</option><option>Outro</option></select></div>
+        <div class="col-md-4"><label class="form-label">Tipo principal da solicitação</label><select class="form-select" name="tipo_solicitacao" required><option>Elétrica</option><option>Hidráulica</option><option>Telhado / cobertura</option><option>Estrutura / alvenaria</option><option>Pintura / acabamento</option><option>Esquadrias / portas / janelas</option><option>Banheiros / sanitários</option><option>Cozinha / refeitório</option><option>Acessibilidade</option><option>Segurança</option><option>Área externa</option><option>Outro</option></select></div>
+        <div class="col-md-4"><label class="form-label">Local da ocorrência</label><select class="form-select" name="local_ocorrencia" required><option>Sala de aula</option><option>Banheiro</option><option>Cozinha</option><option>Refeitório</option><option>Pátio</option><option>Cobertura / telhado</option><option>Área externa</option><option>Corredor</option><option>Secretaria</option><option>Muro / portão</option><option>Outro</option></select></div>
+        <div class="col-md-4"><label class="form-label">Há quanto tempo?</label><select class="form-select" name="tempo_problema" required><option>Hoje</option><option>Nos últimos 3 dias</option><option>Há cerca de 1 semana</option><option>Há mais de 1 semana</option><option>Há mais de 1 mês</option></select></div>
+        <div class="col-12"><label class="form-label">Descreva detalhadamente o problema</label><textarea class="form-control" name="descricao" rows="4" required></textarea></div>
+        <div class="col-md-4"><label class="form-label">Intervenção urgente?</label><select class="form-select" name="urgente"><option>Sim</option><option>Não</option></select></div>
+        <div class="col-md-4"><label class="form-label">Risco à segurança</label><select class="form-select" name="risco"><option>Sim, risco elevado</option><option>Sim, risco moderado</option><option>Não</option></select></div>
+        <div class="col-md-4"><label class="form-label">Impacto no funcionamento</label><select class="form-select" name="funcionamento"><option>Sim, totalmente</option><option>Sim, parcialmente</option><option>Não</option></select></div>
+        <div class="col-md-6"><label class="form-label">Afeta turma/serviço essencial?</label><select class="form-select" name="afeta_turma"><option>Sim</option><option>Não</option></select></div>
+        <div class="col-md-6"><label class="form-label">Precisa isolamento imediato?</label><select class="form-select" name="isolamento"><option>Sim</option><option>Não</option></select></div>
+        <div class="col-md-6"><label class="form-label">Possui recursos da subvenção?</label><select class="form-select" name="recursos"><option>Sim</option><option>Não</option><option>Parcialmente</option><option>Não sei informar</option></select></div>
+        <div class="col-md-6"><label class="form-label">Poderia ser executada com recursos próprios?</label><select class="form-select" name="execucao_propria"><option>Sim</option><option>Não</option><option>Depende de avaliação técnica</option></select></div>
+        <div class="col-md-6"><label class="form-label">Prestador já avaliou?</label><select class="form-select" name="prestador_avaliou"><option>Sim</option><option>Não</option></select></div>
+        <div class="col-md-6"><label class="form-label">Foi elaborado orçamento?</label><select class="form-select" name="orcamento_elaborado"><option>Sim</option><option>Não</option></select></div>
+        <div class="col-md-4"><label class="form-label">Valor estimado</label><input class="form-control" name="valor_estimado"></div>
+        <div class="col-md-8"><label class="form-label">Nome do prestador/empresa</label><input class="form-control" name="prestador_nome"></div>
+        <div class="col-12"><label class="form-label">Observações sobre a avaliação</label><textarea class="form-control" name="observacoes_avaliacao" rows="2"></textarea></div>
+        <div class="col-md-8"><label class="form-label">Ambientes/serviços afetados</label><input class="form-control" name="ambientes_afetados" placeholder="Ex: sala de aula, banheiro, cobertura..."></div>
+        <div class="col-md-4"><label class="form-label">Quantidade afetada</label><select class="form-select" name="qtd_afetada"><option>1</option><option>2 a 3</option><option>4 ou mais</option><option>Não se aplica</option></select></div>
+        <div class="col-12"><label class="form-label">Observações adicionais</label><textarea class="form-control" name="observacoes_adicionais" rows="3"></textarea></div>
+        <div class="col-12"><label class="form-label">Anexos da solicitação</label><input type="file" class="form-control" name="anexos" multiple></div>
+        <div class="col-12 text-end"><button class="btn btn-primary px-5 fw-bold">ENVIAR SOLICITAÇÃO</button></div>
+      </div>
+    </form>
+  </div>
+
+  <div class="tab-pane fade" id="cad-interno">
+    <form class="form-card" id="formCadastro" onsubmit="enviarFormularioInterno(event)">
+      <div class="row g-3">
+        <div class="col-md-4"><label class="form-label">Data</label><input type="date" class="form-control" name="data" required></div>
+        <div class="col-md-4"><label class="form-label">Origem</label><select class="form-select" name="sistema" id="selectSistema" onchange="toggleCamposSistema()"><option value="Email" selected>Email</option><option value="Solar">Solar</option><option value="Solicitação por">Solicitação por...</option></select></div>
+        <div class="col-md-4"><label class="form-label">Situação Inicial</label><select class="form-select" name="situacao" id="selectSituacaoCadastro"></select></div>
+        <div class="col-12" id="divSolar" style="display:none;"><input type="text" class="form-control" name="num_processo" placeholder="Nº Processo Solar"></div>
+        <div class="col-12" id="divSolicitacaoPor" style="display:none;"><input type="text" class="form-control" name="nome_especifico" placeholder="Nome do Solicitante"></div>
+        <div class="col-md-9"><label class="form-label">Unidade Escolar</label><select class="form-select" name="unidade" id="selectUnidade" onchange="setTipoEscola()"><option value="">Selecione...</option></select></div>
+        <div class="col-md-3"><label class="form-label">Tipo</label><input type="text" class="form-control bg-light text-center fw-bold" name="tipo" id="inputTipo" readonly></div>
+        <div class="col-12"><label class="form-label">Detalhamento</label><textarea class="form-control" name="detalhamento" rows="4" required></textarea></div>
+        <div class="col-12"><label class="form-label">Observações</label><textarea class="form-control" name="observacoes" rows="2"></textarea></div>
+        <div class="col-12"><label class="form-label">Anexos da solicitação</label><input type="file" class="form-control" name="anexos" multiple></div>
+        <div class="col-12 text-end mt-4"><button type="submit" class="btn btn-primary px-5 fw-bold shadow-sm">GRAVAR SOLICITAÇÃO</button></div>
+      </div>
+    </form>
+  </div>
+</div>
+
+  </template>
+
+
+  <template id="tpl-equipes">
+<div class="page-title equipes-page-title d-flex justify-content-between align-items-start gap-3 mb-3">
+  <div>
+    <h4 class="text-primary fw-bold mb-1"><i class="bi bi-diagram-3 me-2"></i>Gerenciamento de Equipes</h4>
+    <p class="text-muted small mb-0">Tela administrativa para visualizar e manter equipes da Secretaria/GOM e equipes da empresa, com seus respectivos integrantes.</p>
+  </div>
+  <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2"><i class="bi bi-shield-check me-1"></i>Administrativo</span>
+</div>
+<div id="painelEquipesGerencial"></div>
+  </template>
+
+  <template id="tpl-acompanhar">
+<div class="page-title acompanhar-title">
+  <div>
+    <h4><i class="bi bi-search-heart me-2"></i>Acompanhar Solicitação</h4>
+    <p>Consulta pública do andamento dos protocolos pela escola, por unidade, protocolo ou e-mail cadastrado.</p>
+  </div>
+  <div class="acompanhar-title-actions">
+    <button class="btn btn-light border fw-bold btn-sm" onclick="limparConsultaAcompanhar()"><i class="bi bi-x-circle me-1"></i>Limpar</button>
+  </div>
+</div>
+
+<section class="acompanhar-hero">
+  <div>
+    <span class="acompanhar-pill"><i class="bi bi-shield-check me-1"></i>Portal da Escola</span>
+    <h5>Consulte um protocolo específico ou veja todos os chamados da unidade.</h5>
+    <p>Informe apenas a unidade para listar todos os chamados da escola. Se preferir, filtre por número do protocolo ou use o e-mail cadastrado da unidade.</p>
+  </div>
+  <i class="bi bi-clipboard2-pulse acompanhar-hero-icon"></i>
+</section>
+
+<div class="acompanhar-grid">
+  <section class="acompanhar-card">
+    <div class="acompanhar-card-head">
+      <h5>Consultar andamento</h5>
+      <span>Nenhum campo é obrigatório isoladamente. Informe pelo menos uma opção: protocolo, unidade ou e-mail.</span>
+    </div>
+
+    <form id="formAcompanharProtocolo" onsubmit="consultarProtocoloEscola(event)" class="acompanhar-form">
+      <div>
+        <label class="form-label fw-bold">Número do chamado / protocolo <small class="text-muted">(opcional)</small></label>
+        <input class="form-control" name="id" id="acompanharId" placeholder="Ex.: 77">
+      </div>
+
+      <div>
+        <label class="form-label fw-bold">Unidade escolar <small class="text-muted">(opcional)</small></label>
+        <select class="form-select" name="unidade" id="acompanharUnidade">
+          <option value="">Selecione uma unidade para listar seus chamados</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="form-label fw-bold">E-mail cadastrado da unidade <small class="text-muted">(opcional)</small></label>
+        <input class="form-control" type="email" name="email" id="acompanharEmail" placeholder="email@escola.sp.gov.br">
+        <small class="text-muted fw-semibold">Use o e-mail quando não souber exatamente o nome da unidade.</small>
+      </div>
+
+      <button class="btn btn-primary fw-bold acompanhar-submit" type="submit">
+        <i class="bi bi-search me-1"></i>Consultar
+      </button>
+    </form>
+  </section>
+
+  <section class="acompanhar-card acompanhar-orientacao">
+    <div class="acompanhar-card-head">
+      <h5>Formas de consulta</h5>
+      <span>Use a opção que fizer mais sentido no momento.</span>
+    </div>
+    <ul>
+      <li><i class="bi bi-check-circle"></i>Somente unidade: lista todos os chamados vinculados à escola.</li>
+      <li><i class="bi bi-check-circle"></i>Somente protocolo: abre diretamente o chamado informado.</li>
+      <li><i class="bi bi-check-circle"></i>Protocolo + unidade: valida e abre um chamado específico.</li>
+      <li><i class="bi bi-check-circle"></i>E-mail cadastrado: localiza os chamados da unidade vinculada ao e-mail.</li>
+      <li><i class="bi bi-check-circle"></i>Quando estiver devolvido para a escola, permite enviar complemento e anexos.</li>
+    </ul>
+  </section>
+</div>
+
+<div id="acompanharResultado" class="acompanhar-resultado"></div>
+  </template>
+
+  <template id="tpl-configuracoes">
+<div class="page-title configuracoes-head d-flex justify-content-between align-items-start gap-3 mb-3">
+  <div>
+    <h4 class="text-primary fw-bold mb-1"><i class="bi bi-sliders me-2"></i>Configurações do Sistema</h4>
+    <p class="text-muted small mb-0">Controle parâmetros operacionais sem alterar código: empresa, prazos, alertas, anexos, status e dados institucionais.</p>
+  </div>
+  <div class="d-flex gap-2 flex-wrap justify-content-end">
+    <button class="btn btn-light border fw-bold" onclick="recarregarConfiguracoes(this)"><i class="bi bi-arrow-clockwise me-1"></i>Recarregar</button>
+  </div>
+</div>
+
+<div class="config-save-alert" id="configSaveAlert" style="display:none;">
+  <i class="bi bi-info-circle-fill"></i>
+  <span>Você tem <strong id="configAlteracoesCount">0</strong> alteração(ões) não salva(s). O botão <strong>Salvar alterações</strong> aparecerá fixo na parte inferior da tela.</span>
+</div>
+
+<div class="config-kpi-grid mb-3" id="configKpis"></div>
+
+<div class="config-layout">
+  <aside class="config-sidebar">
+    <div class="config-sidebar-title"><i class="bi bi-grid-1x2-fill me-2"></i>Grupos</div>
+    <div id="configGrupoFiltros" class="config-grupo-list"></div>
+  </aside>
+
+  <section class="config-main">
+    <div class="p-3 bg-white rounded shadow-sm d-flex justify-content-between align-items-center border-start border-4 border-primary mb-3 flex-wrap gap-3">
+      <div class="input-group" style="max-width: 620px; min-width: 280px;">
+        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
+        <input type="text" id="pesquisaConfiguracoes" class="form-control border-start-0" placeholder="Buscar por chave, grupo ou descrição..." onkeyup="renderizarConfiguracoes()">
+      </div>
+      <span class="badge bg-primary px-3 py-2" id="contadorConfiguracoes">0 configurações</span>
+    </div>
+
+    <div class="config-help mb-3">
+      <i class="bi bi-info-circle-fill"></i>
+      <span>Edite os valores desejados. Quando houver alteração, uma barra fixa aparecerá no rodapé com a opção <strong>Salvar alterações</strong>. Se tentar sair sem salvar, o sistema vai pedir confirmação.</span>
+    </div>
+
+    <div id="painelConfiguracoes" class="config-panels"></div>
+  </section>
+</div>
+
+<div class="config-save-bar" id="configSaveBar" style="display:none;">
+  <div>
+    <strong><i class="bi bi-pencil-square me-1"></i>Alterações pendentes</strong>
+    <span id="configSaveBarText">Nenhuma alteração pendente.</span>
+  </div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-light border fw-bold btn-sm" onclick="descartarAlteracoesConfiguracoes(this)"><i class="bi bi-x-circle me-1"></i>Descartar</button>
+    <button class="btn btn-primary fw-bold btn-sm" onclick="salvarConfiguracoesTela(this)"><i class="bi bi-check2-circle me-1"></i>Salvar alterações</button>
+  </div>
+</div>
+
+  </template>
+
+
+  <!-- CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Ponte Supabase (carrega antes dos scripts da app) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/producao.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/login.js"></script>
+  <script src="js/supabase/mapeadores.js"></script>
+  <script src="js/supabase/anexos.js"></script>
+  <script src="js/supabase/dados.js"></script>
+  <script src="js/supabase/api.js"></script>
+
+  <!-- Scripts da aplicação (mesma ordem do Apps Script) -->
+  <script src="js/gom-config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/permissoes.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/router.js"></script>
+  <script src="js/date-br.js"></script>
+  <script src="js/render-chamados.js"></script>
+  <script src="js/modal-chamados.js"></script>
+  <script src="js/empresa.js"></script>
+  <script src="js/formularios.js"></script>
+  <script src="js/obras.js"></script>
+  <script src="js/campo.js"></script>
+  <script src="js/alertas.js"></script>
+  <script src="js/relatorios.js"></script>
+  <script src="js/acompanhar.js"></script>
+  <script src="js/configuracoes-ui.js"></script>
+  <script src="js/triagem-fila-inline.js"></script>
+  <script src="js/fila-secretaria.js"></script>
+  <script src="js/ui-feedback.js"></script>
+  <script src="js/acessibilidade.js"></script>
+  <script src="js/runtime-patch.js"></script>
+  <script src="js/aviso-saida.js"></script>
+
+</body>
+</html>

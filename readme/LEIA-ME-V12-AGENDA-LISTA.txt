@@ -1,0 +1,16 @@
+GOM v12 - Agenda/Acompanhamento em lista operacional
+
+Arquivos:
+- css/styles.css
+- js/fila-secretaria.js
+
+O que muda:
+- Substitui a agenda em colunas por lista vertical agrupada por data.
+- Facilita leitura de unidade, equipe, OS, status, data e descrição.
+- Mantém botão Atualizar agora e refresh leve em background.
+- Mantém o submenu Fila | Agenda / Acompanhamento.
+
+Aplicação:
+git add css/styles.css js/fila-secretaria.js
+git commit -m "Melhora leitura da agenda da fila"
+git push origin main

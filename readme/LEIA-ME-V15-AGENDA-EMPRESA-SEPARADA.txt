@@ -1,0 +1,36 @@
+PATCH V15 - Agenda/Acompanhamento separada por tela
+
+Arquivos alterados:
+- index.html
+- css/styles.css
+- js/router.js
+- js/empresa.js
+- js/fila-secretaria.js
+- js/triagem-fila-inline.js
+
+Correções:
+1) A tela Fila > Agenda/Acompanhamento passa a mostrar somente a agenda da Secretaria/GOM:
+   - Fila de visita
+   - Aguardando visita
+   - Pós-visita sem andamento
+   - Sem equipe
+   - Sem data
+
+2) A tela Empresa ganha uma aba própria no submenu:
+   - Agenda/Acompanhamento
+
+3) A agenda da Empresa mostra somente status de responsabilidade da empresa:
+   - Solicitações de orçamento
+   - OS emitidas
+   - Atendimento emergencial
+   - Garantia de obra
+   - Execução / aguardando execução
+
+4) Os KPIs da agenda viram filtros visuais e têm textos próprios, sem usar a descrição genérica de chamados novos.
+
+5) Fila e Empresa não ficam mais misturadas em uma mesma visão.
+
+Após aplicar, testar:
+- Secretaria > Fila > Agenda/Acompanhamento
+- Empresa > Agenda/Acompanhamento
+- Clicar nos KPIs/filtros das duas telas

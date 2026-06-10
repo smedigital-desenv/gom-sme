@@ -1,0 +1,25 @@
+GOM SME - Patch v25
+
+Correções incluídas:
+1. Datas com calendário nativo nos pontos editáveis principais.
+2. Correção para evitar gravação/exibição D-1 por fuso horário.
+3. Datas da Secretaria e da Empresa separadas:
+   - Secretaria/Fila usa dataAgendamentoVisita/dataVisita.
+   - Empresa/Campo usa dataAtendimento/dataEquipe/dataEquipeDia.
+4. Empresa não grava mais data de atendimento em dataAgendamentoVisita.
+5. Campo/Acompanhamento diário usa a data_equipe/dataAtendimento vigente da empresa.
+6. Agenda da Secretaria não usa datas de atendimento da empresa.
+7. Agenda da Empresa não usa datas de agendamento da Secretaria.
+8. Remove os filtros em balões repetidos abaixo dos KPIs nas agendas.
+9. Mantém os KPIs como filtros principais e ajusta cores dos cards ativos/pendências.
+
+Arquivos:
+- index.html
+- css/styles.css
+- js/date-br.js
+- js/modal-chamados.js
+- js/triagem-fila-inline.js
+- js/fila-secretaria.js
+- js/empresa.js
+- js/campo.js
+- js/supabase/dados.js

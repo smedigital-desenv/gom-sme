@@ -1,0 +1,19 @@
+GOM SME - v35 - Configurações sincronizadas com perfis do Supabase
+
+Arquivos:
+- js/supabase/dados.js
+- sql/07_fix_perfis_configuracoes_homologacao.sql
+
+Correção:
+- A tela Configurações agora puxa usuários ativos da tabela public.perfis.
+- Ao salvar as listas de e-mail em Permissões, o sistema também cria/atualiza public.perfis.
+- E-mails removidos da lista são desativados no perfil correspondente, sem apagar histórico.
+
+Mapeamento:
+- EMAILS_ADMIN_GOM -> ADMIN_GOM
+- EMAILS_GOM_OPERACIONAL -> GOM
+- EMAILS_EMPRESA_ADICIONAIS -> EMPRESA
+- EMAILS_CAMPO -> CAMPO
+- EMAILS_CONFERENTE -> CONFERENTE
+
+Rode o SQL no Supabase antes/depois de aplicar o patch para garantir RLS e grants de homologação.

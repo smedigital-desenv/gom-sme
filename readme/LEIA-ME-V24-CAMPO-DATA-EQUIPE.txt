@@ -1,0 +1,14 @@
+GOM SME - Patch v24
+
+Correções:
+1. Campo / Acompanhamento diário passa a considerar a equipe/data vigente do chamado.
+2. Se a empresa troca a equipe no mesmo dia, o card mostra a última equipe salva.
+3. O histórico continua preservado na linha do tempo, mas o acompanhamento diário não duplica nem mostra equipe antiga como vigente.
+4. Se o atendimento é reagendado de um dia para outro, ele deixa de aparecer no dia antigo e aparece no dia novo.
+5. Botão Atualizar da tela Campo agora força nova leitura do backend, incluindo histórico de equipes.
+6. Tela Empresa aplica atualização local otimista após salvar equipe/data, evitando que o Campo use dados antigos até o refresh.
+
+Arquivos:
+- js/campo.js
+- js/state.js
+- js/empresa.js

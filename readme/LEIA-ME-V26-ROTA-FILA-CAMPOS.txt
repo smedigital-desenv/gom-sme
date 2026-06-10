@@ -1,0 +1,24 @@
+GOM SME - Patch v26
+
+Correções incluídas:
+
+1. Mantém a tela atual ao atualizar a página
+- O sistema passa a salvar a última tela acessada.
+- Ao atualizar/recarregar, volta para a tela em que o usuário estava.
+- Se abrir o sistema sem rota salva/hash, continua iniciando pelo Dashboard.
+- Também preserva submodo da Empresa e submodo da Fila quando possível.
+
+2. Fila: campos de visita só aparecem quando fazem sentido
+- Quando a situação selecionada for Solicitado Orçamento, Atendimento Emergencial, Devolvido para escola ou OS emitida, o sistema oculta Equipe da visita e Data da visita.
+- Para Aguardando visita / Em atendimento / status de visita, mantém Equipe da visita e Data da visita.
+- Ao ocultar os campos, o sistema não envia equipe/data de visita no salvamento, evitando gravações indevidas.
+
+Arquivos alterados:
+- css/styles.css
+- js/router.js
+- js/state.js
+- js/triagem-fila-inline.js
+- js/empresa.js
+- js/fila-secretaria.js
+
+Não há alteração de banco neste patch.

@@ -1,0 +1,21 @@
+GOM SME - Patch v21
+
+Inclui todas as correções do v20 e acrescenta:
+1. Ações rápidas em todos os chamados da Agenda/Acompanhamento da Fila, não só pós-visita.
+2. Remoção visual e lógica do KPI Entrada hoje na tela Fila.
+3. Campo/Acompanhamento diário blindado para mostrar somente registros da data selecionada.
+4. Correções de salvamento de datas com aliases de compatibilidade: dataAgendamentoVisita, dataAgendamento e dataVisita.
+5. Empresa/Execução diária com data individual por card, mantendo a opção de aplicar a data geral somente aos cards alterados.
+6. Ajustes de data brasileira dd/mm/aaaa mantidos.
+
+Arquivos alterados:
+index.html
+css/styles.css
+js/date-br.js
+js/modal-chamados.js
+js/triagem-fila-inline.js
+js/fila-secretaria.js
+js/campo.js
+js/router.js
+js/state.js
+js/empresa.js

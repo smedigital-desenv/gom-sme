@@ -1,0 +1,34 @@
+GOM | SME - Patch v32
+Etapa 2: revisão de regras de acesso visual por perfil.
+
+Arquivos:
+- js/permissoes.js
+- sql/05_seed_perfis_homologacao.sql (opcional)
+
+O que muda:
+1. Centraliza as telas permitidas por perfil.
+2. Garante que EMPRESA/PIN acesse somente a tela Empresa.
+3. Bloqueia navegação direta para telas não permitidas.
+4. Mantém ADMIN_GOM com acesso total.
+5. Mantém GOM sem área Empresa/Configurações/Gerenciar Equipes.
+6. Adiciona funções de diagnóstico no console:
+   - gomPermissoesResumo()
+   - gomTestarPermissao('fila')
+
+Comandos:
+cd /d "C:\Users\DNMCPEREZ\Documents\Projetos\Obras\gom-sme-main"
+
+git status
+git add js/permissoes.js sql/05_seed_perfis_homologacao.sql
+git commit -m "Revisa regras de acesso por perfil"
+git push origin main
+
+Teste:
+1. Entrar com Google ADMIN_GOM: deve ver tudo.
+2. Entrar com PIN Empresa: deve abrir Empresa e não ver Secretaria/Cadastro/Fila.
+3. Atualizar a página como Empresa: deve continuar Empresa.
+4. Console: gomPermissoesResumo()
+5. Console: gomTestarPermissao('fila') como Empresa deve retornar permitido:false.
+
+Observação:
+Este patch não fecha as permissões do Supabase. A RLS definitiva será feita na próxima etapa.

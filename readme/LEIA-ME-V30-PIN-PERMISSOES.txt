@@ -1,0 +1,9 @@
+GOM SME - Patch v30
+Correção: PIN da Empresa não pode acessar Secretaria.
+
+Arquivos:
+- js/login.js
+- js/permissoes.js
+
+O perfil do login híbrido (GomAuth) passa a ser a fonte de verdade das permissões.
+Quando entrar por PIN, o sistema força rota Empresa, esconde Secretaria/Cadastro/Fila e bloqueia acesso direto às demais telas.

@@ -1,0 +1,25 @@
+GOM | SME - Patch v11
+
+Base: patch v9.
+Este pacote deve ser usado no lugar do patch v10, que foi desprezado.
+
+Correções:
+- Restaura a base do patch v9 para index.html, js/login.js e js/router.js.
+- Ajusta visualmente a sidebar da Secretaria.
+- Centraliza os botões/ícones no menu recolhido.
+- Corrige o botão principal de hamburguer para aparecer sem depender do ícone Bootstrap.
+- Mantém o comportamento de expandir por cima da tela sem empurrar o Dashboard.
+- Mantém recolhimento automático ao clicar em item, clicar fora ou tirar o mouse.
+
+Arquivos do patch:
+- index.html
+- css/styles.css
+- js/login.js
+- js/router.js
+
+Comandos sugeridos:
+cd /d "C:\Users\DNMCPEREZ\Documents\Projetos\Obras\gom-sme-main"
+git status
+git add index.html css/styles.css js/login.js js/router.js
+git commit -m "Ajusta sidebar da secretaria com base no patch v9"
+git push origin main

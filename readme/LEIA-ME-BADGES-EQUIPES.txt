@@ -1,0 +1,8 @@
+PATCH - Correção definitiva badges Gerenciar Equipes
+
+Substitua css/styles.css no projeto por este arquivo.
+
+Correção aplicada no final do CSS:
+- força texto branco nos badges Ativa e Inativa da tela Gerenciar Equipes;
+- usa seletores mais específicos para vencer a regra .equipe-gerencial-card-head span;
+- remove efeito de opacity no card inativo.

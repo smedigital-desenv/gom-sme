@@ -1,0 +1,14 @@
+GOM SME - v33 Corrige recursao entre aviso-saida e permissoes
+
+Arquivos:
+- js/permissoes.js
+- js/aviso-saida.js
+
+Correção:
+- Remove o embrulho direto de window.loadPage feito por permissoes.js.
+- aviso-saida.js passa a ser o único interceptor de loadPage.
+- aviso-saida.js consulta gomAutorizarNavegacao() antes de navegar.
+- Evita o loop: aviso-saida -> permissoes -> aviso-saida.
+
+Depois de aplicar:
+Ctrl+F5 no navegador.

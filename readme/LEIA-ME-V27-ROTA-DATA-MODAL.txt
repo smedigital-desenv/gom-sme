@@ -1,0 +1,29 @@
+GOM SME - Patch v27
+
+Correções incluídas:
+1. Mantém a tela atual ao atualizar a página.
+   - A rota salva passa a ser respeitada de forma obrigatória.
+   - O Dashboard só abre quando não existe rota válida salva ou quando o usuário clica em Secretaria/Dashboard.
+   - Preserva subabas já salvas, como Fila > Agenda/Acompanhamento e Empresa > Agenda/Acompanhamento.
+
+2. Corrige o comportamento do login que forçava o Dashboard após autenticação.
+   - O login agora respeita a rota salva, desde que o perfil tenha permissão para ela.
+
+3. Substitui o prompt nativo do navegador em Reagendar visita por um modal visual do sistema.
+   - Campo type=date com calendário nativo.
+   - A pessoa pode selecionar pelo calendário ou digitar.
+   - Visual mais harmonioso e integrado ao layout GOM.
+
+Arquivos alterados:
+- css/styles.css
+- js/fila-secretaria.js
+- js/login.js
+- js/router.js
+- js/state.js
+
+Comandos sugeridos:
+cd /d "C:\Users\DNMCPEREZ\Documents\Projetos\Obras\gom-sme-main"
+git status
+git add css/styles.css js/fila-secretaria.js js/login.js js/router.js js/state.js
+git commit -m "Mantem rota atual e melhora reagendamento com calendario"
+git push origin main

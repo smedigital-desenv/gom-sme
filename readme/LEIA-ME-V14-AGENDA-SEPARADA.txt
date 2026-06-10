@@ -1,0 +1,28 @@
+GOM SME - Patch v14
+Agenda/Acompanhamento separada por responsabilidade
+
+Arquivos:
+- css/styles.css
+- js/fila-secretaria.js
+
+Alterações:
+1. Agenda da Secretaria separada da Agenda da Empresa.
+2. Secretaria mostra somente fila de visita e pós-visita.
+3. Empresa mostra somente orçamento, OS, emergencial, garantia e execução.
+4. KPIs da agenda agora funcionam como filtros próprios, sem usar o texto padrão dos KPIs globais.
+5. Descrições corrigidas para Agenda Secretaria, Agenda Empresa e Pendências.
+6. Filtros mais intuitivos por responsabilidade.
+7. Ações pós-visita mantidas somente na área da Secretaria:
+   - Reagendar visita
+   - Encaminhar para orçamento
+   - Encaminhar como emergencial
+   - Devolver para escola
+   - Registrar justificativa
+   - Abrir chamado
+
+Comandos sugeridos:
+cd /d "C:\Users\DNMCPEREZ\Documents\Projetos\Obras\gom-sme-main"
+git status
+git add css/styles.css js/fila-secretaria.js
+git commit -m "Separa agenda da secretaria e empresa"
+git push origin main

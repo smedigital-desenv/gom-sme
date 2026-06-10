@@ -1,0 +1,18 @@
+GOM SME - Patch v29
+Correção definitiva de datas D-1
+
+Arquivos alterados:
+- js/supabase/mapeadores.js
+- js/date-br.js
+
+O que corrige:
+1. Datas do tipo DATE vindas do Supabase, como 2026-06-17, não são mais interpretadas como UTC.
+2. A data selecionada no calendário deve permanecer exatamente no dia escolhido.
+3. Corrige exibição e chaves internas usadas em Agenda, Campo, Empresa, Fila e previsões.
+4. Não altera banco de dados.
+
+Teste recomendado:
+- Reagendar uma visita para 17/06/2026.
+- Confirmar no Supabase que data_agendamento_visita ficou 2026-06-17.
+- Confirmar na Agenda que aparece em 17/06/2026, não em 16/06/2026.
+- Testar data da Empresa/Campo com o mesmo padrão.
