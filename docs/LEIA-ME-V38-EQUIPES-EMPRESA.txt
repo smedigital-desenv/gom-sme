@@ -1,0 +1,13 @@
+GOM SME - Patch v38
+Correção: Tela Empresa não deve listar equipes da Secretaria/GOM.
+
+Arquivo alterado:
+- js/empresa.js
+
+O que foi ajustado:
+- A tela Empresa > Execução diária agora usa somente window.listaEquipesEmpresaGlobal.
+- Remove o uso de window.listaEquipesGlobal nos selects da Empresa, pois essa lista é da Secretaria.
+- Se não existir equipe da empresa cadastrada, o select mostra "Nenhuma equipe da empresa cadastrada" e fica desabilitado.
+- Para usar a Execução diária, cadastre equipes em Empresa > Equipes.
+
+Não há alteração no banco de dados.

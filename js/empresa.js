@@ -1294,12 +1294,24 @@ function renderLinhaExecucaoDiaria(item) {
     : '';
   var miniaturasAnexos = typeof renderMiniaturasAnexosChamado === 'function' ? renderMiniaturasAnexosChamado(item, 3) : '';
 
-  var opts = '<option value="">-- Selecionar equipe --</option>';
-  (window.listaEquipesGlobal || []).forEach(function(e) {
-    var nome = String(e && e.nome ? e.nome : e);
-    var selected = equipeAtual === nome ? ' selected' : '';
-    opts += '<option value="' + escapeHtml(nome) + '"' + selected + '>' + escapeHtml(nome) + '</option>';
-  });
+  var equipesEmpresaDisponiveis = Array.isArray(window.listaEquipesEmpresaGlobal)
+    ? window.listaEquipesEmpresaGlobal.slice()
+    : [];
+
+  // Segurança operacional: a tela da Empresa só pode listar equipes do tipo
+  // "empresa". Nunca usar listaEquipesGlobal aqui, pois ela contém as equipes
+  // internas da Secretaria/GOM.
+  var opts = '<option value="">-- Selecionar equipe da empresa --</option>';
+  if (!equipesEmpresaDisponiveis.length) {
+    opts = '<option value="">Nenhuma equipe da empresa cadastrada</option>';
+  } else {
+    equipesEmpresaDisponiveis.forEach(function(e) {
+      var nome = String(e && e.nome ? e.nome : e);
+      var selected = equipeAtual === nome ? ' selected' : '';
+      opts += '<option value="' + escapeHtml(nome) + '"' + selected + '>' + escapeHtml(nome) + '</option>';
+    });
+  }
+  var selectEquipeEmpresaDisabled = equipesEmpresaDisponiveis.length ? '' : ' disabled';
 
   return [
     '<div class="empresa-os-list-row empresa-os-list-row-v2 ' + classe + rowAlterada + '" style="--card-accent:' + cor + ';">',
@@ -1322,7 +1334,7 @@ function renderLinhaExecucaoDiaria(item) {
       '</div>',
       '<form id="' + formId + '" class="empresa-os-form-inline" data-label="Equipe do dia" onsubmit="event.preventDefault(); marcarEncaminhamentoDiaEmpresaAlterado(\'' + idJs + '\')">',
         '<label class="empresa-field-label">Equipe do dia</label>',
-        '<select class="form-select form-select-sm fw-bold" name="equipe" required onchange="marcarEncaminhamentoDiaEmpresaAlterado(\'' + idJs + '\')">' + opts + '</select>',
+        '<select class="form-select form-select-sm fw-bold" name="equipe" required' + selectEquipeEmpresaDisabled + ' onchange="marcarEncaminhamentoDiaEmpresaAlterado(\'' + idJs + '\')">' + opts + '</select>',
         '<label class="empresa-field-label mt-1"><i class="bi bi-calendar3 me-1"></i>Data do atendimento</label>',
         '<input class="form-control form-control-sm gom-date-br-input empresa-data-individual-input" type="date" id="empresaDataAtendimento_' + formIdSeguro + '" name="dataAtendimento" value="' + dataAtendimentoInput + '" onchange="gomNormalizarDataBrInput(this);marcarEncaminhamentoDiaEmpresaAlterado(\'' + idJs + '\')">',
       '</form>',
