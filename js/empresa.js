@@ -337,9 +337,32 @@ function setEmpresaModo(modo, botao) {
   Array.prototype.forEach.call(tabs, function(b) { b.classList.remove('active'); });
   if (botao) botao.classList.add('active');
 
-  if (window.empresaModoAtual === 'gerencial') carregarHistoricoCampoEmpresaSePreciso();
+  if (window.empresaModoAtual === 'gerencial') {
+    carregarHistoricoCampoEmpresaSePreciso({ forcar: true });
+    empresaForcarAtualizacaoGerencialOs_();
+  }
   gomEmpresaAtualizarVisibilidadeData_();
   renderizarTela();
+}
+
+function empresaForcarAtualizacaoGerencialOs_() {
+  if (window.empresaGerencialAtualizando) return;
+  window.empresaGerencialAtualizando = true;
+  var finalizar = function() {
+    window.empresaGerencialAtualizando = false;
+    if (window.telaAtual === 'empresa' && (window.empresaModoAtual || 'diario') === 'gerencial' && typeof renderizarTela === 'function') {
+      renderizarTela();
+    }
+  };
+  try {
+    if (typeof refreshChamados === 'function') {
+      refreshChamados(finalizar);
+    } else {
+      finalizar();
+    }
+  } catch (e) {
+    window.empresaGerencialAtualizando = false;
+  }
 }
 
 // Mostra o campo de data global só na Execução diária (e Orçamentos, opcional).
@@ -447,7 +470,7 @@ function renderEmpresaView(listaRender) {
   }
 
   if (modo === 'gerencial') {
-    var statusGerencial = window.STATUS_EMPRESA_GERENCIAL || ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Serviço Realizado'];
+    var statusGerencial = window.STATUS_EMPRESA_GERENCIAL || ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra'];
     var listaGer = listaBase.filter(function(i) {
       return statusGerencial.indexOf(normalizarSituacaoSistema(i.situacao || i.status)) !== -1;
     });
@@ -1349,7 +1372,7 @@ function renderLinhaExecucaoDiaria(item) {
 function renderGerencialOsEmpresa(lista) {
   carregarHistoricoCampoEmpresaSePreciso();
 
-  var statusGerencial = window.STATUS_EMPRESA_GERENCIAL || ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Serviço Realizado'];
+  var statusGerencial = window.STATUS_EMPRESA_GERENCIAL || ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra'];
   var listaBase = Array.isArray(lista) ? lista.slice() : [];
 
   // Blindagem: se algum re-render chegar sem lista, remonta direto da lista global.
@@ -1363,16 +1386,17 @@ function renderGerencialOsEmpresa(lista) {
   var listaFiltrada = filtrarGerencialOsEmpresa(listaBase || []);
   var buscaAtual = valorCampoGerencial_(window.empresaGerencialBusca || '');
 
+  var avisoAtualizando = window.empresaGerencialAtualizando ? '<div class="alert alert-info py-2 px-3 mb-3"><span class="spinner-border spinner-border-sm me-2"></span>Atualizando dados do Gerencial OS...</div>' : '';
   return [
     '<div class="empresa-gerencial-wrap">',
+      avisoAtualizando,
       '<div class="empresa-gerencial-resumo">',
         '<div class="empresa-mini-kpi"><span>OS em acompanhamento</span><strong>' + escapeHtml(resumo.total) + '</strong><small>ordens, emergências e garantias</small></div>',
         resumo.vencidas > 0 ? '<div class="empresa-mini-kpi perigo"><span>Previsão vencida</span><strong>' + escapeHtml(resumo.vencidas) + '</strong><small>atendimentos fora do prazo</small></div>' : '',
-        resumo.realizados > 0 ? '<div class="empresa-mini-kpi ok"><span>Serviço realizado</span><strong>' + escapeHtml(resumo.realizados) + '</strong><small>aguardando validação/finalização</small></div>' : '',
       '</div>',
       '<div class="empresa-gerencial-filtros-v7">',
         '<div class="input-group empresa-gerencial-busca"><span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span><input id="empresaGerencialBusca" type="text" class="form-control border-start-0" placeholder="Buscar unidade, OS, equipe ou descrição..." value="' + escapeHtml(buscaAtual) + '" oninput="setEmpresaGerencialBusca(this)"></div>',
-        '<select class="form-select" id="empresaGerencialStatus" onchange="setEmpresaGerencialStatus(this)">' + montarOptionsGerencialEmpresa(['Todos','OS emitida','Atendimento Emergencial','Garantia de Obra','Serviço Realizado'], window.empresaGerencialStatus || 'Todos') + '</select>',
+        '<select class="form-select" id="empresaGerencialStatus" onchange="setEmpresaGerencialStatus(this)">' + montarOptionsGerencialEmpresa(['Todos','OS emitida','Atendimento Emergencial','Garantia de Obra'], window.empresaGerencialStatus || 'Todos') + '</select>',
         '<select class="form-select" id="empresaGerencialPrazo" onchange="setEmpresaGerencialPrazo(this)">' + montarOptionsGerencialEmpresa(['Todos','Vencidas','Sem previsão','No prazo'], window.empresaGerencialPrazo || 'Todos') + '</select>',
         '<button type="button" class="btn btn-light border fw-bold" onclick="limparFiltrosGerencialEmpresa()"><i class="bi bi-x-circle me-1"></i>Limpar</button>',
       '</div>',
@@ -1753,7 +1777,15 @@ async function finalizarOsEmpresaFront(e, id) {
   try {
     payload.anexosServico = await arquivosInputParaBase64(form.querySelector('[name="anexosServico"]'));
     google.script.run
-      .withSuccessHandler(function() { refreshChamados(function() { carregarHistoricoCampoEmpresaSePreciso({ forcar: true }); if (window.telaAtual === 'empresa' && typeof renderizarTela === 'function') renderizarTela(); }); })
+      .withSuccessHandler(function() {
+        if (typeof window.gomAtualizarChamadoLocal === 'function') {
+          window.gomAtualizarChamadoLocal(id, { situacao: 'Serviço Realizado' });
+        }
+        refreshChamados(function() {
+          carregarHistoricoCampoEmpresaSePreciso({ forcar: true });
+          if (window.telaAtual === 'empresa' && typeof renderizarTela === 'function') renderizarTela();
+        });
+      })
       .withFailureHandler(function(err) {
         if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(botao);
         else if (botao) botao.disabled = false;

@@ -1,0 +1,11 @@
+GOM SME - Patch v39
+
+Correções:
+1. Gerencial OS força atualização de chamados/histórico ao abrir a aba, reduzindo problema de tela sem informações por cache antigo.
+2. Finalizar OS pela Empresa muda para "Serviço Realizado" e encaminha para Aprovação/Validação da GOM, não para Memorial direto.
+3. Serviço Realizado sai da aba Gerencial OS da Empresa após finalização.
+4. Tela Aprovação passa a validar também serviços realizados, além de orçamentos devolvidos.
+5. Número da OS passa a ser gerado automaticamente pelo sistema ao aprovar orçamento.
+6. Validação final da GOM pode concluir e mandar ao Memorial, enviar para Garantia de Obra ou devolver para escola.
+
+Não exige alteração no banco de dados.

@@ -70,7 +70,7 @@ function filtrarTelaChamados(lista) {
   const getStatusEmpresaPorModo = function() {
     const modo = window.empresaModoAtual || 'diario';
     if (modo === 'orcamentos') return window.STATUS_EMPRESA_ORCAMENTO || ['Solicitado Orçamento'];
-    if (modo === 'gerencial') return window.STATUS_EMPRESA_GERENCIAL || ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Serviço Realizado'];
+    if (modo === 'gerencial') return window.STATUS_EMPRESA_GERENCIAL || ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra'];
     if (modo === 'equipes') return [];
     return window.STATUS_EMPRESA_DIARIO || ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra'];
   };
@@ -132,7 +132,7 @@ function renderizarKPIsChamados(listaTela) {
       statuses = window.STATUS_EMPRESA_ORCAMENTO || ['Solicitado Orçamento'];
       tituloTotal = 'Orçamentos';
     } else if (modoEmpresa === 'gerencial') {
-      statuses = window.STATUS_EMPRESA_GERENCIAL || ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Serviço Realizado'];
+      statuses = window.STATUS_EMPRESA_GERENCIAL || ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra'];
       tituloTotal = 'OS em acompanhamento';
     } else {
       statuses = window.STATUS_EMPRESA_DIARIO || ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra'];
@@ -788,10 +788,13 @@ function renderAprovacaoView(lista, listaGlobal) {
     '<div class="aprovacao-lista-oficial">',
       '<div class="aprovacao-lista-head">',
         '<div>Unidade / problema</div>',
-        '<div>Orçamento da empresa</div>',
+        '<div>Informações para validação</div>',
         '<div>Parecer e decisão</div>',
       '</div>',
-      registros.map(renderLinhaAprovacaoOrcamento).join(''),
+      registros.map(function(item) {
+        const st = normalizarSituacaoSistema(item.situacao || item.status);
+        return st === 'Serviço Realizado' ? renderLinhaAprovacaoServico(item) : renderLinhaAprovacaoOrcamento(item);
+      }).join(''),
     '</div>'
   ].join('');
 }
@@ -849,6 +852,92 @@ function abrirEmpresaOrcamentosAprovacao() {
   }, 80);
 }
 
+
+function renderLinhaAprovacaoServico(item) {
+  const idOriginal = String(item.id || '');
+  const id = escapeHtml(idOriginal);
+  const idJs = escapeJsAttr(idOriginal);
+  const unidade = escapeHtml(item.unidade || 'Unidade não informada');
+  const detalheCompleto = escapeHtml(item.detalhamento || 'Sem detalhamento informado.');
+  const detalheCurto = escapeHtml(resumirTextoAprovacao(item.detalhamento || 'Sem detalhamento informado.', 180));
+  const obsEmpresa = escapeHtml(item.observacoes || 'Sem observações registradas.');
+  const dataAcao = escapeHtml(item.dataHoraUltimaAcao || item.dataHora || item.data || '-');
+  const equipe = escapeHtml(item.equipe || item.equipeDia || item.equipeResponsavel || 'Equipe não informada');
+  const numeroOs = escapeHtml(item.numeroOs || item.numero_os || 'Sem número');
+  const formId = 'formValidacaoServico_' + id;
+  const anexos = renderAnexosGrupo('Anexos do serviço realizado', item.anexosServico || item.anexos);
+
+  return [
+    '<div class="aprovacao-row" style="--card-accent: var(--servico-realizado, #10b981);">',
+      '<div class="aprovacao-unidade" data-label="Unidade / problema">',
+        '<details class="empresa-expand">',
+          '<summary><span class="empresa-unidade-link">' + unidade + '</span><span class="empresa-os-id">#' + id + '</span></summary>',
+          '<div class="empresa-expand-body">',
+            '<div class="modal-label">Descrição completa</div>',
+            '<div class="card-detail mb-2">' + detalheCompleto + '</div>',
+            '<button type="button" class="btn btn-light btn-sm border fw-bold" onclick="abrirModalAnalise(\'' + idJs + '\')"><i class="bi bi-box-arrow-up-right me-1"></i>Abrir detalhes completos</button>',
+          '</div>',
+        '</details>',
+        '<div class="empresa-os-desc">' + detalheCurto + '</div>',
+      '</div>',
+
+      '<div class="aprovacao-orcamento" data-label="Informações para validação">',
+        '<div class="aprovacao-valor"><i class="bi bi-check2-circle"></i><strong>Serviço realizado</strong></div>',
+        '<div class="aprovacao-meta"><i class="bi bi-hash"></i><span>OS: ' + numeroOs + '</span></div>',
+        '<div class="aprovacao-meta"><i class="bi bi-people"></i><span>Equipe: ' + equipe + '</span></div>',
+        '<div class="aprovacao-meta"><i class="bi bi-calendar3"></i><span>Informado em: ' + dataAcao + '</span></div>',
+        '<div class="aprovacao-obs"><strong>Observações da empresa:</strong><br>' + obsEmpresa + '</div>',
+        anexos || '<div class="aprovacao-anexo-vazio"><i class="bi bi-paperclip"></i> Nenhum anexo de serviço informado.</div>',
+      '</div>',
+
+      '<form id="' + formId + '" class="aprovacao-decisao" data-label="Parecer e decisão" onsubmit="salvarValidacaoServicoFront(event,\'' + idJs + '\')">',
+        '<label class="empresa-field-label">Parecer interno</label>',
+        '<textarea class="form-control form-control-sm" name="observacoes" rows="3" placeholder="Validação da execução, motivo de garantia ou devolução..."></textarea>',
+        '<div class="aprovacao-form-grid mt-2">',
+          '<div>',
+            '<label class="empresa-field-label">Decisão</label>',
+            '<select class="form-select form-select-sm fw-bold" name="situacao" required>',
+              '<option value="">Selecione...</option>',
+              '<option value="Concluído">Validar e enviar ao Memorial</option>',
+              '<option value="Garantia de Obra">Enviar para garantia</option>',
+              '<option value="Devolvido para a escola">Devolver para escola</option>',
+            '</select>',
+          '</div>',
+        '</div>',
+        '<div class="aprovacao-decisao-help">Após validação, o chamado concluído será encaminhado ao Memorial. Garantia volta para a Empresa.</div>',
+        '<button class="btn btn-success btn-sm fw-bold aprovacao-submit"><i class="bi bi-check2-square me-1"></i>Registrar validação</button>',
+      '</form>',
+    '</div>'
+  ].join('');
+}
+
+function salvarValidacaoServicoFront(e, id) {
+  if (e && typeof e.preventDefault === 'function') e.preventDefault();
+  const form = e.target;
+  const payload = formToObject(form);
+  payload.id = id;
+  if (!payload.situacao) {
+    alert('Selecione uma decisão.');
+    return;
+  }
+  const botao = form.querySelector('button[type="submit"], .aprovacao-submit');
+  if (typeof gomSetButtonLoading === 'function') gomSetButtonLoading(botao, 'Registrando validação...');
+  else if (botao) botao.disabled = true;
+  google.script.run
+    .withSuccessHandler(function() {
+      refreshChamados(function() {
+        if (typeof renderizarTela === 'function') renderizarTela();
+      });
+    })
+    .withFailureHandler(function(err) {
+      if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(botao);
+      else if (botao) botao.disabled = false;
+      if (typeof gomMostrarErroAcao === 'function') gomMostrarErroAcao(err, 'Não foi possível registrar a validação.');
+      else alert((err && err.message) || err);
+    })
+    .atualizarChamadoWorkflow(payload);
+}
+
 function renderLinhaAprovacaoOrcamento(item) {
   const idOriginal = String(item.id || '');
   const id = escapeHtml(idOriginal);
@@ -901,7 +990,7 @@ function renderLinhaAprovacaoOrcamento(item) {
           '</div>',
           '<div>',
             '<label class="empresa-field-label">Número da OS</label>',
-            '<input class="form-control form-control-sm" name="numeroOs" id="aprovNumeroOs_' + id + '" placeholder="Obrigatório ao aprovar" disabled>',
+            '<input class="form-control form-control-sm" name="numeroOs" id="aprovNumeroOs_' + id + '" placeholder="Gerado automaticamente pelo sistema" disabled>',
           '</div>',
           '<div>',
             '<label class="empresa-field-label">Previsão de conclusão</label>',
@@ -925,7 +1014,7 @@ function atualizarCamposAprovacao(select, id) {
   if (numeroOs) {
     const aprovar = decisao === 'aprovar';
     numeroOs.disabled = !aprovar;
-    numeroOs.required = aprovar;
+    numeroOs.required = false;
     if (!aprovar) numeroOs.value = '';
   }
 
@@ -935,7 +1024,7 @@ function atualizarCamposAprovacao(select, id) {
 
   if (help) {
     const mensagens = {
-      aprovar: 'Ao aprovar, o número da OS é obrigatório. A previsão será usada para controle de prazo.',
+      aprovar: 'Ao aprovar, o número da OS será gerado automaticamente pelo sistema. A previsão será usada para controle de prazo.',
       ajuste: 'O orçamento volta para a empresa como Solicitado Orçamento, com o parecer interno registrado.',
       negar: 'O chamado será encaminhado ao Memorial como A cargo da unidade escolar.',
       devolver_escola: 'O chamado será devolvido para a escola e ficará no Memorial.'
@@ -955,14 +1044,7 @@ function salvarDecisaoAprovacaoFront(e, id) {
     return;
   }
 
-  if (payload.decisao === 'aprovar' && !String(payload.numeroOs || '').trim()) {
-    alert('Informe o número da OS para aprovar o orçamento.');
-    const input = form.querySelector('[name="numeroOs"]');
-    if (input) input.focus();
-    return;
-  }
-
-  const botao = form.querySelector('button[type="submit"], .aprovacao-submit');
+    const botao = form.querySelector('button[type="submit"], .aprovacao-submit');
   if (typeof gomSetButtonLoading === 'function') gomSetButtonLoading(botao, 'Registrando decisão...');
   else if (botao) {
     botao.disabled = true;
@@ -996,5 +1078,6 @@ function resumirTextoAprovacao(valor, limite) {
 window.renderAprovacaoView = renderAprovacaoView;
 window.atualizarCamposAprovacao = atualizarCamposAprovacao;
 window.salvarDecisaoAprovacaoFront = salvarDecisaoAprovacaoFront;
+window.salvarValidacaoServicoFront = salvarValidacaoServicoFront;
 
 window.abrirEmpresaOrcamentosAprovacao = abrirEmpresaOrcamentosAprovacao;

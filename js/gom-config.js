@@ -105,16 +105,16 @@ var empresaDetalheAberto = window.empresaDetalheAberto = window.empresaDetalheAb
 var usuarioAtualGom = window.usuarioAtualGom = window.usuarioAtualGom || null;
 var permissoesCarregadas = window.permissoesCarregadas = Boolean(window.permissoesCarregadas);
 
-var TELAS_WEB = window.TELAS_WEB = ['dashboard','triagem','fila','aprovacao','empresa','campo','alertas','obras','historico','relatorios','cadastro','equipes','acompanhar','configuracoes'];
+var TELAS_WEB = window.TELAS_WEB = ['dashboard','triagem','fila','aprovacao','empresa','campo','alertas','obras','historico','relatorios','cadastro','acompanhar','configuracoes'];
 var TELAS_CHAMADOS = window.TELAS_CHAMADOS = ['triagem','fila','aprovacao','empresa','historico'];
 
 var STATUS_TRIAGEM = window.STATUS_TRIAGEM = ['Em análise'];
 var STATUS_FILA = window.STATUS_FILA = ['Aguardando visita', 'Em atendimento'];
-var STATUS_APROVACAO = window.STATUS_APROVACAO = ['Orçamento Realizado'];
+var STATUS_APROVACAO = window.STATUS_APROVACAO = ['Orçamento Realizado', 'Serviço Realizado'];
 var STATUS_EMPRESA = window.STATUS_EMPRESA = ['Solicitado Orçamento', 'OS emitida', 'Atendimento Emergencial', 'Garantia de Obra'];
 var STATUS_EMPRESA_DIARIO = window.STATUS_EMPRESA_DIARIO = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra'];
 var STATUS_EMPRESA_ORCAMENTO = window.STATUS_EMPRESA_ORCAMENTO = ['Solicitado Orçamento'];
-var STATUS_EMPRESA_GERENCIAL = window.STATUS_EMPRESA_GERENCIAL = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Serviço Realizado'];
+var STATUS_EMPRESA_GERENCIAL = window.STATUS_EMPRESA_GERENCIAL = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra'];
 var STATUS_CAMPO = window.STATUS_CAMPO = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra'];
 var STATUS_MEMORIAL = window.STATUS_MEMORIAL = ['Concluído', 'Encaminhado para outra gerência ou Unidade escolar.', 'A cargo da unidade escolar', 'Duplicado', 'Devolvido para a escola'];
 

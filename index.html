@@ -318,22 +318,22 @@
   </template>
 
   <template id="tpl-aprovacao">
-<h4 class="text-primary fw-bold mb-1"><i class="bi bi-clipboard2-check me-2"></i>Aprovação de Orçamentos</h4>
-<p class="text-muted small mb-3">Orçamentos devolvidos pela empresa aguardando decisão interna. Ao aprovar, informe obrigatoriamente o número da OS; a previsão pode vir da empresa no orçamento e pode ser ajustada aqui.</p>
+<h4 class="text-primary fw-bold mb-1"><i class="bi bi-clipboard2-check me-2"></i>Aprovação e Validação</h4>
+<p class="text-muted small mb-3">Orçamentos devolvidos pela empresa e serviços realizados aguardando decisão interna. O número da OS é gerado automaticamente pelo sistema ao aprovar orçamento.</p>
 
 <div id="kpiGrid" class="kpi-grid"></div>
 
 <div class="aprovacao-help mb-3">
   <i class="bi bi-info-circle-fill"></i>
-  <span><strong>Fluxo correto:</strong> a empresa devolve o orçamento, a GOM analisa, registra parecer interno e decide: aprovar, devolver para ajuste, negar ou devolver para a escola.</span>
+  <span><strong>Fluxo correto:</strong> a empresa devolve orçamento ou informa serviço realizado; a GOM valida e decide o próximo encaminhamento antes do Memorial.</span>
 </div>
 
 <div class="p-3 bg-white rounded shadow-sm d-flex justify-content-between align-items-center border-start border-4 border-warning mb-3 flex-wrap gap-3">
   <div class="input-group" style="max-width: 680px; min-width: 280px;">
     <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
-    <input type="text" id="pesquisa" class="form-control border-start-0" placeholder="Buscar por unidade, ID, valor, observação ou descrição..." onkeyup="renderizarTela()">
+    <input type="text" id="pesquisa" class="form-control border-start-0" placeholder="Buscar por unidade, ID, OS, valor, observação ou descrição..." onkeyup="renderizarTela()">
   </div>
-  <span class="badge bg-warning text-dark px-3 py-2" id="contador">0 orçamentos</span>
+  <span class="badge bg-warning text-dark px-3 py-2" id="contador">0 pendências</span>
 </div>
 
 <div id="painelDados" class="aprovacao-lista"></div>

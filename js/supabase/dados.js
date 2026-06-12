@@ -615,10 +615,28 @@ window.GomDados = (function () {
     return true;
   }
 
+
+  async function _gerarNumeroOsAutomatico() {
+    const ano = new Date().getFullYear();
+    try {
+      const r = await window.SB.from('solicitacoes').select('numero_os').ilike('numero_os', '%/' + ano);
+      if (r.error) return '';
+      let maior = 0;
+      (r.data || []).forEach(row => {
+        const m = String(row.numero_os || '').match(/^(\d+)\s*\/\s*(\d{4})$/);
+        if (m && Number(m[2]) === ano) maior = Math.max(maior, Number(m[1]) || 0);
+      });
+      return String(maior + 1) + '/' + ano;
+    } catch (e) {
+      return '';
+    }
+  }
+
   async function aprovarOrcamento(p) {
     const id = p.id; const atual = await _getChamado(id);
-    const numeroOs = String(p.numeroOs || atual.numero_os || '').trim();
-    if (!numeroOs) throw new Error('Informe o número da OS para aprovar o orçamento.');
+    let numeroOs = String(p.numeroOs || atual.numero_os || '').trim();
+    if (!numeroOs) numeroOs = await _gerarNumeroOsAutomatico();
+    if (!numeroOs) numeroOs = String(id) + '/' + new Date().getFullYear();
     const u = { situacao: 'OS emitida', numero_os: numeroOs, observacoes: M.appendObservacao(atual.observacoes, p.observacoes, 'Orçamento aprovado'), data_hora_ultima_acao: _nowISO(), data_hora_encaminhamento: _nowISO() };
     if (p.dataPrevistaConclusao) u.data_prevista_conclusao = _date(p.dataPrevistaConclusao);
     await _update(id, u);
@@ -636,7 +654,7 @@ window.GomDados = (function () {
     const r = mapa[dec]; if (!r) throw new Error('Decisão inválida.');
     const [stNovo, rotulo] = r;
     const u = { situacao: stNovo, observacoes: M.appendObservacao(atual.observacoes, parecer, rotulo), data_hora_ultima_acao: _nowISO() };
-    if (stNovo === 'OS emitida') { const n = String(p.numeroOs || '').trim(); if (!n) throw new Error('Informe o número da OS para aprovar.'); u.numero_os = n; u.data_hora_encaminhamento = _nowISO(); if (p.dataPrevistaConclusao) u.data_prevista_conclusao = _date(p.dataPrevistaConclusao); }
+    if (stNovo === 'OS emitida') { let n = String(p.numeroOs || atual.numero_os || '').trim(); if (!n) n = await _gerarNumeroOsAutomatico(); if (!n) n = String(id) + '/' + new Date().getFullYear(); u.numero_os = n; u.data_hora_encaminhamento = _nowISO(); if (p.dataPrevistaConclusao) u.data_prevista_conclusao = _date(p.dataPrevistaConclusao); }
     if (stNovo === 'Solicitado Orçamento') u.data_hora_encaminhamento = _nowISO();
     if (['A cargo da unidade escolar', 'Devolvido para a escola'].includes(stNovo)) u.data_conclusao_os = _nowISO();
     const _anexosAtual = p.anexosAtualizacao || p.anexos || [];
@@ -661,11 +679,11 @@ window.GomDados = (function () {
   async function finalizarOsEmpresa(p) {
     const id = p.id; const atual = await _getChamado(id);
     if (Array.isArray(p.anexosServico) && p.anexosServico.length) await window.GomAnexos.upload(id, 'servico', p.anexosServico);
-    const u = { situacao: 'Serviço Realizado', observacoes: M.appendObservacao(atual.observacoes, p.observacoes, 'Serviço realizado pela empresa'), data_hora_ultima_acao: _nowISO(), data_conclusao_os: _nowISO() };
+    const u = { situacao: 'Serviço Realizado', observacoes: M.appendObservacao(atual.observacoes, p.observacoes, 'Serviço realizado pela empresa - aguardando validação GOM'), data_hora_ultima_acao: _nowISO() };
     if (p.equipe) { u.equipe_responsavel = p.equipe; u.data_equipe = _nowISO(); }
     if (p.numeroOs !== undefined) u.numero_os = p.numeroOs || atual.numero_os || '';
     await _update(id, u);
-    await _atendimento({ solicitacao_id: id, status: 'Serviço Realizado', numero_os: p.numeroOs || atual.numero_os || '', equipe: p.equipe || atual.equipe_responsavel || '', observacoes_dia: p.observacoes || '', data_conclusao: M.todayKey(), data_atendimento: M.todayKey(), tipo_registro: 'Finalização OS' });
+    await _atendimento({ solicitacao_id: id, status: 'Serviço Realizado', numero_os: p.numeroOs || atual.numero_os || '', equipe: p.equipe || atual.equipe_responsavel || '', observacoes_dia: p.observacoes || '', data_atendimento: M.todayKey(), tipo_registro: 'Finalização OS - aguardando validação' });
     await _log({ solicitacao_id: id, acao: 'OS finalizada pela empresa', status_anterior: atual.situacao, status_novo: 'Serviço Realizado', observacao: p.observacoes || '', equipe: p.equipe || '' });
     return true;
   }

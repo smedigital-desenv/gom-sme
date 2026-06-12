@@ -98,7 +98,7 @@ window.GomMap = (function () {
     'Atendimento Emergencial': { tela: 'empresa', exigeEquipeDia: true, exigeObservacao: true, anexoPermitido: 'servico', proximos: ['Serviço Realizado'] },
     'Garantia de Obra': { tela: 'empresa', exigeEquipeDia: true, exigeObservacao: true, anexoPermitido: 'servico', proximos: ['Serviço Realizado'] },
     'Em atendimento': { tela: 'fila', legado: true, proximos: ['Serviço Realizado', 'Devolvido para a escola', 'Solicitado Orçamento', 'Atendimento Emergencial'] },
-    'Serviço Realizado': { tela: 'triagem', proximos: ['Concluído', 'Garantia de Obra', 'Devolvido para a escola'] },
+    'Serviço Realizado': { tela: 'aprovacao', exigeValidacaoServico: true, proximos: ['Concluído', 'Garantia de Obra', 'Devolvido para a escola'] },
     'Visita Técnica': { tela: 'fila', legado: true, proximos: ['Devolvido para a escola', 'Atendimento Emergencial', 'Solicitado Orçamento'] },
     'Devolvido para a escola': { tela: 'memorial', finalizado: true, proximos: [] },
     'Concluído': { tela: 'memorial', finalizado: true, proximos: [] },
