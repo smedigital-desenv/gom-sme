@@ -243,6 +243,9 @@ function loadPage(pageName, inicial=false) {
       });
       if (alvo) alvo.classList.add('active');
       if (typeof renderizarListaEquipes === 'function') renderizarListaEquipes();
+      if (window.empresaModoAtual === 'gerencial' && typeof carregarGerencialOsEmpresaAtualizado_ === 'function') {
+        carregarGerencialOsEmpresaAtualizado_({ forcar: true });
+      }
     }, 0);
   }
 

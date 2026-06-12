@@ -310,6 +310,54 @@ function salvarEncaminhamentosDiaEmpresa(botao) {
 }
 
 
+
+
+// =============================================================
+// V40 - Gerencial OS: carregamento determinístico
+// Garante que a aba Gerencial OS não dependa de abrir outra aba antes.
+// Recarrega chamados/histórico ao entrar na aba e evita filtros invisíveis.
+// =============================================================
+function gomEmpresaGerencialStatusPermitidos_() {
+  return window.STATUS_EMPRESA_GERENCIAL || ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra'];
+}
+
+function gomEmpresaGerencialResetarFiltros_() {
+  window.empresaGerencialBusca = '';
+  window.empresaGerencialStatus = 'Todos';
+  window.empresaGerencialPrazo = 'Todos';
+}
+
+function carregarGerencialOsEmpresaAtualizado_(opcoes) {
+  opcoes = opcoes || {};
+  if (window.empresaGerencialAtualizando && !opcoes.forcar) return;
+  var agora = Date.now();
+  if (!opcoes.forcar && window.empresaGerencialUltimoRefresh && (agora - window.empresaGerencialUltimoRefresh < 2500)) return;
+
+  window.empresaGerencialAtualizando = true;
+  window.empresaGerencialUltimoRefresh = agora;
+
+  try {
+    if (typeof carregarHistoricoCampoEmpresaSePreciso === 'function') carregarHistoricoCampoEmpresaSePreciso({ forcar: !!opcoes.forcar });
+  } catch(e) {}
+
+  if (typeof carregarChamados === 'function') {
+    carregarChamados({
+      renderizar: true,
+      forcar: true,
+      callback: function() {
+        window.empresaGerencialAtualizando = false;
+        try { if (typeof carregarHistoricoCampoEmpresaSePreciso === 'function') carregarHistoricoCampoEmpresaSePreciso({ forcar: !!opcoes.forcar }); } catch(e) {}
+        if (window.telaAtual === 'empresa' && (window.empresaModoAtual || '') === 'gerencial' && typeof renderizarTela === 'function') {
+          setTimeout(function(){ renderizarTela(); }, 0);
+        }
+      }
+    });
+  } else {
+    window.empresaGerencialAtualizando = false;
+  }
+}
+window.carregarGerencialOsEmpresaAtualizado_ = carregarGerencialOsEmpresaAtualizado_;
+
 function setEmpresaModo(modo, botao) {
   modo = modo || 'diario';
   if ((window.empresaModoAtual || 'diario') === 'diario' && modo !== 'diario' && totalEncaminhamentosDiaAlterados_ && totalEncaminhamentosDiaAlterados_() > 0) {
@@ -470,7 +518,7 @@ function renderEmpresaView(listaRender) {
   }
 
   if (modo === 'gerencial') {
-    var statusGerencial = window.STATUS_EMPRESA_GERENCIAL || ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra'];
+    var statusGerencial = gomEmpresaGerencialStatusPermitidos_();
     var listaGer = listaBase.filter(function(i) {
       return statusGerencial.indexOf(normalizarSituacaoSistema(i.situacao || i.status)) !== -1;
     });
@@ -1370,9 +1418,10 @@ function renderLinhaExecucaoDiaria(item) {
 }
 
 function renderGerencialOsEmpresa(lista) {
-  carregarHistoricoCampoEmpresaSePreciso();
+  try { carregarHistoricoCampoEmpresaSePreciso(); } catch(e) {}
+  if (!window.empresaGerencialAtualizando) { setTimeout(function(){ carregarGerencialOsEmpresaAtualizado_({ forcar: false }); }, 0); }
 
-  var statusGerencial = window.STATUS_EMPRESA_GERENCIAL || ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra'];
+  var statusGerencial = gomEmpresaGerencialStatusPermitidos_();
   var listaBase = Array.isArray(lista) ? lista.slice() : [];
 
   // Blindagem: se algum re-render chegar sem lista, remonta direto da lista global.
@@ -1384,6 +1433,12 @@ function renderGerencialOsEmpresa(lista) {
 
   var resumo = calcularResumoGerencialOsEmpresa(listaBase || []);
   var listaFiltrada = filtrarGerencialOsEmpresa(listaBase || []);
+  if (!listaFiltrada.length && listaBase.length) {
+    // Blindagem contra filtros/objetos de DOM antigos que ficaram no estado e escondiam toda a lista
+    // até o usuário entrar em outra aba e voltar.
+    gomEmpresaGerencialResetarFiltros_();
+    listaFiltrada = filtrarGerencialOsEmpresa(listaBase || []);
+  }
   var buscaAtual = valorCampoGerencial_(window.empresaGerencialBusca || '');
 
   var avisoAtualizando = window.empresaGerencialAtualizando ? '<div class="alert alert-info py-2 px-3 mb-3"><span class="spinner-border spinner-border-sm me-2"></span>Atualizando dados do Gerencial OS...</div>' : '';
@@ -1399,6 +1454,7 @@ function renderGerencialOsEmpresa(lista) {
         '<select class="form-select" id="empresaGerencialStatus" onchange="setEmpresaGerencialStatus(this)">' + montarOptionsGerencialEmpresa(['Todos','OS emitida','Atendimento Emergencial','Garantia de Obra'], window.empresaGerencialStatus || 'Todos') + '</select>',
         '<select class="form-select" id="empresaGerencialPrazo" onchange="setEmpresaGerencialPrazo(this)">' + montarOptionsGerencialEmpresa(['Todos','Vencidas','Sem previsão','No prazo'], window.empresaGerencialPrazo || 'Todos') + '</select>',
         '<button type="button" class="btn btn-light border fw-bold" onclick="limparFiltrosGerencialEmpresa()"><i class="bi bi-x-circle me-1"></i>Limpar</button>',
+        '<button type="button" class="btn btn-primary fw-bold" onclick="carregarGerencialOsEmpresaAtualizado_({forcar:true})"><i class="bi bi-arrow-clockwise me-1"></i>Atualizar</button>',
       '</div>',
       '<div class="empresa-gerencial-tabela-v7">',
         '<div class="empresa-gerencial-lista">',
@@ -1781,8 +1837,11 @@ async function finalizarOsEmpresaFront(e, id) {
         if (typeof window.gomAtualizarChamadoLocal === 'function') {
           window.gomAtualizarChamadoLocal(id, { situacao: 'Serviço Realizado' });
         }
+        gomEmpresaGerencialResetarFiltros_();
         refreshChamados(function() {
-          carregarHistoricoCampoEmpresaSePreciso({ forcar: true });
+          try { carregarHistoricoCampoEmpresaSePreciso({ forcar: true }); } catch(e) {}
+          if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(botao);
+          else if (botao) botao.disabled = false;
           if (window.telaAtual === 'empresa' && typeof renderizarTela === 'function') renderizarTela();
         });
       })
