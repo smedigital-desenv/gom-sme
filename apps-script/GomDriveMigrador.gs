@@ -183,11 +183,47 @@ function pastaDestino_(a) {
   lock.waitLock(20000);
   try {
     var raiz = pastaRaiz_();
-    var pChamados = subpasta_(raiz, 'chamados');
-    var pChamado = subpasta_(pChamados, 'chamado-' + String(a.solicitacao_id || 'sem-id'));
+
+    // Mantém o mesmo padrão usado no fluxo direto para Drive:
+    // GOM-SME Anexos / escolas / NOME_DA_ESCOLA / chamado-000 / categoria
+    var pEscolas = subpasta_(raiz, 'escolas');
+    var nomeEscola = obterNomeEscola_(a.solicitacao_id) || 'sem-escola';
+    var pEscola = subpasta_(pEscolas, slug_(nomeEscola));
+    var pChamado = subpasta_(pEscola, 'chamado-' + String(a.solicitacao_id || 'sem-id'));
     return subpasta_(pChamado, slug_(a.categoria || 'anexo'));
   } finally {
     lock.releaseLock();
+  }
+}
+
+var ESCOLA_CACHE_ = {};
+
+function obterNomeEscola_(solicitacaoId) {
+  var key = String(solicitacaoId || '');
+  if (!key) return 'sem-escola';
+  if (ESCOLA_CACHE_[key]) return ESCOLA_CACHE_[key];
+
+  try {
+    var sol = sbFetch_('/rest/v1/solicitacoes?select=' + encodeURIComponent('id,escola_id')
+      + '&id=eq.' + encodeURIComponent(key)
+      + '&limit=1', { method: 'get' }) || [];
+
+    var escolaId = sol[0] && sol[0].escola_id;
+    if (!escolaId) {
+      ESCOLA_CACHE_[key] = 'sem-escola';
+      return ESCOLA_CACHE_[key];
+    }
+
+    var esc = sbFetch_('/rest/v1/escolas?select=' + encodeURIComponent('id,nome')
+      + '&id=eq.' + encodeURIComponent(String(escolaId))
+      + '&limit=1', { method: 'get' }) || [];
+
+    ESCOLA_CACHE_[key] = (esc[0] && esc[0].nome) || 'sem-escola';
+    return ESCOLA_CACHE_[key];
+  } catch (e) {
+    Logger.log('Aviso: não foi possível identificar escola do chamado ' + key + ': ' + ((e && e.message) || e));
+    ESCOLA_CACHE_[key] = 'sem-escola';
+    return ESCOLA_CACHE_[key];
   }
 }
 
