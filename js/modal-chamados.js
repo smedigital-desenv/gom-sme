@@ -329,9 +329,12 @@ function preencherSelectStatusModal(chamado) {
     return;
   }
 
-  const opcoes = [atual].concat(getStatusPermitidosModal(chamado).filter(s => s !== atual));
-  select.innerHTML = opcoes.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
-  select.value = atual;
+  const aguardandoVisitaNaFila = (telaAtual === 'fila' || atual === 'Aguardando visita') && atual === 'Aguardando visita';
+  const permitidos = getStatusPermitidosModal(chamado).filter(s => s !== atual);
+  const opcoes = aguardandoVisitaNaFila ? permitidos : [atual].concat(permitidos);
+  select.innerHTML = (aguardandoVisitaNaFila ? '<option value="" disabled selected>-- Selecionar encaminhamento --</option>' : '')
+    + opcoes.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+  select.value = aguardandoVisitaNaFila ? '' : atual;
 }
 
 async function salvarStatusDoModal(botao) {

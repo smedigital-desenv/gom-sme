@@ -104,18 +104,21 @@
   function gomOptionsStatus_(item, contexto) {
     var atual = gomNormalizar_(item && (item.situacao || item.status));
     var vistos = {};
-    // Triagem: não mostrar "Em análise" como opção — só as transições
-    var baseList = contexto === 'triagem' ? [] : [atual];
+    var aguardandoVisitaNaFila = contexto === 'fila' && atual === 'Aguardando visita';
+    // Triagem: não mostrar "Em análise" como opção — só as transições.
+    // Fila/Aguardando visita: não mostrar o próprio status como encaminhamento.
+    var baseList = (contexto === 'triagem' || aguardandoVisitaNaFila) ? [] : [atual];
     var lista = baseList.concat(gomStatusPermitidos_(item, contexto)).map(gomNormalizar_).filter(function(s) {
       if (!s || vistos[s]) return false;
+      if (aguardandoVisitaNaFila && s === atual) return false;
       vistos[s] = true;
       return true;
     });
-    var placeholder = contexto === 'triagem'
+    var placeholder = (contexto === 'triagem' || aguardandoVisitaNaFila)
       ? '<option value="" disabled selected>-- Selecionar encaminhamento --</option>'
       : '';
     return placeholder + lista.map(function(s) {
-      return '<option value="' + gomHtml_(s) + '"' + (s === atual ? ' selected' : '') + '>' + gomHtml_(s) + '</option>';
+      return '<option value="' + gomHtml_(s) + '"' + (!aguardandoVisitaNaFila && s === atual ? ' selected' : '') + '>' + gomHtml_(s) + '</option>';
     }).join('');
   }
 
