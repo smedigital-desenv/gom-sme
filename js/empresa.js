@@ -92,7 +92,32 @@ function marcarEncaminhamentoDiaEmpresaAlterado(id) {
   if (payload.dataAtendimento) payload.dataAtendimento = typeof gomDataParaISO === 'function' ? gomDataParaISO(payload.dataAtendimento) : payload.dataAtendimento;
   if (payload.dataAtendimento) { payload.dataEquipe = payload.dataAtendimento; payload.dataEquipeDia = payload.dataAtendimento; }
 
+  var idSeguro = id.replace(/[^A-Za-z0-9_-]/g, '_');
+  var equipeEl = form.querySelector('select[name="equipe"]');
+  var dataEl = document.getElementById('empresaDataAtendimento_' + idSeguro) || form.querySelector('input[name="dataAtendimento"]');
+  var equipeOriginal = String(form.getAttribute('data-equipe-original') || '').trim();
+  var dataOriginal = String(form.getAttribute('data-data-original') || '').trim();
+  var equipeAtualForm = String(payload.equipe || '').trim();
+  var dataAtualForm = String(payload.dataAtendimento || '').trim();
+  var equipeMudou = equipeAtualForm !== equipeOriginal;
+  var dataFoiTocada = !!(dataEl && dataEl.dataset && dataEl.dataset.tocado === '1');
+  var dataMudou = !!(dataFoiTocada && dataAtualForm && dataAtualForm !== dataOriginal);
 
+  // A data pré-setada com hoje não cria alteração sozinha.
+  // Observação também não salva sozinha: só acompanha mudança de equipe/data.
+  if (!equipeMudou && !dataMudou) {
+    delete (window.empresaDiaAlterados || {})[id];
+    var rowSemMudanca = form.closest ? form.closest('.empresa-os-list-row-v2') : null;
+    if (rowSemMudanca) rowSemMudanca.classList.remove('empresa-dia-alterado');
+    atualizarEstadoEncaminhamentosDiaEmpresa();
+    return;
+  }
+
+  if (equipeMudou && dataAtualForm && !payload.dataAtendimento) {
+    payload.dataAtendimento = dataAtualForm;
+    payload.dataEquipe = dataAtualForm;
+    payload.dataEquipeDia = dataAtualForm;
+  }
 
   // Enriquecer com unidade vinda do listaChamadosGlobal
   // (a unidade é texto renderizado no HTML, não um campo do form)
@@ -422,7 +447,9 @@ function gomEmpresaAtualizarVisibilidadeData_() {
   var modo = window.empresaModoAtual || 'diario';
   if (modo === 'diario') {
     wrap.style.display = '';
-    if (label) label.textContent = 'Data de atendimento para todos:';
+    if (label) label.textContent = 'Data padrão dos cards:';
+    var btnAplicar = wrap.querySelector('button');
+    if (btnAplicar) btnAplicar.style.display = 'none';
   } else {
     wrap.style.display = 'none';
   }
@@ -479,7 +506,7 @@ function gomEmpresaPrePreencherDataHoje_() {
   if (input && !input.value) {
     var h = new Date();
     var iso = h.getFullYear() + '-' + String(h.getMonth()+1).padStart(2,'0') + '-' + String(h.getDate()).padStart(2,'0');
-    input.value = typeof gomDataParaBR === 'function' ? gomDataParaBR(iso) : iso;
+    input.value = iso;
   }
   // Quando a data muda, reseta o botão para "Aplicar" (sai do estado "Aplicada")
   if (input && !input._gomListenerAdded) {
@@ -1355,9 +1382,11 @@ function renderLinhaExecucaoDiaria(item) {
   var observacaoAtual = Object.prototype.hasOwnProperty.call(alterado, 'observacoes')
     ? String(alterado.observacoes || '')
     : '';
+  var dataAtendimentoSalva = item.dataAtendimentoRaw || item.dataAtendimento || item.dataEquipeRaw || item.dataEquipe || item.dataEquipeDiaRaw || item.dataEquipeDia || '';
+  var dataAtendimentoOriginalIso = dataAtendimentoSalva ? (typeof gomDataParaISO === 'function' ? gomDataParaISO(dataAtendimentoSalva) : String(dataAtendimentoSalva || '').trim()) : '';
   var dataAtendimentoAtual = Object.prototype.hasOwnProperty.call(alterado, 'dataAtendimento')
     ? String(alterado.dataAtendimento || '')
-    : (item.dataAtendimento || item.dataEquipeRaw || item.dataEquipe || item.dataEquipeDia || '');
+    : empresaHojeIso_();
   var dataAtendimentoInput = escapeHtml(formatarInputDateEmpresa(dataAtendimentoAtual));
   var rowAlterada = Object.prototype.hasOwnProperty.call(window.empresaDiaAlterados || {}, idRaw) ? ' empresa-dia-alterado' : '';
   var alertaOs = st === 'OS emitida' && !numeroOsBruto
@@ -1403,11 +1432,11 @@ function renderLinhaExecucaoDiaria(item) {
         '<div class="empresa-os-meta-line"><i class="bi bi-hash"></i><strong>OS:</strong> ' + (numeroOs || 'sem número') + '</div>',
         '<div class="empresa-os-meta-line"><i class="bi bi-calendar3"></i><strong>Encaminhamento:</strong> ' + dataEnc + '</div>',
       '</div>',
-      '<form id="' + formId + '" class="empresa-os-form-inline" data-label="Equipe do dia" onsubmit="event.preventDefault(); marcarEncaminhamentoDiaEmpresaAlterado(\'' + idJs + '\')">',
+      '<form id="' + formId + '" class="empresa-os-form-inline" data-label="Equipe do dia" data-equipe-original="' + escapeHtml(equipeAtual) + '" data-data-original="' + escapeHtml(dataAtendimentoOriginalIso) + '" onsubmit="event.preventDefault(); marcarEncaminhamentoDiaEmpresaAlterado(\'' + idJs + '\')">',
         '<label class="empresa-field-label">Equipe do dia</label>',
-        '<select class="form-select form-select-sm fw-bold" name="equipe" required' + selectEquipeEmpresaDisabled + ' onchange="marcarEncaminhamentoDiaEmpresaAlterado(\'' + idJs + '\')">' + opts + '</select>',
+        '<select class="form-select form-select-sm fw-bold" name="equipe" required' + selectEquipeEmpresaDisabled + ' onchange="this.dataset.tocado=\'1\';marcarEncaminhamentoDiaEmpresaAlterado(\'' + idJs + '\')">' + opts + '</select>',
         '<label class="empresa-field-label mt-1"><i class="bi bi-calendar3 me-1"></i>Data do atendimento</label>',
-        '<input class="form-control form-control-sm gom-date-br-input empresa-data-individual-input" type="date" id="empresaDataAtendimento_' + formIdSeguro + '" name="dataAtendimento" value="' + dataAtendimentoInput + '" onchange="gomNormalizarDataBrInput(this);marcarEncaminhamentoDiaEmpresaAlterado(\'' + idJs + '\')">',
+        '<input class="form-control form-control-sm gom-date-br-input empresa-data-individual-input" type="date" id="empresaDataAtendimento_' + formIdSeguro + '" name="dataAtendimento" value="' + dataAtendimentoInput + '" data-original="' + escapeHtml(dataAtendimentoOriginalIso) + '" onchange="this.dataset.tocado=\'1\';gomNormalizarDataBrInput(this);marcarEncaminhamentoDiaEmpresaAlterado(\'' + idJs + '\')">',
       '</form>',
       '<div class="empresa-os-observacao-wrap" data-label="Observação do dia">',
         '<label class="empresa-field-label">Observação do dia</label>',
