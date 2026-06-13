@@ -446,10 +446,16 @@ function gomEmpresaAtualizarVisibilidadeData_() {
   if (!wrap) return;
   var modo = window.empresaModoAtual || 'diario';
   if (modo === 'diario') {
-    wrap.style.display = '';
-    if (label) label.textContent = 'Data padrão dos cards:';
-    var btnAplicar = wrap.querySelector('button');
-    if (btnAplicar) btnAplicar.style.display = 'none';
+    // Campo de data global oculto na Execução diária da Empresa.
+    // Os cards continuam recebendo a data de hoje diretamente em cada linha,
+    // sem marcar alteração e sem salvar automaticamente.
+    wrap.style.display = 'none';
+
+    // Para voltar a exibir o campo futuramente, restaurar o bloco abaixo:
+    // wrap.style.display = '';
+    // if (label) label.textContent = 'Data padrão dos cards:';
+    // var btnAplicar = wrap.querySelector('button');
+    // if (btnAplicar) btnAplicar.style.display = 'none';
   } else {
     wrap.style.display = 'none';
   }
