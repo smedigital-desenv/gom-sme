@@ -325,7 +325,7 @@ function carregarCampo(opcoes = {}) {
   // OTIMIZAÇÃO: monta chamados de campo a partir de listaChamadosGlobal (já em memória),
   // sem round-trip ao backend. O histórico de equipes vem em background.
   if (dadosCarregados && Array.isArray(listaChamadosGlobal) && listaChamadosGlobal.length && !opcoes.forcarBackend) {
-    const statusCampo = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra'];
+    const statusCampo = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'];
     const chamadosCampo = listaChamadosGlobal.filter(c =>
       statusCampo.includes(normalizarSituacaoSistema(c.situacao || c.status))
     );

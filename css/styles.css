@@ -4,7 +4,7 @@
       --concluido: #39FF14; --encaminhado: #6366f1; --orcamento: #f59e0b; 
       --os: #22d3ee; --emergencial: #ec4899; --griffo: #ff3131; 
       --orcamento-realizado: #fb923c; --servico-realizado: #22c55e;
-      --analise: #FFD300; --garantia: #d97706; --duplicado: #475569; 
+      --analise: #FFD300; --garantia: #d97706; --garantia-servico: #a855f7; --duplicado: #475569; 
       --visita: #14b8a6; --unidade: #84cc16;
       --obras: #0f766e; --obra-aguardando: #f59e0b; --obra-projeto: #6366f1;
       --obra-licitacao: #0ea5e9; --obra-execucao: #14b8a6; --obra-concluida: #22c55e;
@@ -222,7 +222,7 @@
     .st-encaminhado { --card-accent: var(--encaminhado); } .st-orcamento { --card-accent: var(--orcamento); }
     .st-os { --card-accent: var(--os); } .st-emergencial { --card-accent: var(--emergencial); }
     .st-griffo { --card-accent: var(--griffo); } .st-analise { --card-accent: var(--analise); }
-    .st-garantia { --card-accent: var(--garantia); } .st-duplicado { --card-accent: var(--duplicado); }
+    .st-garantia { --card-accent: var(--garantia); } .st-garantia-servico { --card-accent: var(--garantia-servico); } .st-duplicado { --card-accent: var(--duplicado); }
     .st-visita { --card-accent: var(--visita); } .st-unidade { --card-accent: var(--unidade); }
     .st-orcamento-realizado { --card-accent: var(--orcamento-realizado); } .st-servico-realizado { --card-accent: var(--servico-realizado); }
     .st-default { --card-accent: var(--primary); }

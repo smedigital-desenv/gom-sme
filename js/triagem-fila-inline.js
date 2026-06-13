@@ -61,7 +61,7 @@
   function gomStatusPermitidos_(item, contexto) {
     var st = gomNormalizar_(item && (item.situacao || item.status));
     if (contexto === 'triagem' || st === 'Em análise') {
-      return ['Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Devolvido para a escola'];
+      return ['Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Garantia de Obra', 'Devolvido para a escola'];
     }
     if (contexto === 'fila' || st === 'Aguardando visita' || st === 'Em atendimento') {
       return ['Devolvido para a escola', 'Atendimento Emergencial', 'Solicitado Orçamento'];

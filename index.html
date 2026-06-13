@@ -268,19 +268,12 @@
 <h4 class="text-primary fw-bold mb-1"><i class="bi bi-funnel me-2"></i>Triagem Operacional GOM</h4>
 <p class="text-muted small mb-3">Chamados sem interação inicial aguardando definição da equipe interna.</p>
 <div id="kpiGrid" class="kpi-grid"></div>
-<div class="fila-help"><i class="bi bi-info-circle-fill"></i><span>Na triagem inicial, os encaminhamentos permitidos são: emergencial, orçamento, aguardando visita ou devolvido para a escola.</span></div>
+<div class="fila-help"><i class="bi bi-info-circle-fill"></i><span>Na triagem inicial, os encaminhamentos permitidos são: emergencial, orçamento, aguardando visita, garantia de obra ou devolvido para a escola. Nenhuma ação da triagem exige data.</span></div>
 <div class="gom-tela-toolbar p-3 bg-white rounded shadow-sm border-start border-4 border-primary mb-3">
   <div class="d-flex align-items-center gap-3 flex-wrap flex-grow-1">
     <div class="input-group" style="max-width:480px;min-width:200px;">
       <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
       <input type="text" id="pesquisa" class="form-control border-start-0" placeholder="Filtrar chamados na triagem..." onkeyup="renderizarTela()">
-    </div>
-    <div class="gom-data-global-wrap" id="gomDataGlobalWrap_triagem">
-      <label class="gom-data-global-label"><i class="bi bi-calendar-check me-1"></i>Encaminhar todos para:</label>
-      <input type="date" class="form-control form-control-sm gom-data-global-input" id="gomTfDataGlobal_triagem">
-      <button type="button" class="btn btn-outline-primary btn-sm fw-bold" onclick="gomTfAplicarDataGlobal_('triagem')" title="Aplica esta data de encaminhamento em todos os chamados visíveis">
-        <i class="bi bi-calendar-fill me-1"></i>Aplicar a todos
-      </button>
     </div>
   </div>
   <span class="badge bg-primary px-3 py-2 ms-auto" id="contador">0 Resultados</span>
@@ -389,6 +382,11 @@
     <p class="text-muted small mb-0">Visualização das equipes em atendimento, pendências de preenchimento da empresa e histórico operacional das unidades em campo.</p>
   </div>
   <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2"><i class="bi bi-eye me-1"></i>Somente visualização</span>
+</div>
+
+<div class="gom-submenu-tela gom-submenu-campo" id="campoSubmenuEquipe">
+  <button type="button" class="gom-submenu-btn" data-campo-equipe="educacao" onclick="setCampoEquipeModo('educacao', this)"><i class="bi bi-mortarboard"></i><span>Equipe da Educação</span></button>
+  <button type="button" class="gom-submenu-btn active" data-campo-equipe="empresa" onclick="setCampoEquipeModo('empresa', this)"><i class="bi bi-building-gear"></i><span>Equipe da Empresa</span></button>
 </div>
 
 <div id="campoKpis" class="kpi-grid"></div>

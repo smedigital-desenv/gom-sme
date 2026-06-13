@@ -241,12 +241,18 @@ function prepararItemCampoDia_(item, iso) {
     clone._campoObsDia = obsHistDia || obsAtual;
     clone._campoDataDia = getDataCampoItemAtual_(item) || (hDia ? dataHistoricoCampo_(hDia) : iso);
     clone._campoDataDiaBr = campoFormatarDataHoraBr_(clone._campoDataDia || iso);
+    // Momento em que o lançamento foi FEITO (registrado_em) — diferente da data do atendimento.
+    const registroFeitoEm = hDia ? dataRegistroHistoricoCampo_(hDia) : '';
+    clone._campoPreenchidoEmBr = registroFeitoEm
+      ? campoFormatarDataHoraBr_(registroFeitoEm)
+      : campoFormatarDataHoraBr_(item.dataHoraUltimaAcao || '');
   } else {
     clone._campoTemRegistroDia = false;
     clone._campoEquipeDia = '';
     clone._campoObsDia = '';
     clone._campoDataDia = '';
     clone._campoDataDiaBr = '';
+    clone._campoPreenchidoEmBr = '';
   }
 
   return clone;
@@ -263,9 +269,48 @@ function campoFormatarDataHoraBr_(valor) {
   return data + ' ' + hora;
 }
 
+// ── Submenu Equipe da Educação x Equipe da Empresa ───────────────────────────
+// Classifica pelo nome da equipe registrada (listas separadas que já existem).
+// Sem equipe identificável, decide pelo status: visitas = Educação; OS/garantias = Empresa.
+window.campoEquipeModo = window.campoEquipeModo || 'empresa';
+
+function setCampoEquipeModo(modo, btn) {
+  window.campoEquipeModo = (modo === 'educacao') ? 'educacao' : 'empresa';
+  const wrap = document.getElementById('campoSubmenuEquipe');
+  if (wrap) {
+    wrap.querySelectorAll('.gom-submenu-btn').forEach(function(b) { b.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+    else {
+      const alvo = wrap.querySelector('[data-campo-equipe="' + window.campoEquipeModo + '"]');
+      if (alvo) alvo.classList.add('active');
+    }
+  }
+  window.campoFiltroAtual = null;
+  if (typeof renderizarCampo === 'function') renderizarCampo();
+}
+
+function campoNomesEquipes_(lista) {
+  return (Array.isArray(lista) ? lista : []).map(function(eq) {
+    return normalizarTextoBase(String(eq && eq.nome ? eq.nome : eq || ''));
+  }).filter(Boolean);
+}
+
+function campoGrupoEquipeItem_(item) {
+  const eq = normalizarTextoBase(String(item && (item._campoEquipeDia || item.equipe || item.equipeResponsavel) || ''));
+  if (eq) {
+    if (campoNomesEquipes_(window.listaEquipesEmpresaGlobal).indexOf(eq) >= 0) return 'empresa';
+    if (campoNomesEquipes_(window.listaEquipesGlobal).indexOf(eq) >= 0) return 'educacao';
+  }
+  const st = normalizarSituacaoSistema(item && (item.situacao || item.status));
+  return (st === 'Aguardando visita' || st === 'Em atendimento') ? 'educacao' : 'empresa';
+}
+
 function getChamadosCampoPreparadosDia_() {
   const iso = campoDataSelecionadaISO();
-  return getChamadosCampo().map(function(item) { return prepararItemCampoDia_(item, iso); });
+  const modo = window.campoEquipeModo || 'empresa';
+  return getChamadosCampo()
+    .map(function(item) { return prepararItemCampoDia_(item, iso); })
+    .filter(function(item) { return campoGrupoEquipeItem_(item) === modo; });
 }
 
 function renderizarCampo() {
@@ -293,7 +338,9 @@ function renderizarCampo() {
     return textoOk && passaFiltroEscolaCampo(item);
   });
   const chamados = aplicarFiltroCampo(chamadosBase);
-  const historico = filtrarHistoricoCampo(getHistoricoCampo(), termo);
+  const historico = filtrarHistoricoCampo(getHistoricoCampo(), termo).filter(function(h) {
+    return campoGrupoEquipeItem_(h) === (window.campoEquipeModo || 'empresa');
+  });
 
   if (campoTabAtual === 'historico') {
     painel.innerHTML = renderHistoricoCampo(historico, chamadosBase);
@@ -422,8 +469,9 @@ function renderLinhaCampoOficial(item) {
     ? escapeHtml(resumirTextoCampo(obsDiaValor, 170))
     : '<span class="campo-muted-value">Aguardando preenchimento da empresa para a data.</span>';
   const rowClass = temRegistroDia ? 'campo-preenchido' : 'campo-pendente';
+  const preenchidoEmBr = escapeHtml(item._campoPreenchidoEmBr || '');
   const badge = temRegistroDia
-    ? '<span class="badge bg-success">Preenchido em ' + dataSelecionadaBr + '</span>'
+    ? '<span class="badge bg-success">Preenchido em ' + (preenchidoEmBr || dataSelecionadaBr) + '</span>'
     : '<span class="badge bg-warning text-dark">Pendente em ' + dataSelecionadaBr + '</span>';
   const alertaOs = st === 'OS emitida' && !String(item.numeroOs || '').trim() ? '<span class="empresa-os-alert"><i class="bi bi-exclamation-triangle-fill"></i> Sem nº OS</span>' : '';
 
@@ -441,9 +489,8 @@ function renderLinhaCampoOficial(item) {
             <div class="modal-label">Observações acumuladas</div>
             <div class="card-observacao mb-2">${obs}</div>
             <div class="campo-expand-meta">
-              <span><strong>Dia consultado:</strong> ${dataSelecionadaBr}</span>
               <span><strong>Data prevista:</strong> ${dataPrev}</span>
-              <span><strong>Registro de equipe do dia:</strong> ${dataEquipe}</span>
+              <span><strong>Último lançamento:</strong> ${dataEquipe}</span>
             </div>
             <button type="button" class="btn btn-light btn-sm border fw-bold mt-2" onclick="abrirModalAnalise('${idJs}')"><i class="bi bi-box-arrow-up-right me-1"></i>Abrir chamado</button>
           </div>
@@ -453,8 +500,7 @@ function renderLinhaCampoOficial(item) {
 
       <div class="campo-status-cell campo-status-data-cell" data-label="Status / OS / encaminhamento">
         <span class="badge-status">${escapeHtml(st)}</span>
-        <span class="campo-data-selecionada-pill"><i class="bi bi-calendar-check"></i> Dia consultado: ${dataSelecionadaBr}</span>
-        ${dataRegistroDiaBr ? '<span class="campo-data-registro-pill"><i class="bi bi-person-check"></i> Registro: ' + dataRegistroDiaBr + '</span>' : ''}
+        ${preenchidoEmBr ? '<span class="campo-data-registro-pill"><i class="bi bi-person-check"></i> Lançamento: ' + preenchidoEmBr + '</span>' : ''}
         <span class="empresa-os-numero"><strong>OS:</strong> ${numeroOs}</span>
         <span class="campo-data-inline"><i class="bi bi-calendar3"></i> Encaminhamento: ${dataEnc}</span>
         ${alertaOs}

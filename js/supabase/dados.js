@@ -312,9 +312,14 @@ window.GomDados = (function () {
   }
 
   async function listarCampo() {
-    const campoStatus = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra'];
+    const campoStatus = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'];
+    // Equipe da Educação: visitas da secretaria com equipe atribuída também entram no acompanhamento.
+    const campoStatusEducacao = ['Aguardando visita', 'Em atendimento'];
     const jsonChamados = JSON.parse(await listarChamados());
-    const chamados = (jsonChamados.chamados || []).filter(c => campoStatus.includes(c.situacao));
+    const chamados = (jsonChamados.chamados || []).filter(c =>
+      campoStatus.includes(c.situacao) ||
+      (campoStatusEducacao.includes(c.situacao) && String(c.equipe || '').trim())
+    );
     let historico = [];
     try {
       const h = await window.SB.from('historico_equipes').select('*').order('registrado_em', { ascending: false }).limit(300);
@@ -335,7 +340,7 @@ window.GomDados = (function () {
         osSemNumero: chamados.filter(c => c.situacao === 'OS emitida' && !c.numeroOs).length,
         escolasEmAtendimento: new Set(chamados.map(c => c.unidade).filter(Boolean)).size,
         preenchidosHoje: preenchidosHoje.size,
-        pendentesHoje: chamados.filter(c => !preenchidosHoje.has(String(c.id))).length
+        pendentesHoje: chamados.filter(c => campoStatus.includes(c.situacao) && !preenchidosHoje.has(String(c.id))).length
       }
     };
     return JSON.stringify({ ok: true, versao: 'campo-supabase', total: chamados.length, dados });
@@ -389,6 +394,7 @@ window.GomDados = (function () {
       'OS emitida': 'A ordem de serviço foi emitida e o atendimento será acompanhado pela equipe responsável.',
       'Atendimento Emergencial': 'A solicitação foi classificada como emergencial e está em atendimento prioritário.',
       'Garantia de Obra': 'A solicitação está relacionada à garantia de obra e está em acompanhamento.',
+      'Garantia de Serviço': 'O serviço executado está em garantia e retornou à empresa para correção.',
       'Serviço Realizado': 'A empresa informou a realização do serviço. A equipe interna fará a validação final.',
       'Devolvido para a escola': 'A solicitação foi devolvida para complementação da unidade escolar.',
       'Concluído': 'A solicitação foi concluída pela equipe responsável.',
@@ -525,7 +531,7 @@ window.GomDados = (function () {
     if (p.equipe !== undefined) { u.equipe_responsavel = p.equipe || ''; if (p.equipe) u.data_equipe = _nowISO(); }
     if (p.dataAgendamentoVisita !== undefined && p.dataAgendamentoVisita !== '') u.data_agendamento_visita = _date(p.dataAgendamentoVisita);
     if (['Aguardando visita', 'Em atendimento'].includes(stNovo) && !atual.data_hora_entrada_fila) u.data_hora_entrada_fila = _nowISO();
-    if (['Solicitado Orçamento', 'Atendimento Emergencial', 'OS emitida', 'Aguardando visita'].includes(stNovo) && mudou) u.data_hora_encaminhamento = _nowISO();
+    if (['Solicitado Orçamento', 'Atendimento Emergencial', 'OS emitida', 'Aguardando visita', 'Garantia de Obra', 'Garantia de Serviço'].includes(stNovo) && mudou) u.data_hora_encaminhamento = _nowISO();
     if (stNovo === 'Devolvido para a escola') u.data_conclusao_os = _nowISO();
     const _anexosAtual = p.anexosAtualizacao || p.anexos || [];
     if (Array.isArray(_anexosAtual) && _anexosAtual.length) {
@@ -670,7 +676,7 @@ window.GomDados = (function () {
   async function atualizarPrevisaoOsEmpresa(p) {
     const id = p.id; const atual = await _getChamado(id);
     const st = M.normalizarStatus(atual.situacao);
-    if (!['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Serviço Realizado'].includes(st)) throw new Error('A previsão só pode ser alterada em OS, emergência, garantia ou serviço realizado.');
+    if (!['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço', 'Serviço Realizado'].includes(st)) throw new Error('A previsão só pode ser alterada em OS, emergência, garantia ou serviço realizado.');
     await _update(id, { data_prevista_conclusao: _date(p.dataPrevistaConclusao) });
     await _log({ solicitacao_id: id, acao: 'Previsão de conclusão atualizada pela empresa', status_anterior: st, status_novo: st });
     return true;

@@ -1,8 +1,16 @@
 /* ============================================================================
- * GOM | SME — Anexos (Supabase Storage, no lugar do Google Drive)
+ * GOM | SME — Anexos (Google Drive via Web App GAS + metadados no Supabase)
  * ----------------------------------------------------------------------------
- * Bucket: GOM_SUPABASE.BUCKET_ANEXOS (privado). Caminho: chamado/<id>/<cat>/arquivo
- * Metadados ficam na tabela `anexos`. URLs de leitura são assinadas em lote.
+ * Upload: cada arquivo é enviado em base64 para o Web App (GomDriveAPI.gs),
+ * que salva no Drive e devolve a URL pública. Os metadados continuam na
+ * tabela `anexos` (storage_path = 'drive:<fileId>' e a nova coluna `url`).
+ *
+ * Compatibilidade retroativa: anexos antigos (Supabase Storage) não têm `url`
+ * e seguem sendo lidos por URL assinada do bucket, como antes.
+ *
+ * Pré-requisitos:
+ *   1) sql/10_anexos_drive.sql aplicado (coluna `url`)
+ *   2) GOM_DRIVE.URL e GOM_DRIVE.TOKEN preenchidos em js/config.js
  * ========================================================================== */
 window.GomAnexos = (function () {
   'use strict';
@@ -11,63 +19,104 @@ window.GomAnexos = (function () {
 
   function _slug(s) { return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w.-]+/g, '_').slice(0, 80); }
 
-  function _b64ToBlob(base64, mime) {
-    const bin = atob(String(base64).split(',').pop());
-    const bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    return new Blob([bytes], { type: mime || 'application/octet-stream' });
+  function _cfgDrive() {
+    const c = window.GOM_DRIVE || {};
+    if (!c.URL || !c.TOKEN) {
+      throw new Error('Armazenamento no Drive não configurado. Preencha GOM_DRIVE.URL e GOM_DRIVE.TOKEN em js/config.js.');
+    }
+    return c;
   }
 
-  // Recebe a lista de arquivos em base64 (mesmo formato do front: {nome/base64/mimeType}),
-  // sobe pro Storage e grava em `anexos`. Sem arquivos, não toca em nada (saída rápida).
+  // Envia UM arquivo ao Web App do Drive. Um arquivo por requisição mantém o
+  // payload pequeno (limite do GAS) e permite tratar erro por arquivo.
+  // IMPORTANTE: sem header Content-Type — assim a requisição é "simple request"
+  // (text/plain), dispensa preflight CORS e o Apps Script aceita normalmente.
+  async function _enviarParaDrive(arq, chamadoId, categoria, escolaNome) {
+    const cfg = _cfgDrive();
+    const corpo = JSON.stringify({
+      token: cfg.TOKEN,
+      acao: 'upload',
+      escola: escolaNome || 'sem-escola',
+      chamadoId: chamadoId,
+      categoria: categoria,
+      arquivos: [{
+        nome: arq.nome || arq.name || 'anexo',
+        mimeType: arq.mimeType || arq.type || 'application/octet-stream',
+        base64: String(arq.base64).split(',').pop()
+      }]
+    });
+
+    const resp = await fetch(cfg.URL, { method: 'POST', body: corpo });
+    if (!resp.ok) throw new Error('Falha de rede no upload (HTTP ' + resp.status + ').');
+
+    let json;
+    try { json = await resp.json(); }
+    catch (e) { throw new Error('Resposta inválida do Drive API. Verifique a publicação do Web App (acesso: Qualquer pessoa).'); }
+
+    if (!json.ok) throw new Error('Drive recusou o upload: ' + (json.erro || 'erro desconhecido'));
+    if (!json.arquivos || !json.arquivos.length) throw new Error('Drive não retornou o arquivo salvo.');
+    return json.arquivos[0]; // { nome, id, url, tamanho }
+  }
+
+  // Mesma assinatura de antes — dados.js não muda.
   // upload(chamadoId, categoria, arquivos, escolaNome?)
-  // Path: escolas/{escola}/{chamado}/{categoria}/{ts}_{nome}
   async function upload(chamadoId, categoria, arquivos, escolaNome) {
     const lista = Array.isArray(arquivos) ? arquivos.filter(a => a && a.base64) : [];
     if (!lista.length) return [];
     if (lista.length > LIMITE) throw new Error(`Limite de ${LIMITE} anexos por envio.`);
-    const bucket = window.GOM_SUPABASE.BUCKET_ANEXOS;
-    const escolaSlug = escolaNome ? _slug(String(escolaNome)) : 'sem-escola';
+
     const salvos = [];
     for (let i = 0; i < lista.length; i++) {
       const arq = lista[i];
       const nome = _slug(arq.nome || arq.name || `anexo_${i + 1}`);
-      const mime = arq.mimeType || arq.type || 'application/octet-stream';
-      const blob = _b64ToBlob(arq.base64, mime);
-      if (blob.size > MAX_MB * 1024 * 1024) throw new Error(`Arquivo ${nome} excede ${MAX_MB} MB.`);
-      const caminho = `escolas/${escolaSlug}/chamado-${chamadoId}/${categoria}/${Date.now()}_${nome}`;
-      const up = await window.SB.storage.from(bucket).upload(caminho, blob, { contentType: mime, upsert: false });
-      if (up.error) throw new Error('Falha no upload: ' + up.error.message);
+      const tamanhoEstimado = Math.floor(String(arq.base64).length * 0.75);
+      if (tamanhoEstimado > MAX_MB * 1024 * 1024) throw new Error(`Arquivo ${nome} excede ${MAX_MB} MB.`);
+
+      const drive = await _enviarParaDrive(arq, chamadoId, categoria, escolaNome);
+
       const ins = await window.SB.from('anexos').insert({
-        solicitacao_id: chamadoId, categoria: categoria,
-        nome: arq.nome || nome, storage_path: caminho, mime_type: mime, tamanho_bytes: blob.size
+        solicitacao_id: chamadoId,
+        categoria: categoria,
+        nome: arq.nome || drive.nome || nome,
+        storage_path: 'drive:' + drive.id,
+        url: drive.url,
+        mime_type: arq.mimeType || arq.type || 'application/octet-stream',
+        tamanho_bytes: drive.tamanho || tamanhoEstimado
       });
-      if (ins.error) throw new Error('Falha ao gravar anexo: ' + ins.error.message);
-      salvos.push({ nome: arq.nome || nome, path: caminho });
+      if (ins.error) throw new Error('Arquivo salvo no Drive, mas falhou ao gravar metadado: ' + ins.error.message);
+
+      salvos.push({ nome: arq.nome || drive.nome || nome, path: 'drive:' + drive.id, url: drive.url });
     }
     return salvos;
   }
 
-  // Mapa de anexos por chamado, com URL assinada (1 chamada em lote pro Storage).
-  // Retorno: { [solicitacao_id]: { solicitacao:[{nome,url}], orcamento:[...], servico:[...] } }
+  // Mapa de anexos por chamado.
+  // Drive: usa a coluna `url` direto (sem chamada extra).
+  // Legado (Supabase Storage): gera URLs assinadas em lote, como antes.
   async function mapaPorChamado(ids) {
     const out = {};
     if (!ids || !ids.length) return out;
-    const r = await window.SB.from('anexos').select('solicitacao_id,categoria,nome,storage_path').in('solicitacao_id', ids);
+    const r = await window.SB.from('anexos')
+      .select('solicitacao_id,categoria,nome,storage_path,url')
+      .in('solicitacao_id', ids);
     if (r.error || !r.data || !r.data.length) return out;
 
-    const bucket = window.GOM_SUPABASE.BUCKET_ANEXOS;
-    const paths = r.data.map(a => a.storage_path);
+    // URLs assinadas só para o legado (sem `url` e sem prefixo drive:)
+    const legados = r.data.filter(a => !a.url && a.storage_path && a.storage_path.indexOf('drive:') !== 0);
     let urlByPath = {};
-    try {
-      const s = await window.SB.storage.from(bucket).createSignedUrls(paths, 60 * 60); // 1h
-      (s.data || []).forEach(it => { if (it && it.path) urlByPath[it.path] = it.signedUrl; });
-    } catch (e) { /* sem URL assinada, ainda devolve nome */ }
+    if (legados.length) {
+      try {
+        const bucket = window.GOM_SUPABASE.BUCKET_ANEXOS;
+        const s = await window.SB.storage.from(bucket).createSignedUrls(legados.map(a => a.storage_path), 60 * 60);
+        (s.data || []).forEach(it => { if (it && it.path) urlByPath[it.path] = it.signedUrl; });
+      } catch (e) { /* sem URL assinada, ainda devolve nome */ }
+    }
 
     r.data.forEach(a => {
       const cat = a.categoria || 'solicitacao';
       out[a.solicitacao_id] = out[a.solicitacao_id] || { solicitacao: [], orcamento: [], servico: [] };
-      (out[a.solicitacao_id][cat] = out[a.solicitacao_id][cat] || []).push({ nome: a.nome || 'arquivo', url: urlByPath[a.storage_path] || '' });
+      const url = a.url || urlByPath[a.storage_path] || '';
+      (out[a.solicitacao_id][cat] = out[a.solicitacao_id][cat] || []).push({ nome: a.nome || 'arquivo', url: url });
     });
     return out;
   }

@@ -31,8 +31,10 @@ function gomModalDataParaISO_(valor) {
 
 
 function isFluxoAprovacaoModal_(chamado) {
+  // Decisões de orçamento valem APENAS para "Orçamento Realizado".
+  // "Serviço Realizado" tem fluxo próprio de validação (Memorial ou Garantia de Serviço).
   var st = normalizarSituacaoSistema(chamado && (chamado.situacao || chamado.status));
-  return window.telaAtual === 'aprovacao' || st === 'Orçamento Realizado';
+  return st === 'Orçamento Realizado';
 }
 
 function setTextoModalFluxo_(emAprovacao) {
@@ -242,7 +244,7 @@ function abrirModalAnalise(id) {
   const emAprovacaoModal = isFluxoAprovacaoModal_(c);
   setTextoModalFluxo_(emAprovacaoModal);
   const workflow = document.getElementById('mdlWorkflowBox');
-  if (workflow) workflow.style.display = telaAtual === 'historico' ? 'none' : '';
+  if (workflow) workflow.style.display = (telaAtual === 'historico' || telaAtual === 'campo') ? 'none' : '';
   const inputObs = document.getElementById('mdlNovaObservacao');
   if (inputObs) inputObs.value = '';
   limparAnexosModalAtualizacao_();
@@ -274,7 +276,7 @@ function getStatusPermitidosModal(chamado) {
   const st = normalizarSituacaoSistema(chamado.situacao || chamado.status);
   if (telaAtual === 'triagem' || st === 'Em análise') return ['Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Devolvido para a escola'];
   if (telaAtual === 'fila' || st === 'Aguardando visita') return ['Devolvido para a escola', 'Atendimento Emergencial', 'Solicitado Orçamento'];
-  if (st === 'Serviço Realizado') return ['Concluído', 'Garantia de Obra', 'Devolvido para a escola'];
+  if (st === 'Serviço Realizado') return ['Concluído', 'Garantia de Serviço'];
   return STATUS_TODOS;
 }
 
@@ -297,6 +299,18 @@ function preencherSelectStatusModal(chamado) {
 
   select.onchange = null;
   const atual = normalizarSituacaoSistema(chamado.situacao || chamado.status);
+
+  // Validação de Serviço Realizado: apenas duas decisões, com rótulos claros.
+  if (atual === 'Serviço Realizado') {
+    select.innerHTML = [
+      '<option value="" disabled selected>-- Selecionar decisão --</option>',
+      '<option value="Concluído">Validar e enviar para Memorial</option>',
+      '<option value="Garantia de Serviço">Garantia de Serviço (retorna à empresa)</option>'
+    ].join('');
+    select.value = '';
+    return;
+  }
+
   const opcoes = [atual].concat(getStatusPermitidosModal(chamado).filter(s => s !== atual));
   select.innerHTML = opcoes.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
   select.value = atual;

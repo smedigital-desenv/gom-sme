@@ -3,7 +3,7 @@
   window.STATUS_OBRAS = window.STATUS_OBRAS || ['Aguardando','Em projeto','Em licitação','Em execução','Suspensa','Concluída','Arquivada'];
   window.PRIORIDADES_OBRAS = window.PRIORIDADES_OBRAS || ['P0','P1','P2','P3'];
   window.STATUS_TODOS = window.STATUS_TODOS || [
-    'Em análise','Aguardando visita','Solicitado Orçamento','Orçamento Realizado','OS emitida','Atendimento Emergencial','Garantia de Obra','Serviço Realizado','Devolvido para a escola','Concluído','Encaminhado para outra gerência ou Unidade escolar.','A cargo da unidade escolar','Duplicado'
+    'Em análise','Aguardando visita','Solicitado Orçamento','Orçamento Realizado','OS emitida','Atendimento Emergencial','Garantia de Obra','Garantia de Serviço','Serviço Realizado','Devolvido para a escola','Concluído','Encaminhado para outra gerência ou Unidade escolar.','A cargo da unidade escolar','Duplicado'
   ];
 
   // Alguns arquivos usam os nomes diretamente. Criamos bindings globais seguros.
@@ -116,8 +116,8 @@
       const filtrarModo = (item) => {
         const st = normalizarSituacaoSistema(item.situacao || item.status);
         if (modo === 'orcamentos') return st === 'Solicitado Orçamento';
-        if (modo === 'gerencial') return ['OS emitida','Atendimento Emergencial','Garantia de Obra','Serviço Realizado'].includes(st);
-        return ['OS emitida','Atendimento Emergencial','Garantia de Obra'].includes(st);
+        if (modo === 'gerencial') return ['OS emitida','Atendimento Emergencial','Garantia de Obra','Garantia de Serviço','Serviço Realizado'].includes(st);
+        return ['OS emitida','Atendimento Emergencial','Garantia de Obra','Garantia de Serviço'].includes(st);
       };
       const lista = (listaRender || []).filter(filtrarModo);
       if (!lista.length) return '<div class="empty-state"><h5>Nenhuma demanda encontrada para esta visualização.</h5></div>';

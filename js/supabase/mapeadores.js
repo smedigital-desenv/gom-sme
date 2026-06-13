@@ -76,7 +76,7 @@ window.GomMap = (function () {
   const CORES = {
     'Em análise': '#FFD300', 'Solicitado Orçamento': '#f59e0b', 'Orçamento Realizado': '#fb923c',
     'Aguardando visita': '#14b8a6', 'Em atendimento': '#00e5ff', 'Atendimento Emergencial': '#ec4899',
-    'OS emitida': '#22d3ee', 'Serviço Realizado': '#10b981', 'Garantia de Obra': '#d97706',
+    'OS emitida': '#22d3ee', 'Serviço Realizado': '#10b981', 'Garantia de Obra': '#d97706', 'Garantia de Serviço': '#a855f7',
     'Visita Técnica': '#14b8a6', 'Devolvido para a escola': '#64748b', 'Concluído': '#39FF14',
     'Encaminhado para outra gerência ou Unidade escolar.': '#6366f1', 'A cargo da unidade escolar': '#84cc16', 'Duplicado': '#475569'
   };
@@ -84,21 +84,23 @@ window.GomMap = (function () {
   const ALIASES = {
     'recebido': 'Em análise', 'avaliar': 'Em análise',
     'garantia obra - griffo': 'Garantia de Obra', 'garantia de obra - griffo': 'Garantia de Obra',
+    'garantia de servico': 'Garantia de Serviço', 'garantia servico': 'Garantia de Serviço', 'garantia do servico': 'Garantia de Serviço',
     'solicitado orcamento': 'Solicitado Orçamento', 'orçamento solicitado': 'Solicitado Orçamento', 'orcamento solicitado': 'Solicitado Orçamento',
     'servico realizado': 'Serviço Realizado',
     'aguardando visita tecnica': 'Aguardando visita', 'aguardando visita técnica': 'Aguardando visita',
     'devolvido escola': 'Devolvido para a escola', 'devolvido para escola': 'Devolvido para a escola'
   };
   const REGRAS = {
-    'Em análise': { tela: 'triagem', proximos: ['Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Devolvido para a escola'] },
+    'Em análise': { tela: 'triagem', proximos: ['Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Garantia de Obra', 'Devolvido para a escola'] },
     'Aguardando visita': { tela: 'fila', filaVisita: true, proximos: ['Devolvido para a escola', 'Atendimento Emergencial', 'Solicitado Orçamento'] },
     'Solicitado Orçamento': { tela: 'empresa', exigeValorOrcamento: true, exigeObservacao: true, anexoPermitido: 'orcamento', bloqueiaEquipe: true, proximos: ['Orçamento Realizado'] },
     'Orçamento Realizado': { tela: 'aprovacao', exigeAprovacao: true, proximos: ['OS emitida', 'Solicitado Orçamento', 'A cargo da unidade escolar', 'Devolvido para a escola'] },
     'OS emitida': { tela: 'empresa', exigeEquipeDia: true, exigeObservacao: true, anexoPermitido: 'servico', proximos: ['Serviço Realizado'] },
     'Atendimento Emergencial': { tela: 'empresa', exigeEquipeDia: true, exigeObservacao: true, anexoPermitido: 'servico', proximos: ['Serviço Realizado'] },
     'Garantia de Obra': { tela: 'empresa', exigeEquipeDia: true, exigeObservacao: true, anexoPermitido: 'servico', proximos: ['Serviço Realizado'] },
+    'Garantia de Serviço': { tela: 'empresa', exigeEquipeDia: true, exigeObservacao: true, anexoPermitido: 'servico', proximos: ['Serviço Realizado'] },
     'Em atendimento': { tela: 'fila', legado: true, proximos: ['Serviço Realizado', 'Devolvido para a escola', 'Solicitado Orçamento', 'Atendimento Emergencial'] },
-    'Serviço Realizado': { tela: 'aprovacao', exigeValidacaoServico: true, proximos: ['Concluído', 'Garantia de Obra', 'Devolvido para a escola'] },
+    'Serviço Realizado': { tela: 'aprovacao', exigeValidacaoServico: true, proximos: ['Concluído', 'Garantia de Serviço'] },
     'Visita Técnica': { tela: 'fila', legado: true, proximos: ['Devolvido para a escola', 'Atendimento Emergencial', 'Solicitado Orçamento'] },
     'Devolvido para a escola': { tela: 'memorial', finalizado: true, proximos: [] },
     'Concluído': { tela: 'memorial', finalizado: true, proximos: [] },

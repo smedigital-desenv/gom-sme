@@ -15,7 +15,7 @@ function renderDashboard() {
   const anoAtual = hoje.getFullYear();
 
   const porStatus = contarPorStatusDashboard(chamados);
-  const campoAtivos = chamados.filter(c => ['OS emitida','Atendimento Emergencial','Garantia de Obra'].includes(normalizarSituacaoSistema(c.situacao || c.status)));
+  const campoAtivos = chamados.filter(c => ['OS emitida','Atendimento Emergencial','Garantia de Obra','Garantia de Serviço'].includes(normalizarSituacaoSistema(c.situacao || c.status)));
   const osEmitidas = chamados.filter(c => normalizarSituacaoSistema(c.situacao || c.status) === 'OS emitida');
   const osSemNumero = osEmitidas.filter(c => !String(c.numeroOs || '').trim());
   const campoHoje = campoAtivos.filter(c => !!c.temEquipeDiaValida);
@@ -150,7 +150,7 @@ function calcularAtrasosDashboardIntegrado(chamados) {
 
 function calcularAtrasosDashboard(chamados) {
   const hoje = inicioDiaDashboard(new Date());
-  const campoStatus = ['OS emitida','Atendimento Emergencial','Garantia de Obra'];
+  const campoStatus = ['OS emitida','Atendimento Emergencial','Garantia de Obra','Garantia de Serviço'];
   return (chamados || []).filter(c => {
     const st = normalizarSituacaoSistema(c.situacao || c.status);
     const previsao = parseDataDashboard(c.dataPrevistaConclusao || c.dataPrevistaConclusaoRaw);
@@ -214,7 +214,7 @@ function irDashboardStatus(status) {
   if (st === 'Aguardando visita') return irDashboardPara('fila', st);
   if (st === 'Solicitado Orçamento') return irDashboardPara('empresa', st, 'orcamentos');
   if (st === 'Orçamento Realizado') return irDashboardPara('aprovacao', st);
-  if (['OS emitida','Atendimento Emergencial','Garantia de Obra','Serviço Realizado'].includes(st)) return irDashboardPara('empresa', null, 'gerencial');
+  if (['OS emitida','Atendimento Emergencial','Garantia de Obra','Garantia de Serviço','Serviço Realizado'].includes(st)) return irDashboardPara('empresa', null, 'gerencial');
   return loadPage('historico');
 }
 

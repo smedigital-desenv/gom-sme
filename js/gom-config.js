@@ -111,11 +111,11 @@ var TELAS_CHAMADOS = window.TELAS_CHAMADOS = ['triagem','fila','aprovacao','empr
 var STATUS_TRIAGEM = window.STATUS_TRIAGEM = ['Em análise'];
 var STATUS_FILA = window.STATUS_FILA = ['Aguardando visita', 'Em atendimento'];
 var STATUS_APROVACAO = window.STATUS_APROVACAO = ['Orçamento Realizado', 'Serviço Realizado'];
-var STATUS_EMPRESA = window.STATUS_EMPRESA = ['Solicitado Orçamento', 'OS emitida', 'Atendimento Emergencial', 'Garantia de Obra'];
-var STATUS_EMPRESA_DIARIO = window.STATUS_EMPRESA_DIARIO = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra'];
+var STATUS_EMPRESA = window.STATUS_EMPRESA = ['Solicitado Orçamento', 'OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'];
+var STATUS_EMPRESA_DIARIO = window.STATUS_EMPRESA_DIARIO = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'];
 var STATUS_EMPRESA_ORCAMENTO = window.STATUS_EMPRESA_ORCAMENTO = ['Solicitado Orçamento'];
-var STATUS_EMPRESA_GERENCIAL = window.STATUS_EMPRESA_GERENCIAL = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra'];
-var STATUS_CAMPO = window.STATUS_CAMPO = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra'];
+var STATUS_EMPRESA_GERENCIAL = window.STATUS_EMPRESA_GERENCIAL = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'];
+var STATUS_CAMPO = window.STATUS_CAMPO = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'];
 var STATUS_MEMORIAL = window.STATUS_MEMORIAL = ['Concluído', 'Encaminhado para outra gerência ou Unidade escolar.', 'A cargo da unidade escolar', 'Duplicado', 'Devolvido para a escola'];
 
 var STATUS_TODOS = window.STATUS_TODOS = [
@@ -126,6 +126,7 @@ var STATUS_TODOS = window.STATUS_TODOS = [
   'OS emitida',
   'Atendimento Emergencial',
   'Garantia de Obra',
+  'Garantia de Serviço',
   'Serviço Realizado',
   'Devolvido para a escola',
   'Concluído',
@@ -141,7 +142,8 @@ var configKPIs = window.configKPIs = [
   { key: 'Orçamento Realizado', title: 'Aprovação', cor: 'var(--orcamento-realizado)' },
   { key: 'OS emitida', title: 'OS emitida', cor: 'var(--os)' },
   { key: 'Atendimento Emergencial', title: 'Emergencial', cor: 'var(--emergencial)' },
-  { key: 'Garantia de Obra', title: 'Garantia', cor: 'var(--garantia)' },
+  { key: 'Garantia de Obra', title: 'Garantia de obra', cor: 'var(--garantia)' },
+  { key: 'Garantia de Serviço', title: 'Garantia de serviço', cor: 'var(--garantia-servico)' },
   { key: 'Serviço Realizado', title: 'Serviço realizado', cor: 'var(--servico-realizado)' },
   { key: 'Devolvido para a escola', title: 'Devolvido escola', cor: 'var(--duplicado)' },
   { key: 'Concluído', title: 'Concluído', cor: 'var(--concluido)' },
@@ -170,6 +172,7 @@ var CORES_STATUS = window.CORES_STATUS = {
   'OS emitida': '#22d3ee',
   'Serviço Realizado': '#10b981',
   'Garantia de Obra': '#d97706',
+  'Garantia de Serviço': '#a855f7',
   'Visita Técnica': '#14b8a6',
   'Devolvido para a escola': '#64748b',
   'Concluído': '#39FF14',

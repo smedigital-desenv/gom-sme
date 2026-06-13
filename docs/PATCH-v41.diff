@@ -1,0 +1,737 @@
+diff -ruN base/css/styles.css gom/css/styles.css
+--- base/css/styles.css	2026-06-12 22:45:32.917376901 +0000
++++ gom/css/styles.css	2026-06-12 22:41:25.688374781 +0000
+@@ -4,7 +4,7 @@
+       --concluido: #39FF14; --encaminhado: #6366f1; --orcamento: #f59e0b; 
+       --os: #22d3ee; --emergencial: #ec4899; --griffo: #ff3131; 
+       --orcamento-realizado: #fb923c; --servico-realizado: #22c55e;
+-      --analise: #FFD300; --garantia: #d97706; --duplicado: #475569; 
++      --analise: #FFD300; --garantia: #d97706; --garantia-servico: #a855f7; --duplicado: #475569; 
+       --visita: #14b8a6; --unidade: #84cc16;
+       --obras: #0f766e; --obra-aguardando: #f59e0b; --obra-projeto: #6366f1;
+       --obra-licitacao: #0ea5e9; --obra-execucao: #14b8a6; --obra-concluida: #22c55e;
+@@ -222,7 +222,7 @@
+     .st-encaminhado { --card-accent: var(--encaminhado); } .st-orcamento { --card-accent: var(--orcamento); }
+     .st-os { --card-accent: var(--os); } .st-emergencial { --card-accent: var(--emergencial); }
+     .st-griffo { --card-accent: var(--griffo); } .st-analise { --card-accent: var(--analise); }
+-    .st-garantia { --card-accent: var(--garantia); } .st-duplicado { --card-accent: var(--duplicado); }
++    .st-garantia { --card-accent: var(--garantia); } .st-garantia-servico { --card-accent: var(--garantia-servico); } .st-duplicado { --card-accent: var(--duplicado); }
+     .st-visita { --card-accent: var(--visita); } .st-unidade { --card-accent: var(--unidade); }
+     .st-orcamento-realizado { --card-accent: var(--orcamento-realizado); } .st-servico-realizado { --card-accent: var(--servico-realizado); }
+     .st-default { --card-accent: var(--primary); }
+diff -ruN base/index.html gom/index.html
+--- base/index.html	2026-06-12 22:45:32.925624693 +0000
++++ gom/index.html	2026-06-12 22:43:02.207839737 +0000
+@@ -268,20 +268,13 @@
+ <h4 class="text-primary fw-bold mb-1"><i class="bi bi-funnel me-2"></i>Triagem Operacional GOM</h4>
+ <p class="text-muted small mb-3">Chamados sem interação inicial aguardando definição da equipe interna.</p>
+ <div id="kpiGrid" class="kpi-grid"></div>
+-<div class="fila-help"><i class="bi bi-info-circle-fill"></i><span>Na triagem inicial, os encaminhamentos permitidos são: emergencial, orçamento, aguardando visita ou devolvido para a escola.</span></div>
++<div class="fila-help"><i class="bi bi-info-circle-fill"></i><span>Na triagem inicial, os encaminhamentos permitidos são: emergencial, orçamento, aguardando visita, garantia de obra ou devolvido para a escola. Nenhuma ação da triagem exige data.</span></div>
+ <div class="gom-tela-toolbar p-3 bg-white rounded shadow-sm border-start border-4 border-primary mb-3">
+   <div class="d-flex align-items-center gap-3 flex-wrap flex-grow-1">
+     <div class="input-group" style="max-width:480px;min-width:200px;">
+       <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
+       <input type="text" id="pesquisa" class="form-control border-start-0" placeholder="Filtrar chamados na triagem..." onkeyup="renderizarTela()">
+     </div>
+-    <div class="gom-data-global-wrap" id="gomDataGlobalWrap_triagem">
+-      <label class="gom-data-global-label"><i class="bi bi-calendar-check me-1"></i>Encaminhar todos para:</label>
+-      <input type="date" class="form-control form-control-sm gom-data-global-input" id="gomTfDataGlobal_triagem">
+-      <button type="button" class="btn btn-outline-primary btn-sm fw-bold" onclick="gomTfAplicarDataGlobal_('triagem')" title="Aplica esta data de encaminhamento em todos os chamados visíveis">
+-        <i class="bi bi-calendar-fill me-1"></i>Aplicar a todos
+-      </button>
+-    </div>
+   </div>
+   <span class="badge bg-primary px-3 py-2 ms-auto" id="contador">0 Resultados</span>
+ </div>
+@@ -391,6 +384,11 @@
+   <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2"><i class="bi bi-eye me-1"></i>Somente visualização</span>
+ </div>
+ 
++<div class="gom-submenu-tela gom-submenu-campo" id="campoSubmenuEquipe">
++  <button type="button" class="gom-submenu-btn" data-campo-equipe="educacao" onclick="setCampoEquipeModo('educacao', this)"><i class="bi bi-mortarboard"></i><span>Equipe da Educação</span></button>
++  <button type="button" class="gom-submenu-btn active" data-campo-equipe="empresa" onclick="setCampoEquipeModo('empresa', this)"><i class="bi bi-building-gear"></i><span>Equipe da Empresa</span></button>
++</div>
++
+ <div id="campoKpis" class="kpi-grid"></div>
+ 
+ <div class="campo-help mb-3">
+diff -ruN base/js/campo.js gom/js/campo.js
+--- base/js/campo.js	2026-06-12 22:45:32.919818941 +0000
++++ gom/js/campo.js	2026-06-12 22:43:12.976281584 +0000
+@@ -241,12 +241,18 @@
+     clone._campoObsDia = obsHistDia || obsAtual;
+     clone._campoDataDia = getDataCampoItemAtual_(item) || (hDia ? dataHistoricoCampo_(hDia) : iso);
+     clone._campoDataDiaBr = campoFormatarDataHoraBr_(clone._campoDataDia || iso);
++    // Momento em que o lançamento foi FEITO (registrado_em) — diferente da data do atendimento.
++    const registroFeitoEm = hDia ? dataRegistroHistoricoCampo_(hDia) : '';
++    clone._campoPreenchidoEmBr = registroFeitoEm
++      ? campoFormatarDataHoraBr_(registroFeitoEm)
++      : campoFormatarDataHoraBr_(item.dataHoraUltimaAcao || '');
+   } else {
+     clone._campoTemRegistroDia = false;
+     clone._campoEquipeDia = '';
+     clone._campoObsDia = '';
+     clone._campoDataDia = '';
+     clone._campoDataDiaBr = '';
++    clone._campoPreenchidoEmBr = '';
+   }
+ 
+   return clone;
+@@ -263,9 +269,48 @@
+   return data + ' ' + hora;
+ }
+ 
++// ── Submenu Equipe da Educação x Equipe da Empresa ───────────────────────────
++// Classifica pelo nome da equipe registrada (listas separadas que já existem).
++// Sem equipe identificável, decide pelo status: visitas = Educação; OS/garantias = Empresa.
++window.campoEquipeModo = window.campoEquipeModo || 'empresa';
++
++function setCampoEquipeModo(modo, btn) {
++  window.campoEquipeModo = (modo === 'educacao') ? 'educacao' : 'empresa';
++  const wrap = document.getElementById('campoSubmenuEquipe');
++  if (wrap) {
++    wrap.querySelectorAll('.gom-submenu-btn').forEach(function(b) { b.classList.remove('active'); });
++    if (btn) btn.classList.add('active');
++    else {
++      const alvo = wrap.querySelector('[data-campo-equipe="' + window.campoEquipeModo + '"]');
++      if (alvo) alvo.classList.add('active');
++    }
++  }
++  window.campoFiltroAtual = null;
++  if (typeof renderizarCampo === 'function') renderizarCampo();
++}
++
++function campoNomesEquipes_(lista) {
++  return (Array.isArray(lista) ? lista : []).map(function(eq) {
++    return normalizarTextoBase(String(eq && eq.nome ? eq.nome : eq || ''));
++  }).filter(Boolean);
++}
++
++function campoGrupoEquipeItem_(item) {
++  const eq = normalizarTextoBase(String(item && (item._campoEquipeDia || item.equipe || item.equipeResponsavel) || ''));
++  if (eq) {
++    if (campoNomesEquipes_(window.listaEquipesEmpresaGlobal).indexOf(eq) >= 0) return 'empresa';
++    if (campoNomesEquipes_(window.listaEquipesGlobal).indexOf(eq) >= 0) return 'educacao';
++  }
++  const st = normalizarSituacaoSistema(item && (item.situacao || item.status));
++  return (st === 'Aguardando visita' || st === 'Em atendimento') ? 'educacao' : 'empresa';
++}
++
+ function getChamadosCampoPreparadosDia_() {
+   const iso = campoDataSelecionadaISO();
+-  return getChamadosCampo().map(function(item) { return prepararItemCampoDia_(item, iso); });
++  const modo = window.campoEquipeModo || 'empresa';
++  return getChamadosCampo()
++    .map(function(item) { return prepararItemCampoDia_(item, iso); })
++    .filter(function(item) { return campoGrupoEquipeItem_(item) === modo; });
+ }
+ 
+ function renderizarCampo() {
+@@ -293,7 +338,9 @@
+     return textoOk && passaFiltroEscolaCampo(item);
+   });
+   const chamados = aplicarFiltroCampo(chamadosBase);
+-  const historico = filtrarHistoricoCampo(getHistoricoCampo(), termo);
++  const historico = filtrarHistoricoCampo(getHistoricoCampo(), termo).filter(function(h) {
++    return campoGrupoEquipeItem_(h) === (window.campoEquipeModo || 'empresa');
++  });
+ 
+   if (campoTabAtual === 'historico') {
+     painel.innerHTML = renderHistoricoCampo(historico, chamadosBase);
+@@ -422,8 +469,9 @@
+     ? escapeHtml(resumirTextoCampo(obsDiaValor, 170))
+     : '<span class="campo-muted-value">Aguardando preenchimento da empresa para a data.</span>';
+   const rowClass = temRegistroDia ? 'campo-preenchido' : 'campo-pendente';
++  const preenchidoEmBr = escapeHtml(item._campoPreenchidoEmBr || '');
+   const badge = temRegistroDia
+-    ? '<span class="badge bg-success">Preenchido em ' + dataSelecionadaBr + '</span>'
++    ? '<span class="badge bg-success">Preenchido em ' + (preenchidoEmBr || dataSelecionadaBr) + '</span>'
+     : '<span class="badge bg-warning text-dark">Pendente em ' + dataSelecionadaBr + '</span>';
+   const alertaOs = st === 'OS emitida' && !String(item.numeroOs || '').trim() ? '<span class="empresa-os-alert"><i class="bi bi-exclamation-triangle-fill"></i> Sem nº OS</span>' : '';
+ 
+@@ -441,9 +489,8 @@
+             <div class="modal-label">Observações acumuladas</div>
+             <div class="card-observacao mb-2">${obs}</div>
+             <div class="campo-expand-meta">
+-              <span><strong>Dia consultado:</strong> ${dataSelecionadaBr}</span>
+               <span><strong>Data prevista:</strong> ${dataPrev}</span>
+-              <span><strong>Registro de equipe do dia:</strong> ${dataEquipe}</span>
++              <span><strong>Último lançamento:</strong> ${dataEquipe}</span>
+             </div>
+             <button type="button" class="btn btn-light btn-sm border fw-bold mt-2" onclick="abrirModalAnalise('${idJs}')"><i class="bi bi-box-arrow-up-right me-1"></i>Abrir chamado</button>
+           </div>
+@@ -453,8 +500,7 @@
+ 
+       <div class="campo-status-cell campo-status-data-cell" data-label="Status / OS / encaminhamento">
+         <span class="badge-status">${escapeHtml(st)}</span>
+-        <span class="campo-data-selecionada-pill"><i class="bi bi-calendar-check"></i> Dia consultado: ${dataSelecionadaBr}</span>
+-        ${dataRegistroDiaBr ? '<span class="campo-data-registro-pill"><i class="bi bi-person-check"></i> Registro: ' + dataRegistroDiaBr + '</span>' : ''}
++        ${preenchidoEmBr ? '<span class="campo-data-registro-pill"><i class="bi bi-person-check"></i> Lançamento: ' + preenchidoEmBr + '</span>' : ''}
+         <span class="empresa-os-numero"><strong>OS:</strong> ${numeroOs}</span>
+         <span class="campo-data-inline"><i class="bi bi-calendar3"></i> Encaminhamento: ${dataEnc}</span>
+         ${alertaOs}
+diff -ruN base/js/config.js gom/js/config.js
+--- base/js/config.js	2026-06-12 22:45:32.919934751 +0000
++++ gom/js/config.js	2026-06-12 22:43:24.076056974 +0000
+@@ -11,6 +11,20 @@
+   BUCKET_ANEXOS: 'anexos'
+ };
+ 
++/* ============================================================================
++ * Armazenamento de anexos no Google Drive (via Web App GomDriveAPI.gs)
++ * ----------------------------------------------------------------------------
++ * URL: a URL /exec pública do Web App (Implantar → App da Web →
++ *      Executar como: eu / Acesso: Qualquer pessoa).
++ * TOKEN: deve ser IDÊNTICO ao GOM_DRIVE_CONFIG.TOKEN do GomDriveAPI.gs.
++ * Enquanto a URL estiver vazia, o sistema avisa ao tentar anexar arquivos.
++ * ========================================================================== */
++const GOM_DRIVE = {
++  URL: '',
++  TOKEN: ''
++};
++window.GOM_DRIVE = GOM_DRIVE;
++
+ /* Controle de logs. Em produção, manter false. */
+ window.GOM_DEBUG = false;
+ window.gomLog = function () {
+diff -ruN base/js/dashboard.js gom/js/dashboard.js
+--- base/js/dashboard.js	2026-06-12 22:45:32.919965918 +0000
++++ gom/js/dashboard.js	2026-06-12 22:41:25.686557330 +0000
+@@ -15,7 +15,7 @@
+   const anoAtual = hoje.getFullYear();
+ 
+   const porStatus = contarPorStatusDashboard(chamados);
+-  const campoAtivos = chamados.filter(c => ['OS emitida','Atendimento Emergencial','Garantia de Obra'].includes(normalizarSituacaoSistema(c.situacao || c.status)));
++  const campoAtivos = chamados.filter(c => ['OS emitida','Atendimento Emergencial','Garantia de Obra','Garantia de Serviço'].includes(normalizarSituacaoSistema(c.situacao || c.status)));
+   const osEmitidas = chamados.filter(c => normalizarSituacaoSistema(c.situacao || c.status) === 'OS emitida');
+   const osSemNumero = osEmitidas.filter(c => !String(c.numeroOs || '').trim());
+   const campoHoje = campoAtivos.filter(c => !!c.temEquipeDiaValida);
+@@ -150,7 +150,7 @@
+ 
+ function calcularAtrasosDashboard(chamados) {
+   const hoje = inicioDiaDashboard(new Date());
+-  const campoStatus = ['OS emitida','Atendimento Emergencial','Garantia de Obra'];
++  const campoStatus = ['OS emitida','Atendimento Emergencial','Garantia de Obra','Garantia de Serviço'];
+   return (chamados || []).filter(c => {
+     const st = normalizarSituacaoSistema(c.situacao || c.status);
+     const previsao = parseDataDashboard(c.dataPrevistaConclusao || c.dataPrevistaConclusaoRaw);
+@@ -214,7 +214,7 @@
+   if (st === 'Aguardando visita') return irDashboardPara('fila', st);
+   if (st === 'Solicitado Orçamento') return irDashboardPara('empresa', st, 'orcamentos');
+   if (st === 'Orçamento Realizado') return irDashboardPara('aprovacao', st);
+-  if (['OS emitida','Atendimento Emergencial','Garantia de Obra','Serviço Realizado'].includes(st)) return irDashboardPara('empresa', null, 'gerencial');
++  if (['OS emitida','Atendimento Emergencial','Garantia de Obra','Garantia de Serviço','Serviço Realizado'].includes(st)) return irDashboardPara('empresa', null, 'gerencial');
+   return loadPage('historico');
+ }
+ 
+diff -ruN base/js/gom-config.js gom/js/gom-config.js
+--- base/js/gom-config.js	2026-06-12 22:45:32.920650902 +0000
++++ gom/js/gom-config.js	2026-06-12 22:41:07.009055362 +0000
+@@ -111,11 +111,11 @@
+ var STATUS_TRIAGEM = window.STATUS_TRIAGEM = ['Em análise'];
+ var STATUS_FILA = window.STATUS_FILA = ['Aguardando visita', 'Em atendimento'];
+ var STATUS_APROVACAO = window.STATUS_APROVACAO = ['Orçamento Realizado', 'Serviço Realizado'];
+-var STATUS_EMPRESA = window.STATUS_EMPRESA = ['Solicitado Orçamento', 'OS emitida', 'Atendimento Emergencial', 'Garantia de Obra'];
+-var STATUS_EMPRESA_DIARIO = window.STATUS_EMPRESA_DIARIO = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra'];
++var STATUS_EMPRESA = window.STATUS_EMPRESA = ['Solicitado Orçamento', 'OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'];
++var STATUS_EMPRESA_DIARIO = window.STATUS_EMPRESA_DIARIO = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'];
+ var STATUS_EMPRESA_ORCAMENTO = window.STATUS_EMPRESA_ORCAMENTO = ['Solicitado Orçamento'];
+-var STATUS_EMPRESA_GERENCIAL = window.STATUS_EMPRESA_GERENCIAL = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra'];
+-var STATUS_CAMPO = window.STATUS_CAMPO = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra'];
++var STATUS_EMPRESA_GERENCIAL = window.STATUS_EMPRESA_GERENCIAL = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'];
++var STATUS_CAMPO = window.STATUS_CAMPO = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'];
+ var STATUS_MEMORIAL = window.STATUS_MEMORIAL = ['Concluído', 'Encaminhado para outra gerência ou Unidade escolar.', 'A cargo da unidade escolar', 'Duplicado', 'Devolvido para a escola'];
+ 
+ var STATUS_TODOS = window.STATUS_TODOS = [
+@@ -126,6 +126,7 @@
+   'OS emitida',
+   'Atendimento Emergencial',
+   'Garantia de Obra',
++  'Garantia de Serviço',
+   'Serviço Realizado',
+   'Devolvido para a escola',
+   'Concluído',
+@@ -141,7 +142,8 @@
+   { key: 'Orçamento Realizado', title: 'Aprovação', cor: 'var(--orcamento-realizado)' },
+   { key: 'OS emitida', title: 'OS emitida', cor: 'var(--os)' },
+   { key: 'Atendimento Emergencial', title: 'Emergencial', cor: 'var(--emergencial)' },
+-  { key: 'Garantia de Obra', title: 'Garantia', cor: 'var(--garantia)' },
++  { key: 'Garantia de Obra', title: 'Garantia de obra', cor: 'var(--garantia)' },
++  { key: 'Garantia de Serviço', title: 'Garantia de serviço', cor: 'var(--garantia-servico)' },
+   { key: 'Serviço Realizado', title: 'Serviço realizado', cor: 'var(--servico-realizado)' },
+   { key: 'Devolvido para a escola', title: 'Devolvido escola', cor: 'var(--duplicado)' },
+   { key: 'Concluído', title: 'Concluído', cor: 'var(--concluido)' },
+@@ -170,6 +172,7 @@
+   'OS emitida': '#22d3ee',
+   'Serviço Realizado': '#10b981',
+   'Garantia de Obra': '#d97706',
++  'Garantia de Serviço': '#a855f7',
+   'Visita Técnica': '#14b8a6',
+   'Devolvido para a escola': '#64748b',
+   'Concluído': '#39FF14',
+diff -ruN base/js/modal-chamados.js gom/js/modal-chamados.js
+--- base/js/modal-chamados.js	2026-06-12 22:45:32.920773222 +0000
++++ gom/js/modal-chamados.js	2026-06-12 22:42:03.896153281 +0000
+@@ -31,8 +31,10 @@
+ 
+ 
+ function isFluxoAprovacaoModal_(chamado) {
++  // Decisões de orçamento valem APENAS para "Orçamento Realizado".
++  // "Serviço Realizado" tem fluxo próprio de validação (Memorial ou Garantia de Serviço).
+   var st = normalizarSituacaoSistema(chamado && (chamado.situacao || chamado.status));
+-  return window.telaAtual === 'aprovacao' || st === 'Orçamento Realizado';
++  return st === 'Orçamento Realizado';
+ }
+ 
+ function setTextoModalFluxo_(emAprovacao) {
+@@ -242,7 +244,7 @@
+   const emAprovacaoModal = isFluxoAprovacaoModal_(c);
+   setTextoModalFluxo_(emAprovacaoModal);
+   const workflow = document.getElementById('mdlWorkflowBox');
+-  if (workflow) workflow.style.display = telaAtual === 'historico' ? 'none' : '';
++  if (workflow) workflow.style.display = (telaAtual === 'historico' || telaAtual === 'campo') ? 'none' : '';
+   const inputObs = document.getElementById('mdlNovaObservacao');
+   if (inputObs) inputObs.value = '';
+   limparAnexosModalAtualizacao_();
+@@ -274,7 +276,7 @@
+   const st = normalizarSituacaoSistema(chamado.situacao || chamado.status);
+   if (telaAtual === 'triagem' || st === 'Em análise') return ['Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Devolvido para a escola'];
+   if (telaAtual === 'fila' || st === 'Aguardando visita') return ['Devolvido para a escola', 'Atendimento Emergencial', 'Solicitado Orçamento'];
+-  if (st === 'Serviço Realizado') return ['Concluído', 'Garantia de Obra', 'Devolvido para a escola'];
++  if (st === 'Serviço Realizado') return ['Concluído', 'Garantia de Serviço'];
+   return STATUS_TODOS;
+ }
+ 
+@@ -297,6 +299,18 @@
+ 
+   select.onchange = null;
+   const atual = normalizarSituacaoSistema(chamado.situacao || chamado.status);
++
++  // Validação de Serviço Realizado: apenas duas decisões, com rótulos claros.
++  if (atual === 'Serviço Realizado') {
++    select.innerHTML = [
++      '<option value="" disabled selected>-- Selecionar decisão --</option>',
++      '<option value="Concluído">Validar e enviar para Memorial</option>',
++      '<option value="Garantia de Serviço">Garantia de Serviço (retorna à empresa)</option>'
++    ].join('');
++    select.value = '';
++    return;
++  }
++
+   const opcoes = [atual].concat(getStatusPermitidosModal(chamado).filter(s => s !== atual));
+   select.innerHTML = opcoes.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+   select.value = atual;
+diff -ruN base/js/relatorios.js gom/js/relatorios.js
+--- base/js/relatorios.js	2026-06-12 22:45:32.920958730 +0000
++++ gom/js/relatorios.js	2026-06-12 22:41:25.686946317 +0000
+@@ -299,7 +299,7 @@
+ 
+   const ativos = (chamados || []).filter(function(c) {
+     const st = normalizarSituacaoSistema(c.situacao || c.status);
+-    return ['Em análise','Aguardando visita','Solicitado Orçamento','Orçamento Realizado','OS emitida','Atendimento Emergencial','Garantia de Obra','Serviço Realizado'].indexOf(st) >= 0;
++    return ['Em análise','Aguardando visita','Solicitado Orçamento','Orçamento Realizado','OS emitida','Atendimento Emergencial','Garantia de Obra','Garantia de Serviço','Serviço Realizado'].indexOf(st) >= 0;
+   });
+ 
+   const concluidos = (chamados || []).filter(function(c) {
+@@ -333,7 +333,7 @@
+ }
+ 
+ function renderRelatorioStatusBars(chamados) {
+-  const ordem = ['Em análise','Aguardando visita','Solicitado Orçamento','Orçamento Realizado','OS emitida','Atendimento Emergencial','Garantia de Obra','Serviço Realizado','Concluído','Devolvido para a escola','A cargo da unidade escolar','Duplicado'];
++  const ordem = ['Em análise','Aguardando visita','Solicitado Orçamento','Orçamento Realizado','OS emitida','Atendimento Emergencial','Garantia de Obra','Garantia de Serviço','Serviço Realizado','Concluído','Devolvido para a escola','A cargo da unidade escolar','Duplicado'];
+   renderBarrasRelatorio('relatorioStatusBars', contarPorRelatorio(chamados, c => normalizarSituacaoSistema(c.situacao || c.status)), ordem, getCorStatus);
+ }
+ 
+diff -ruN base/js/render-chamados.js gom/js/render-chamados.js
+--- base/js/render-chamados.js	2026-06-12 22:45:32.920976871 +0000
++++ gom/js/render-chamados.js	2026-06-12 22:42:29.263600725 +0000
+@@ -898,13 +898,12 @@
+             '<label class="empresa-field-label">Decisão</label>',
+             '<select class="form-select form-select-sm fw-bold" name="situacao" required>',
+               '<option value="">Selecione...</option>',
+-              '<option value="Concluído">Validar e enviar ao Memorial</option>',
+-              '<option value="Garantia de Obra">Enviar para garantia</option>',
+-              '<option value="Devolvido para a escola">Devolver para escola</option>',
++              '<option value="Concluído">Validar e enviar para Memorial</option>',
++              '<option value="Garantia de Serviço">Garantia de Serviço</option>',
+             '</select>',
+           '</div>',
+         '</div>',
+-        '<div class="aprovacao-decisao-help">Após validação, o chamado concluído será encaminhado ao Memorial. Garantia volta para a Empresa.</div>',
++        '<div class="aprovacao-decisao-help">Validar envia o chamado ao Memorial. Garantia de Serviço devolve à Empresa para correção, sem novo orçamento.</div>',
+         '<button class="btn btn-success btn-sm fw-bold aprovacao-submit"><i class="bi bi-check2-square me-1"></i>Registrar validação</button>',
+       '</form>',
+     '</div>'
+diff -ruN base/js/runtime-patch.js gom/js/runtime-patch.js
+--- base/js/runtime-patch.js	2026-06-12 22:45:32.921061453 +0000
++++ gom/js/runtime-patch.js	2026-06-12 22:41:25.686179174 +0000
+@@ -3,7 +3,7 @@
+   window.STATUS_OBRAS = window.STATUS_OBRAS || ['Aguardando','Em projeto','Em licitação','Em execução','Suspensa','Concluída','Arquivada'];
+   window.PRIORIDADES_OBRAS = window.PRIORIDADES_OBRAS || ['P0','P1','P2','P3'];
+   window.STATUS_TODOS = window.STATUS_TODOS || [
+-    'Em análise','Aguardando visita','Solicitado Orçamento','Orçamento Realizado','OS emitida','Atendimento Emergencial','Garantia de Obra','Serviço Realizado','Devolvido para a escola','Concluído','Encaminhado para outra gerência ou Unidade escolar.','A cargo da unidade escolar','Duplicado'
++    'Em análise','Aguardando visita','Solicitado Orçamento','Orçamento Realizado','OS emitida','Atendimento Emergencial','Garantia de Obra','Garantia de Serviço','Serviço Realizado','Devolvido para a escola','Concluído','Encaminhado para outra gerência ou Unidade escolar.','A cargo da unidade escolar','Duplicado'
+   ];
+ 
+   // Alguns arquivos usam os nomes diretamente. Criamos bindings globais seguros.
+@@ -116,8 +116,8 @@
+       const filtrarModo = (item) => {
+         const st = normalizarSituacaoSistema(item.situacao || item.status);
+         if (modo === 'orcamentos') return st === 'Solicitado Orçamento';
+-        if (modo === 'gerencial') return ['OS emitida','Atendimento Emergencial','Garantia de Obra','Serviço Realizado'].includes(st);
+-        return ['OS emitida','Atendimento Emergencial','Garantia de Obra'].includes(st);
++        if (modo === 'gerencial') return ['OS emitida','Atendimento Emergencial','Garantia de Obra','Garantia de Serviço','Serviço Realizado'].includes(st);
++        return ['OS emitida','Atendimento Emergencial','Garantia de Obra','Garantia de Serviço'].includes(st);
+       };
+       const lista = (listaRender || []).filter(filtrarModo);
+       if (!lista.length) return '<div class="empty-state"><h5>Nenhuma demanda encontrada para esta visualização.</h5></div>';
+diff -ruN base/js/state.js gom/js/state.js
+--- base/js/state.js	2026-06-12 22:45:32.921342366 +0000
++++ gom/js/state.js	2026-06-12 22:41:25.686422950 +0000
+@@ -325,7 +325,7 @@
+   // OTIMIZAÇÃO: monta chamados de campo a partir de listaChamadosGlobal (já em memória),
+   // sem round-trip ao backend. O histórico de equipes vem em background.
+   if (dadosCarregados && Array.isArray(listaChamadosGlobal) && listaChamadosGlobal.length && !opcoes.forcarBackend) {
+-    const statusCampo = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra'];
++    const statusCampo = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'];
+     const chamadosCampo = listaChamadosGlobal.filter(c =>
+       statusCampo.includes(normalizarSituacaoSistema(c.situacao || c.status))
+     );
+diff -ruN base/js/supabase/anexos.js gom/js/supabase/anexos.js
+--- base/js/supabase/anexos.js	2026-06-12 22:45:32.921547915 +0000
++++ gom/js/supabase/anexos.js	2026-06-12 22:43:23.844056960 +0000
+@@ -1,8 +1,16 @@
+ /* ============================================================================
+- * GOM | SME — Anexos (Supabase Storage, no lugar do Google Drive)
++ * GOM | SME — Anexos (Google Drive via Web App GAS + metadados no Supabase)
+  * ----------------------------------------------------------------------------
+- * Bucket: GOM_SUPABASE.BUCKET_ANEXOS (privado). Caminho: chamado/<id>/<cat>/arquivo
+- * Metadados ficam na tabela `anexos`. URLs de leitura são assinadas em lote.
++ * Upload: cada arquivo é enviado em base64 para o Web App (GomDriveAPI.gs),
++ * que salva no Drive e devolve a URL pública. Os metadados continuam na
++ * tabela `anexos` (storage_path = 'drive:<fileId>' e a nova coluna `url`).
++ *
++ * Compatibilidade retroativa: anexos antigos (Supabase Storage) não têm `url`
++ * e seguem sendo lidos por URL assinada do bucket, como antes.
++ *
++ * Pré-requisitos:
++ *   1) sql/10_anexos_drive.sql aplicado (coluna `url`)
++ *   2) GOM_DRIVE.URL e GOM_DRIVE.TOKEN preenchidos em js/config.js
+  * ========================================================================== */
+ window.GomAnexos = (function () {
+   'use strict';
+@@ -11,63 +19,104 @@
+ 
+   function _slug(s) { return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w.-]+/g, '_').slice(0, 80); }
+ 
+-  function _b64ToBlob(base64, mime) {
+-    const bin = atob(String(base64).split(',').pop());
+-    const bytes = new Uint8Array(bin.length);
+-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+-    return new Blob([bytes], { type: mime || 'application/octet-stream' });
++  function _cfgDrive() {
++    const c = window.GOM_DRIVE || {};
++    if (!c.URL || !c.TOKEN) {
++      throw new Error('Armazenamento no Drive não configurado. Preencha GOM_DRIVE.URL e GOM_DRIVE.TOKEN em js/config.js.');
++    }
++    return c;
++  }
++
++  // Envia UM arquivo ao Web App do Drive. Um arquivo por requisição mantém o
++  // payload pequeno (limite do GAS) e permite tratar erro por arquivo.
++  // IMPORTANTE: sem header Content-Type — assim a requisição é "simple request"
++  // (text/plain), dispensa preflight CORS e o Apps Script aceita normalmente.
++  async function _enviarParaDrive(arq, chamadoId, categoria, escolaNome) {
++    const cfg = _cfgDrive();
++    const corpo = JSON.stringify({
++      token: cfg.TOKEN,
++      acao: 'upload',
++      escola: escolaNome || 'sem-escola',
++      chamadoId: chamadoId,
++      categoria: categoria,
++      arquivos: [{
++        nome: arq.nome || arq.name || 'anexo',
++        mimeType: arq.mimeType || arq.type || 'application/octet-stream',
++        base64: String(arq.base64).split(',').pop()
++      }]
++    });
++
++    const resp = await fetch(cfg.URL, { method: 'POST', body: corpo });
++    if (!resp.ok) throw new Error('Falha de rede no upload (HTTP ' + resp.status + ').');
++
++    let json;
++    try { json = await resp.json(); }
++    catch (e) { throw new Error('Resposta inválida do Drive API. Verifique a publicação do Web App (acesso: Qualquer pessoa).'); }
++
++    if (!json.ok) throw new Error('Drive recusou o upload: ' + (json.erro || 'erro desconhecido'));
++    if (!json.arquivos || !json.arquivos.length) throw new Error('Drive não retornou o arquivo salvo.');
++    return json.arquivos[0]; // { nome, id, url, tamanho }
+   }
+ 
+-  // Recebe a lista de arquivos em base64 (mesmo formato do front: {nome/base64/mimeType}),
+-  // sobe pro Storage e grava em `anexos`. Sem arquivos, não toca em nada (saída rápida).
++  // Mesma assinatura de antes — dados.js não muda.
+   // upload(chamadoId, categoria, arquivos, escolaNome?)
+-  // Path: escolas/{escola}/{chamado}/{categoria}/{ts}_{nome}
+   async function upload(chamadoId, categoria, arquivos, escolaNome) {
+     const lista = Array.isArray(arquivos) ? arquivos.filter(a => a && a.base64) : [];
+     if (!lista.length) return [];
+     if (lista.length > LIMITE) throw new Error(`Limite de ${LIMITE} anexos por envio.`);
+-    const bucket = window.GOM_SUPABASE.BUCKET_ANEXOS;
+-    const escolaSlug = escolaNome ? _slug(String(escolaNome)) : 'sem-escola';
++
+     const salvos = [];
+     for (let i = 0; i < lista.length; i++) {
+       const arq = lista[i];
+       const nome = _slug(arq.nome || arq.name || `anexo_${i + 1}`);
+-      const mime = arq.mimeType || arq.type || 'application/octet-stream';
+-      const blob = _b64ToBlob(arq.base64, mime);
+-      if (blob.size > MAX_MB * 1024 * 1024) throw new Error(`Arquivo ${nome} excede ${MAX_MB} MB.`);
+-      const caminho = `escolas/${escolaSlug}/chamado-${chamadoId}/${categoria}/${Date.now()}_${nome}`;
+-      const up = await window.SB.storage.from(bucket).upload(caminho, blob, { contentType: mime, upsert: false });
+-      if (up.error) throw new Error('Falha no upload: ' + up.error.message);
++      const tamanhoEstimado = Math.floor(String(arq.base64).length * 0.75);
++      if (tamanhoEstimado > MAX_MB * 1024 * 1024) throw new Error(`Arquivo ${nome} excede ${MAX_MB} MB.`);
++
++      const drive = await _enviarParaDrive(arq, chamadoId, categoria, escolaNome);
++
+       const ins = await window.SB.from('anexos').insert({
+-        solicitacao_id: chamadoId, categoria: categoria,
+-        nome: arq.nome || nome, storage_path: caminho, mime_type: mime, tamanho_bytes: blob.size
++        solicitacao_id: chamadoId,
++        categoria: categoria,
++        nome: arq.nome || drive.nome || nome,
++        storage_path: 'drive:' + drive.id,
++        url: drive.url,
++        mime_type: arq.mimeType || arq.type || 'application/octet-stream',
++        tamanho_bytes: drive.tamanho || tamanhoEstimado
+       });
+-      if (ins.error) throw new Error('Falha ao gravar anexo: ' + ins.error.message);
+-      salvos.push({ nome: arq.nome || nome, path: caminho });
++      if (ins.error) throw new Error('Arquivo salvo no Drive, mas falhou ao gravar metadado: ' + ins.error.message);
++
++      salvos.push({ nome: arq.nome || drive.nome || nome, path: 'drive:' + drive.id, url: drive.url });
+     }
+     return salvos;
+   }
+ 
+-  // Mapa de anexos por chamado, com URL assinada (1 chamada em lote pro Storage).
+-  // Retorno: { [solicitacao_id]: { solicitacao:[{nome,url}], orcamento:[...], servico:[...] } }
++  // Mapa de anexos por chamado.
++  // Drive: usa a coluna `url` direto (sem chamada extra).
++  // Legado (Supabase Storage): gera URLs assinadas em lote, como antes.
+   async function mapaPorChamado(ids) {
+     const out = {};
+     if (!ids || !ids.length) return out;
+-    const r = await window.SB.from('anexos').select('solicitacao_id,categoria,nome,storage_path').in('solicitacao_id', ids);
++    const r = await window.SB.from('anexos')
++      .select('solicitacao_id,categoria,nome,storage_path,url')
++      .in('solicitacao_id', ids);
+     if (r.error || !r.data || !r.data.length) return out;
+ 
+-    const bucket = window.GOM_SUPABASE.BUCKET_ANEXOS;
+-    const paths = r.data.map(a => a.storage_path);
++    // URLs assinadas só para o legado (sem `url` e sem prefixo drive:)
++    const legados = r.data.filter(a => !a.url && a.storage_path && a.storage_path.indexOf('drive:') !== 0);
+     let urlByPath = {};
+-    try {
+-      const s = await window.SB.storage.from(bucket).createSignedUrls(paths, 60 * 60); // 1h
+-      (s.data || []).forEach(it => { if (it && it.path) urlByPath[it.path] = it.signedUrl; });
+-    } catch (e) { /* sem URL assinada, ainda devolve nome */ }
++    if (legados.length) {
++      try {
++        const bucket = window.GOM_SUPABASE.BUCKET_ANEXOS;
++        const s = await window.SB.storage.from(bucket).createSignedUrls(legados.map(a => a.storage_path), 60 * 60);
++        (s.data || []).forEach(it => { if (it && it.path) urlByPath[it.path] = it.signedUrl; });
++      } catch (e) { /* sem URL assinada, ainda devolve nome */ }
++    }
+ 
+     r.data.forEach(a => {
+       const cat = a.categoria || 'solicitacao';
+       out[a.solicitacao_id] = out[a.solicitacao_id] || { solicitacao: [], orcamento: [], servico: [] };
+-      (out[a.solicitacao_id][cat] = out[a.solicitacao_id][cat] || []).push({ nome: a.nome || 'arquivo', url: urlByPath[a.storage_path] || '' });
++      const url = a.url || urlByPath[a.storage_path] || '';
++      (out[a.solicitacao_id][cat] = out[a.solicitacao_id][cat] || []).push({ nome: a.nome || 'arquivo', url: url });
+     });
+     return out;
+   }
+diff -ruN base/js/supabase/dados.js gom/js/supabase/dados.js
+--- base/js/supabase/dados.js	2026-06-12 22:45:32.921606108 +0000
++++ gom/js/supabase/dados.js	2026-06-12 22:44:53.600677619 +0000
+@@ -312,9 +312,14 @@
+   }
+ 
+   async function listarCampo() {
+-    const campoStatus = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra'];
++    const campoStatus = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'];
++    // Equipe da Educação: visitas da secretaria com equipe atribuída também entram no acompanhamento.
++    const campoStatusEducacao = ['Aguardando visita', 'Em atendimento'];
+     const jsonChamados = JSON.parse(await listarChamados());
+-    const chamados = (jsonChamados.chamados || []).filter(c => campoStatus.includes(c.situacao));
++    const chamados = (jsonChamados.chamados || []).filter(c =>
++      campoStatus.includes(c.situacao) ||
++      (campoStatusEducacao.includes(c.situacao) && String(c.equipe || '').trim())
++    );
+     let historico = [];
+     try {
+       const h = await window.SB.from('historico_equipes').select('*').order('registrado_em', { ascending: false }).limit(300);
+@@ -335,7 +340,7 @@
+         osSemNumero: chamados.filter(c => c.situacao === 'OS emitida' && !c.numeroOs).length,
+         escolasEmAtendimento: new Set(chamados.map(c => c.unidade).filter(Boolean)).size,
+         preenchidosHoje: preenchidosHoje.size,
+-        pendentesHoje: chamados.filter(c => !preenchidosHoje.has(String(c.id))).length
++        pendentesHoje: chamados.filter(c => campoStatus.includes(c.situacao) && !preenchidosHoje.has(String(c.id))).length
+       }
+     };
+     return JSON.stringify({ ok: true, versao: 'campo-supabase', total: chamados.length, dados });
+@@ -389,6 +394,7 @@
+       'OS emitida': 'A ordem de serviço foi emitida e o atendimento será acompanhado pela equipe responsável.',
+       'Atendimento Emergencial': 'A solicitação foi classificada como emergencial e está em atendimento prioritário.',
+       'Garantia de Obra': 'A solicitação está relacionada à garantia de obra e está em acompanhamento.',
++      'Garantia de Serviço': 'O serviço executado está em garantia e retornou à empresa para correção.',
+       'Serviço Realizado': 'A empresa informou a realização do serviço. A equipe interna fará a validação final.',
+       'Devolvido para a escola': 'A solicitação foi devolvida para complementação da unidade escolar.',
+       'Concluído': 'A solicitação foi concluída pela equipe responsável.',
+@@ -525,7 +531,7 @@
+     if (p.equipe !== undefined) { u.equipe_responsavel = p.equipe || ''; if (p.equipe) u.data_equipe = _nowISO(); }
+     if (p.dataAgendamentoVisita !== undefined && p.dataAgendamentoVisita !== '') u.data_agendamento_visita = _date(p.dataAgendamentoVisita);
+     if (['Aguardando visita', 'Em atendimento'].includes(stNovo) && !atual.data_hora_entrada_fila) u.data_hora_entrada_fila = _nowISO();
+-    if (['Solicitado Orçamento', 'Atendimento Emergencial', 'OS emitida', 'Aguardando visita'].includes(stNovo) && mudou) u.data_hora_encaminhamento = _nowISO();
++    if (['Solicitado Orçamento', 'Atendimento Emergencial', 'OS emitida', 'Aguardando visita', 'Garantia de Obra', 'Garantia de Serviço'].includes(stNovo) && mudou) u.data_hora_encaminhamento = _nowISO();
+     if (stNovo === 'Devolvido para a escola') u.data_conclusao_os = _nowISO();
+     const _anexosAtual = p.anexosAtualizacao || p.anexos || [];
+     if (Array.isArray(_anexosAtual) && _anexosAtual.length) {
+@@ -670,7 +676,7 @@
+   async function atualizarPrevisaoOsEmpresa(p) {
+     const id = p.id; const atual = await _getChamado(id);
+     const st = M.normalizarStatus(atual.situacao);
+-    if (!['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Serviço Realizado'].includes(st)) throw new Error('A previsão só pode ser alterada em OS, emergência, garantia ou serviço realizado.');
++    if (!['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço', 'Serviço Realizado'].includes(st)) throw new Error('A previsão só pode ser alterada em OS, emergência, garantia ou serviço realizado.');
+     await _update(id, { data_prevista_conclusao: _date(p.dataPrevistaConclusao) });
+     await _log({ solicitacao_id: id, acao: 'Previsão de conclusão atualizada pela empresa', status_anterior: st, status_novo: st });
+     return true;
+diff -ruN base/js/supabase/mapeadores.js gom/js/supabase/mapeadores.js
+--- base/js/supabase/mapeadores.js	2026-06-12 22:45:32.921805087 +0000
++++ gom/js/supabase/mapeadores.js	2026-06-12 22:40:54.313545194 +0000
+@@ -76,7 +76,7 @@
+   const CORES = {
+     'Em análise': '#FFD300', 'Solicitado Orçamento': '#f59e0b', 'Orçamento Realizado': '#fb923c',
+     'Aguardando visita': '#14b8a6', 'Em atendimento': '#00e5ff', 'Atendimento Emergencial': '#ec4899',
+-    'OS emitida': '#22d3ee', 'Serviço Realizado': '#10b981', 'Garantia de Obra': '#d97706',
++    'OS emitida': '#22d3ee', 'Serviço Realizado': '#10b981', 'Garantia de Obra': '#d97706', 'Garantia de Serviço': '#a855f7',
+     'Visita Técnica': '#14b8a6', 'Devolvido para a escola': '#64748b', 'Concluído': '#39FF14',
+     'Encaminhado para outra gerência ou Unidade escolar.': '#6366f1', 'A cargo da unidade escolar': '#84cc16', 'Duplicado': '#475569'
+   };
+@@ -84,21 +84,23 @@
+   const ALIASES = {
+     'recebido': 'Em análise', 'avaliar': 'Em análise',
+     'garantia obra - griffo': 'Garantia de Obra', 'garantia de obra - griffo': 'Garantia de Obra',
++    'garantia de servico': 'Garantia de Serviço', 'garantia servico': 'Garantia de Serviço', 'garantia do servico': 'Garantia de Serviço',
+     'solicitado orcamento': 'Solicitado Orçamento', 'orçamento solicitado': 'Solicitado Orçamento', 'orcamento solicitado': 'Solicitado Orçamento',
+     'servico realizado': 'Serviço Realizado',
+     'aguardando visita tecnica': 'Aguardando visita', 'aguardando visita técnica': 'Aguardando visita',
+     'devolvido escola': 'Devolvido para a escola', 'devolvido para escola': 'Devolvido para a escola'
+   };
+   const REGRAS = {
+-    'Em análise': { tela: 'triagem', proximos: ['Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Devolvido para a escola'] },
++    'Em análise': { tela: 'triagem', proximos: ['Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Garantia de Obra', 'Devolvido para a escola'] },
+     'Aguardando visita': { tela: 'fila', filaVisita: true, proximos: ['Devolvido para a escola', 'Atendimento Emergencial', 'Solicitado Orçamento'] },
+     'Solicitado Orçamento': { tela: 'empresa', exigeValorOrcamento: true, exigeObservacao: true, anexoPermitido: 'orcamento', bloqueiaEquipe: true, proximos: ['Orçamento Realizado'] },
+     'Orçamento Realizado': { tela: 'aprovacao', exigeAprovacao: true, proximos: ['OS emitida', 'Solicitado Orçamento', 'A cargo da unidade escolar', 'Devolvido para a escola'] },
+     'OS emitida': { tela: 'empresa', exigeEquipeDia: true, exigeObservacao: true, anexoPermitido: 'servico', proximos: ['Serviço Realizado'] },
+     'Atendimento Emergencial': { tela: 'empresa', exigeEquipeDia: true, exigeObservacao: true, anexoPermitido: 'servico', proximos: ['Serviço Realizado'] },
+     'Garantia de Obra': { tela: 'empresa', exigeEquipeDia: true, exigeObservacao: true, anexoPermitido: 'servico', proximos: ['Serviço Realizado'] },
++    'Garantia de Serviço': { tela: 'empresa', exigeEquipeDia: true, exigeObservacao: true, anexoPermitido: 'servico', proximos: ['Serviço Realizado'] },
+     'Em atendimento': { tela: 'fila', legado: true, proximos: ['Serviço Realizado', 'Devolvido para a escola', 'Solicitado Orçamento', 'Atendimento Emergencial'] },
+-    'Serviço Realizado': { tela: 'aprovacao', exigeValidacaoServico: true, proximos: ['Concluído', 'Garantia de Obra', 'Devolvido para a escola'] },
++    'Serviço Realizado': { tela: 'aprovacao', exigeValidacaoServico: true, proximos: ['Concluído', 'Garantia de Serviço'] },
+     'Visita Técnica': { tela: 'fila', legado: true, proximos: ['Devolvido para a escola', 'Atendimento Emergencial', 'Solicitado Orçamento'] },
+     'Devolvido para a escola': { tela: 'memorial', finalizado: true, proximos: [] },
+     'Concluído': { tela: 'memorial', finalizado: true, proximos: [] },
+diff -ruN base/js/triagem-fila-inline.js gom/js/triagem-fila-inline.js
+--- base/js/triagem-fila-inline.js	2026-06-12 22:45:32.921856689 +0000
++++ gom/js/triagem-fila-inline.js	2026-06-12 22:42:03.895581006 +0000
+@@ -61,7 +61,7 @@
+   function gomStatusPermitidos_(item, contexto) {
+     var st = gomNormalizar_(item && (item.situacao || item.status));
+     if (contexto === 'triagem' || st === 'Em análise') {
+-      return ['Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Devolvido para a escola'];
++      return ['Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Garantia de Obra', 'Devolvido para a escola'];
+     }
+     if (contexto === 'fila' || st === 'Aguardando visita' || st === 'Em atendimento') {
+       return ['Devolvido para a escola', 'Atendimento Emergencial', 'Solicitado Orçamento'];
+diff -ruN base/js/utils.js gom/js/utils.js
+--- base/js/utils.js	2026-06-12 22:45:32.922108472 +0000
++++ gom/js/utils.js	2026-06-12 22:41:25.686809925 +0000
+@@ -52,6 +52,7 @@
+     'OS emitida': 'st-os',
+     'Serviço Realizado': 'st-servico-realizado',
+     'Garantia de Obra': 'st-garantia',
++    'Garantia de Serviço': 'st-garantia-servico',
+     'Visita Técnica': 'st-visita',
+     'Concluído': 'st-concluido',
+     'Encaminhado para outra gerência ou Unidade escolar.': 'st-encaminhado',
+@@ -79,6 +80,7 @@
+     'OS emitida': 'bi-file-earmark-check-fill',
+     'Serviço Realizado': 'bi-clipboard2-check-fill',
+     'Garantia de Obra': 'bi-shield-check',
++    'Garantia de Serviço': 'bi-arrow-repeat',
+     'Visita Técnica': 'bi-person-walking',
+     'Concluído': 'bi-check-circle-fill',
+     'Encaminhado para outra gerência ou Unidade escolar.': 'bi-send-fill',
+@@ -123,7 +125,8 @@
+   'Atendimento Emergencial': 'Demandas encaminhadas como prioridade alta ou risco imediato.',
+   'OS emitida': 'Chamados aprovados com ordem de serviço liberada para execução.',
+   'Serviço Realizado': 'Serviços informados como realizados pela empresa, aguardando validação/finalização.',
+-  'Garantia de Obra': 'Demandas vinculadas a serviço em garantia.',
++  'Garantia de Obra': 'Demandas vinculadas a serviço em garantia de obra.',
++  'Garantia de Serviço': 'Serviço validado pela GOM como garantia: retorna à empresa para correção sem novo orçamento.',
+   'Visita Técnica': 'Registros tratados como vistoria técnica.',
+   'Concluído': 'Chamados finalizados e enviados ao Memorial.',
+   'Encaminhado para outra gerência ou Unidade escolar.': 'Chamados direcionados para outro setor ou unidade responsável.',
+diff -ruN base/sql/11_garantia_servico_e_anexos_drive.sql gom/sql/11_garantia_servico_e_anexos_drive.sql
+--- base/sql/11_garantia_servico_e_anexos_drive.sql	1970-01-01 00:00:00.000000000 +0000
++++ gom/sql/11_garantia_servico_e_anexos_drive.sql	2026-06-12 22:43:39.636057899 +0000
+@@ -0,0 +1,41 @@
++-- ============================================================================
++-- GOM | SME — Migração 11: Garantia de Serviço + anexos no Google Drive
++-- ----------------------------------------------------------------------------
++-- Executar no SQL Editor do Supabase. Idempotente (pode rodar mais de uma vez).
++-- ============================================================================
++
++-- ─── 1) Novo status "Garantia de Serviço" ────────────────────────────────────
++-- Diferente de "Garantia de Obra". É a decisão da GOM na validação de um
++-- "Serviço Realizado": o chamado volta à Empresa para correção em garantia.
++-- Necessário ANTES do deploy do frontend: historico_equipes.status e
++-- log_acoes referenciam status_chamado(codigo) — sem o seed, o salvamento falha.
++insert into public.status_chamado (codigo, cor, ordem) values
++  ('Garantia de Serviço', '#a855f7', 95)
++on conflict (codigo) do update set cor = excluded.cor, ordem = excluded.ordem;
++
++-- ─── 2) Anexos no Google Drive ───────────────────────────────────────────────
++-- Coluna `url`: URL pública do arquivo no Drive (storage_path = 'drive:<id>').
++-- Anexos antigos (Supabase Storage) ficam com url = null e continuam sendo
++-- lidos por URL assinada do bucket — nenhuma migração de arquivos é necessária.
++alter table public.anexos
++  add column if not exists url text;
++
++comment on column public.anexos.url is
++  'URL pública do arquivo (Google Drive). Null = anexo legado no Supabase Storage, lido por URL assinada.';
++
++-- ─── 3) Garantia de RLS para gravar metadados de anexos ─────────────────────
++-- Se o erro atual ao salvar anexos for de RLS na tabela `anexos`, esta política
++-- resolve. (O upload do ARQUIVO em si deixa de usar o Storage e vai ao Drive.)
++drop policy if exists anexos_insert_app on public.anexos;
++create policy anexos_insert_app on public.anexos
++  for insert to anon, authenticated
++  with check (true);
++
++drop policy if exists anexos_select_app on public.anexos;
++create policy anexos_select_app on public.anexos
++  for select to anon, authenticated
++  using (true);
++
++-- ─── Conferências rápidas ────────────────────────────────────────────────────
++-- select codigo, cor, ordem from public.status_chamado order by ordem;
++-- select id, solicitacao_id, categoria, nome, storage_path, url from public.anexos order by id desc limit 10;
