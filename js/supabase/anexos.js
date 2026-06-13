@@ -1,65 +1,58 @@
 /* ============================================================================
- * GOM | SME — Anexos (Google Drive via Web App GAS + metadados no Supabase)
+ * GOM | SME — Anexos (Supabase Storage rápido + migração assíncrona para Drive)
  * ----------------------------------------------------------------------------
- * Upload: cada arquivo é enviado em base64 para o Web App (GomDriveAPI.gs),
- * que salva no Drive e devolve a URL pública. Os metadados continuam na
- * tabela `anexos` (storage_path = 'drive:<fileId>' e a nova coluna `url`).
- *
- * Compatibilidade retroativa: anexos antigos (Supabase Storage) não têm `url`
- * e seguem sendo lidos por URL assinada do bucket, como antes.
- *
- * Pré-requisitos:
- *   1) sql/10_anexos_drive.sql aplicado (coluna `url`)
- *   2) GOM_DRIVE.URL e GOM_DRIVE.TOKEN preenchidos em js/config.js
+ * Fluxo v43:
+ *   1) Frontend salva o arquivo rapidamente no Supabase Storage.
+ *   2) Frontend grava metadados em public.anexos com migracao_status='pendente'.
+ *   3) O modal atualiza sem F5 usando URL assinada temporária.
+ *   4) Apps Script agendado migra para Drive e apaga o arquivo do Supabase.
  * ========================================================================== */
 window.GomAnexos = (function () {
   'use strict';
   const LIMITE = 5;
   const MAX_MB = 8;
 
-  function _slug(s) { return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w.-]+/g, '_').slice(0, 80); }
+  function _bucket() {
+    return (window.GOM_SUPABASE && window.GOM_SUPABASE.BUCKET_ANEXOS) || 'anexos';
+  }
 
-  function _cfgDrive() {
-    const c = window.GOM_DRIVE || {};
-    if (!c.URL || !c.TOKEN) {
-      throw new Error('Armazenamento no Drive não configurado. Preencha GOM_DRIVE.URL e GOM_DRIVE.TOKEN em js/config.js.');
+  function _slug(s) {
+    let v = String(s || '');
+    try { v = v.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); } catch (e) {}
+    return v.replace(/[^\w.-]+/g, '_').replace(/_+/g, '_').slice(0, 120) || 'arquivo';
+  }
+
+  function _base64ToBlob(base64, mime) {
+    const raw = String(base64 || '').split(',').pop();
+    const bin = atob(raw);
+    const len = bin.length;
+    const chunks = [];
+    const size = 1024 * 512;
+    for (let i = 0; i < len; i += size) {
+      const slice = bin.slice(i, i + size);
+      const arr = new Uint8Array(slice.length);
+      for (let j = 0; j < slice.length; j++) arr[j] = slice.charCodeAt(j);
+      chunks.push(arr);
     }
-    return c;
+    return new Blob(chunks, { type: mime || 'application/octet-stream' });
   }
 
-  // Envia UM arquivo ao Web App do Drive. Um arquivo por requisição mantém o
-  // payload pequeno (limite do GAS) e permite tratar erro por arquivo.
-  // IMPORTANTE: sem header Content-Type — assim a requisição é "simple request"
-  // (text/plain), dispensa preflight CORS e o Apps Script aceita normalmente.
-  async function _enviarParaDrive(arq, chamadoId, categoria, escolaNome) {
-    const cfg = _cfgDrive();
-    const corpo = JSON.stringify({
-      token: cfg.TOKEN,
-      acao: 'upload',
-      escola: escolaNome || 'sem-escola',
-      chamadoId: chamadoId,
-      categoria: categoria,
-      arquivos: [{
-        nome: arq.nome || arq.name || 'anexo',
-        mimeType: arq.mimeType || arq.type || 'application/octet-stream',
-        base64: String(arq.base64).split(',').pop()
-      }]
-    });
-
-    const resp = await fetch(cfg.URL, { method: 'POST', body: corpo });
-    if (!resp.ok) throw new Error('Falha de rede no upload (HTTP ' + resp.status + ').');
-
-    let json;
-    try { json = await resp.json(); }
-    catch (e) { throw new Error('Resposta inválida do Drive API. Verifique a publicação do Web App (acesso: Qualquer pessoa).'); }
-
-    if (!json.ok) throw new Error('Drive recusou o upload: ' + (json.erro || 'erro desconhecido'));
-    if (!json.arquivos || !json.arquivos.length) throw new Error('Drive não retornou o arquivo salvo.');
-    return json.arquivos[0]; // { nome, id, url, tamanho }
+  function _path(chamadoId, categoria, nome) {
+    const dt = new Date();
+    const stamp = dt.getFullYear() + String(dt.getMonth() + 1).padStart(2, '0') + String(dt.getDate()).padStart(2, '0') + '_' + String(dt.getHours()).padStart(2, '0') + String(dt.getMinutes()).padStart(2, '0') + String(dt.getSeconds()).padStart(2, '0') + '_' + Math.random().toString(36).slice(2, 8);
+    return [String(categoria || 'solicitacao'), 'chamado-' + String(chamadoId), stamp + '_' + _slug(nome)].join('/');
   }
 
-  // Mesma assinatura de antes — dados.js não muda.
-  // upload(chamadoId, categoria, arquivos, escolaNome?)
+  async function _urlAssinada(path) {
+    if (!path || String(path).indexOf('drive:') === 0) return '';
+    try {
+      const s = await window.SB.storage.from(_bucket()).createSignedUrl(path, 60 * 60);
+      return (s && s.data && s.data.signedUrl) || '';
+    } catch (e) {
+      return '';
+    }
+  }
+
   async function upload(chamadoId, categoria, arquivos, escolaNome) {
     const lista = Array.isArray(arquivos) ? arquivos.filter(a => a && a.base64) : [];
     if (!lista.length) return [];
@@ -68,55 +61,72 @@ window.GomAnexos = (function () {
     const salvos = [];
     for (let i = 0; i < lista.length; i++) {
       const arq = lista[i];
-      const nome = _slug(arq.nome || arq.name || `anexo_${i + 1}`);
+      const nomeOriginal = arq.nome || arq.name || `anexo_${i + 1}`;
+      const mime = arq.mimeType || arq.type || 'application/octet-stream';
       const tamanhoEstimado = Math.floor(String(arq.base64).length * 0.75);
-      if (tamanhoEstimado > MAX_MB * 1024 * 1024) throw new Error(`Arquivo ${nome} excede ${MAX_MB} MB.`);
+      if (tamanhoEstimado > MAX_MB * 1024 * 1024) throw new Error(`Arquivo ${nomeOriginal} excede ${MAX_MB} MB.`);
 
-      const drive = await _enviarParaDrive(arq, chamadoId, categoria, escolaNome);
+      const blob = _base64ToBlob(arq.base64, mime);
+      const storagePath = _path(chamadoId, categoria, nomeOriginal);
+
+      const up = await window.SB.storage.from(_bucket()).upload(storagePath, blob, {
+        contentType: mime,
+        upsert: false
+      });
+      if (up.error) throw new Error('Falha ao salvar arquivo no Supabase Storage: ' + up.error.message);
 
       const ins = await window.SB.from('anexos').insert({
         solicitacao_id: chamadoId,
-        categoria: categoria,
-        nome: arq.nome || drive.nome || nome,
-        storage_path: 'drive:' + drive.id,
-        url: drive.url,
-        mime_type: arq.mimeType || arq.type || 'application/octet-stream',
-        tamanho_bytes: drive.tamanho || tamanhoEstimado
-      });
-      if (ins.error) throw new Error('Arquivo salvo no Drive, mas falhou ao gravar metadado: ' + ins.error.message);
+        categoria: categoria || 'solicitacao',
+        nome: nomeOriginal,
+        storage_path: storagePath,
+        url: null,
+        mime_type: mime,
+        tamanho_bytes: blob.size || tamanhoEstimado,
+        origem_storage: 'supabase',
+        migracao_status: 'pendente'
+      }).select('id,solicitacao_id,categoria,nome,storage_path,url,migracao_status').single();
 
-      salvos.push({ nome: arq.nome || drive.nome || nome, path: 'drive:' + drive.id, url: drive.url });
+      if (ins.error) {
+        // Se o metadado falhar, tenta remover o arquivo para não deixar órfão.
+        try { await window.SB.storage.from(_bucket()).remove([storagePath]); } catch (e) {}
+        throw new Error('Arquivo salvo no Storage, mas falhou ao gravar metadado: ' + ins.error.message);
+      }
+
+      const url = await _urlAssinada(storagePath);
+      salvos.push({ nome: nomeOriginal, path: storagePath, storage_path: storagePath, url, categoria, solicitacao_id: chamadoId, migracao_status: 'pendente' });
     }
     return salvos;
   }
 
-  // Mapa de anexos por chamado.
-  // Drive: usa a coluna `url` direto (sem chamada extra).
-  // Legado (Supabase Storage): gera URLs assinadas em lote, como antes.
   async function mapaPorChamado(ids) {
     const out = {};
     if (!ids || !ids.length) return out;
     const r = await window.SB.from('anexos')
-      .select('solicitacao_id,categoria,nome,storage_path,url')
+      .select('solicitacao_id,categoria,nome,storage_path,url,origem_storage,migracao_status')
       .in('solicitacao_id', ids);
     if (r.error || !r.data || !r.data.length) return out;
 
-    // URLs assinadas só para o legado (sem `url` e sem prefixo drive:)
-    const legados = r.data.filter(a => !a.url && a.storage_path && a.storage_path.indexOf('drive:') !== 0);
+    const precisamAssinada = r.data.filter(a => !a.url && a.storage_path && String(a.storage_path).indexOf('drive:') !== 0);
     let urlByPath = {};
-    if (legados.length) {
+    if (precisamAssinada.length) {
       try {
-        const bucket = window.GOM_SUPABASE.BUCKET_ANEXOS;
-        const s = await window.SB.storage.from(bucket).createSignedUrls(legados.map(a => a.storage_path), 60 * 60);
+        const s = await window.SB.storage.from(_bucket()).createSignedUrls(precisamAssinada.map(a => a.storage_path), 60 * 60);
         (s.data || []).forEach(it => { if (it && it.path) urlByPath[it.path] = it.signedUrl; });
-      } catch (e) { /* sem URL assinada, ainda devolve nome */ }
+      } catch (e) { /* devolve sem URL se falhar */ }
     }
 
     r.data.forEach(a => {
       const cat = a.categoria || 'solicitacao';
       out[a.solicitacao_id] = out[a.solicitacao_id] || { solicitacao: [], orcamento: [], servico: [] };
       const url = a.url || urlByPath[a.storage_path] || '';
-      (out[a.solicitacao_id][cat] = out[a.solicitacao_id][cat] || []).push({ nome: a.nome || 'arquivo', url: url });
+      (out[a.solicitacao_id][cat] = out[a.solicitacao_id][cat] || []).push({
+        nome: a.nome || 'arquivo',
+        url,
+        path: a.storage_path || '',
+        migracaoStatus: a.migracao_status || '',
+        origemStorage: a.origem_storage || ''
+      });
     });
     return out;
   }

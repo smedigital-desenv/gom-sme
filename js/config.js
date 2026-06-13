@@ -12,18 +12,12 @@ const GOM_SUPABASE = {
 };
 
 /* ============================================================================
- * Armazenamento de anexos no Google Drive (via Web App GomDriveAPI.gs)
+ * Anexos
  * ----------------------------------------------------------------------------
- * URL: a URL /exec pública do Web App (Implantar → App da Web →
- *      Executar como: eu / Acesso: Qualquer pessoa).
- * TOKEN: deve ser IDÊNTICO ao GOM_DRIVE_CONFIG.TOKEN do GomDriveAPI.gs.
- * Enquanto a URL estiver vazia, o sistema avisa ao tentar anexar arquivos.
+ * v43: o navegador salva anexos no Supabase Storage para resposta rápida.
+ * Um Apps Script agendado migra os arquivos para o Google Drive depois.
+ * Não há URL/TOKEN do Drive no frontend.
  * ========================================================================== */
-const GOM_DRIVE = {
-  URL: 'https://script.google.com/macros/s/AKfycbzGf9lnIDmlcBdEVT9EzJ5ykQZwqFniWGOCnr6AovtXrUGx7eFPfyVzwQdaurb_T4XR/exec',
-  TOKEN: '4ccb06a273d04df2a17dddc25b0d351a9cbada8dfa6e487a901db81bb03ab819'
-};
-window.GOM_DRIVE = GOM_DRIVE;
 
 /* Controle de logs. Em produção, manter false. */
 window.GOM_DEBUG = false;

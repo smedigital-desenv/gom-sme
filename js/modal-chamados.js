@@ -228,6 +228,24 @@ function recarregarTimelineModal() {
   if (window.idChamadoAberto || typeof idChamadoAberto !== 'undefined') carregarTimelineChamadoModal_(idChamadoAberto);
 }
 
+
+function atualizarModalChamadoAbertoAposRefresh_() {
+  if (!idChamadoAberto) return;
+  var atualizado = (window.listaChamadosGlobal || []).find(function(x) { return String(x.id) === String(idChamadoAberto); });
+  if (!atualizado) return;
+  var boxAnexos = document.getElementById('mdlAnexosBox');
+  if (boxAnexos) boxAnexos.innerHTML = renderAnexosDetalhesChamadoModal_(atualizado);
+  var obs = document.getElementById('mdlObservacoes');
+  if (obs) obs.innerText = atualizado.observacoes || 'Sem observações';
+  carregarTimelineChamadoModal_(idChamadoAberto);
+}
+
+function sinalizarAtualizacaoAnexosModal_() {
+  var boxAnexos = document.getElementById('mdlAnexosBox');
+  if (!boxAnexos) return;
+  boxAnexos.innerHTML = '<div class="anexo-grupo mb-3"><div class="modal-label"><i class="bi bi-cloud-arrow-up me-1"></i>Arquivos anexados</div><div class="anexo-empty"><span class="spinner-border spinner-border-sm me-2"></span>Atualizando anexos do chamado...</div></div>';
+}
+
 function abrirModalAnalise(id) {
   const c = listaChamadosGlobal.find(x => String(x.id) === String(id));
   if (!c) return;
@@ -478,13 +496,17 @@ async function salvarApenasObservacao(botao) {
       if (typeof gomResetButtonLoading === 'function') gomMostrarSucessoBotao ? gomMostrarSucessoBotao(botao, 'Salvo') : gomResetButtonLoading(botao);
       else if (botao) botao.disabled = false;
       if (document.getElementById('mdlNovaObservacao')) document.getElementById('mdlNovaObservacao').value = '';
+      var tinhaAnexosNovos = anexosAtualizacao.length > 0;
       limparAnexosModalAtualizacao_();
       const camposLocais = {};
       if (obs) camposLocais.observacoes = (chamadoAtual.observacoes ? chamadoAtual.observacoes + '\n' : '') + obs;
       if (agendamentoMudouObs) { camposLocais.dataAgendamentoVisita = valorAgendObs; camposLocais.dataAgendamentoVisitaRaw = valorAgendObs; camposLocais.dataAgendamento = valorAgendObs; camposLocais.dataVisita = valorAgendObs; }
       if (typeof gomAtualizarChamadoLocal === 'function') gomAtualizarChamadoLocal(idChamadoAberto, camposLocais);
-      // Refresh em background sem fechar o modal
-      if (typeof refreshChamados === 'function') refreshChamados(null, null);
+      if (tinhaAnexosNovos) sinalizarAtualizacaoAnexosModal_();
+      // Refresh em background sem fechar o modal e atualiza a área de anexos assim que o backend confirmar.
+      if (typeof refreshChamados === 'function') {
+        refreshChamados(function() { atualizarModalChamadoAbertoAposRefresh_(); }, null);
+      }
     })
     .withFailureHandler(function(err) {
       if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(botao);
