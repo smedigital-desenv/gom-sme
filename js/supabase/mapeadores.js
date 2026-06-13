@@ -92,14 +92,14 @@ window.GomMap = (function () {
   };
   const REGRAS = {
     'Em análise': { tela: 'triagem', proximos: ['Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Garantia de Obra', 'Devolvido para a escola'] },
-    'Aguardando visita': { tela: 'fila', filaVisita: true, proximos: ['Devolvido para a escola', 'Atendimento Emergencial', 'Solicitado Orçamento'] },
+    'Aguardando visita': { tela: 'fila', filaVisita: true, proximos: ['Em atendimento', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Garantia de Obra', 'Devolvido para a escola'] },
     'Solicitado Orçamento': { tela: 'empresa', exigeValorOrcamento: true, exigeObservacao: true, anexoPermitido: 'orcamento', bloqueiaEquipe: true, proximos: ['Orçamento Realizado'] },
     'Orçamento Realizado': { tela: 'aprovacao', exigeAprovacao: true, proximos: ['OS emitida', 'Solicitado Orçamento', 'A cargo da unidade escolar', 'Devolvido para a escola'] },
     'OS emitida': { tela: 'empresa', exigeEquipeDia: true, exigeObservacao: true, anexoPermitido: 'servico', proximos: ['Serviço Realizado'] },
     'Atendimento Emergencial': { tela: 'empresa', exigeEquipeDia: true, exigeObservacao: true, anexoPermitido: 'servico', proximos: ['Serviço Realizado'] },
     'Garantia de Obra': { tela: 'empresa', exigeEquipeDia: true, exigeObservacao: true, anexoPermitido: 'servico', proximos: ['Serviço Realizado'] },
     'Garantia de Serviço': { tela: 'empresa', exigeEquipeDia: true, exigeObservacao: true, anexoPermitido: 'servico', proximos: ['Serviço Realizado'] },
-    'Em atendimento': { tela: 'fila', legado: true, proximos: ['Serviço Realizado', 'Devolvido para a escola', 'Solicitado Orçamento', 'Atendimento Emergencial'] },
+    'Em atendimento': { tela: 'fila', visitaAgendada: true, proximos: ['Devolvido para a escola', 'Solicitado Orçamento', 'Atendimento Emergencial', 'Garantia de Obra'] },
     'Serviço Realizado': { tela: 'aprovacao', exigeValidacaoServico: true, proximos: ['Concluído', 'Garantia de Serviço'] },
     'Visita Técnica': { tela: 'fila', legado: true, proximos: ['Devolvido para a escola', 'Atendimento Emergencial', 'Solicitado Orçamento'] },
     'Devolvido para a escola': { tela: 'memorial', finalizado: true, proximos: [] },

@@ -64,7 +64,7 @@
       return ['Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Garantia de Obra', 'Devolvido para a escola'];
     }
     if (contexto === 'fila' || st === 'Aguardando visita' || st === 'Em atendimento') {
-      return ['Devolvido para a escola', 'Atendimento Emergencial', 'Solicitado Orçamento'];
+      return ['Em atendimento', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Garantia de Obra', 'Devolvido para a escola'];
     }
     return window.STATUS_TODOS || [st];
   }
@@ -96,12 +96,9 @@
   function gomTfStatusUsaEquipeDataVisita_(status, contexto) {
     if (contexto !== 'fila') return false;
     var t = gomTexto_(gomNormalizar_(status));
-    if (!t) return true;
-    if (t.indexOf('orcamento') >= 0) return false;
-    if (t.indexOf('emergencial') >= 0) return false;
-    if (t.indexOf('devolvido') >= 0) return false;
-    if (t.indexOf('os emitida') >= 0) return false;
-    return true;
+    // Fluxo correto: Aguardando visita é a fila de espera; ao escolher
+    // "Em atendimento" a Secretaria define equipe e data da visita.
+    return t === 'em atendimento';
   }
 
   function gomOptionsStatus_(item, contexto) {
@@ -445,8 +442,24 @@
       var alteracao = window.gomTfAlteracoes[id];
       var anexosEl = document.getElementById('gomTfAnexos_' + idSeguro);
       var payload = { id: id };
+      var equipeAtualLinha = document.getElementById('gomTfEquipe_' + idSeguro);
+      var dataAtualLinha = document.getElementById('gomTfData_' + idSeguro);
+      var equipeSelecionadaLinha = equipeAtualLinha ? String(equipeAtualLinha.value || '').trim() : '';
+      var dataSelecionadaLinha = dataAtualLinha ? (typeof gomDataParaISO === 'function' ? gomDataParaISO(dataAtualLinha.value || '') : String(dataAtualLinha.value || '').trim()) : '';
+
+      if (contexto === 'fila' && gomNormalizar_(alteracao.situacao) === 'Em atendimento') {
+        if (!equipeSelecionadaLinha || !dataSelecionadaLinha) {
+          alert('Para mover o chamado #' + id + ' para Em atendimento, selecione a equipe da Secretaria e a data da visita.');
+          return;
+        }
+        payload.equipe = equipeSelecionadaLinha;
+        payload.dataAgendamentoVisita = dataSelecionadaLinha;
+        payload.dataAgendamento = dataSelecionadaLinha;
+        payload.dataVisita = dataSelecionadaLinha;
+      }
+
       if (alteracao.situacao) payload.situacao = alteracao.situacao;
-      if (alteracao.equipe) payload.equipe = alteracao.equipe;
+      if (alteracao.equipe && !payload.equipe) payload.equipe = alteracao.equipe;
       if (alteracao.observacoes) payload.observacoes = alteracao.observacoes;
       if (contexto === 'triagem' && dataGlobal) { payload.dataAgendamentoVisita = dataGlobal; payload.dataAgendamento = dataGlobal; payload.dataVisita = dataGlobal; }
       if (contexto === 'fila' && alteracao.dataAgendamentoVisita) { payload.dataAgendamentoVisita = alteracao.dataAgendamentoVisita; payload.dataAgendamento = alteracao.dataAgendamentoVisita; payload.dataVisita = alteracao.dataAgendamentoVisita; }

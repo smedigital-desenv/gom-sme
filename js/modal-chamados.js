@@ -292,8 +292,8 @@ function abrirModalAnalise(id) {
 
 function getStatusPermitidosModal(chamado) {
   const st = normalizarSituacaoSistema(chamado.situacao || chamado.status);
-  if (telaAtual === 'triagem' || st === 'Em análise') return ['Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Devolvido para a escola'];
-  if (telaAtual === 'fila' || st === 'Aguardando visita') return ['Devolvido para a escola', 'Atendimento Emergencial', 'Solicitado Orçamento'];
+  if (telaAtual === 'triagem' || st === 'Em análise') return ['Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Garantia de Obra', 'Devolvido para a escola'];
+  if (telaAtual === 'fila' || st === 'Aguardando visita') return ['Em atendimento', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Garantia de Obra', 'Devolvido para a escola'];
   if (st === 'Serviço Realizado') return ['Concluído', 'Garantia de Serviço'];
   return STATUS_TODOS;
 }
