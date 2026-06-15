@@ -302,7 +302,7 @@ function campoGrupoEquipeItem_(item) {
     if (campoNomesEquipes_(window.listaEquipesGlobal).indexOf(eq) >= 0) return 'educacao';
   }
   const st = normalizarSituacaoSistema(item && (item.situacao || item.status));
-  return (st === 'Aguardando visita' || st === 'Em atendimento') ? 'educacao' : 'empresa';
+  return (st === 'Aguardando visita' || st === 'Visita agendada') ? 'educacao' : 'empresa';
 }
 
 function getChamadosCampoPreparadosDia_() {

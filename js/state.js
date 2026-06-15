@@ -325,12 +325,14 @@ function carregarCampo(opcoes = {}) {
   // OTIMIZAÇÃO: monta chamados de campo a partir de listaChamadosGlobal (já em memória),
   // sem round-trip ao backend. O histórico de equipes vem em background.
   if (dadosCarregados && Array.isArray(listaChamadosGlobal) && listaChamadosGlobal.length && !opcoes.forcarBackend) {
-    const statusCampo = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'];
+    const statusCampo = ['Aguardando visita', 'Visita agendada', 'OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'];
     const chamadosCampo = listaChamadosGlobal.filter(c =>
       statusCampo.includes(normalizarSituacaoSistema(c.situacao || c.status))
     );
     const kpis = {
       osAbertas:            chamadosCampo.filter(c => normalizarSituacaoSistema(c.situacao||c.status) === 'OS emitida').length,
+      visitasAguardando:    chamadosCampo.filter(c => normalizarSituacaoSistema(c.situacao||c.status) === 'Aguardando visita').length,
+      visitasAgendadas:     chamadosCampo.filter(c => normalizarSituacaoSistema(c.situacao||c.status) === 'Visita agendada').length,
       emergenciais:         chamadosCampo.filter(c => normalizarSituacaoSistema(c.situacao||c.status) === 'Atendimento Emergencial').length,
       osSemNumero:          chamadosCampo.filter(c => normalizarSituacaoSistema(c.situacao||c.status) === 'OS emitida' && !String(c.numeroOs||'').trim()).length,
       escolasEmAtendimento: new Set(chamadosCampo.map(c => c.unidade).filter(Boolean)).size,

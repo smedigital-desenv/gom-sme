@@ -108,12 +108,14 @@ function renderizarKPIsChamados(listaTela) {
   let html = '';
 
   if (telaAtual === 'fila') {
-    const hoje = new Date();
-    const entradaHoje = (listaTela || []).filter(item => ehMesmoDia(parseDataOrdenacao(item), hoje)).length;
-    const revisar     = (listaTela || []).filter(item => deveRevisarFila(item)).length;
-    html += montarKpiCard(null,           'Fila de visita', listaTela.length, 'var(--primary)',   statusFiltroClicado === null,          'Exibir todos os chamados da fila.', true);
-    html += montarKpiCard('Entrada hoje', 'Entrada hoje',   entradaHoje,      'var(--visita)',    statusFiltroClicado === 'Entrada hoje', 'Chamados que entraram em atendimento hoje.', true);
-    html += montarKpiCard('A revisar',    'A revisar',      revisar,          'var(--orcamento)', statusFiltroClicado === 'A revisar',    'Chamados com inconsistência de data de entrada.', true);
+    if (statusFiltroClicado === 'Entrada hoje' || statusFiltroClicado === 'A revisar') {
+      statusFiltroClicado = window.statusFiltroClicado = null;
+    }
+    const aguardandoVisita = cont['Aguardando visita'] || 0;
+    const visitaAgendada = cont['Visita agendada'] || 0;
+    html += montarKpiCard(null, 'Atendimento', listaTela.length, 'var(--primary)', statusFiltroClicado === null, 'Exibir todos os chamados da tela de atendimento.', true);
+    html += montarKpiCard('Aguardando visita', 'Aguardando visita', aguardandoVisita, getCorStatus('Aguardando visita'), statusFiltroClicado === 'Aguardando visita', 'Chamados aguardando definição de encaminhamento da visita.', true);
+    html += montarKpiCard('Visita agendada', 'Visita agendada', visitaAgendada, getCorStatus('Visita agendada'), statusFiltroClicado === 'Visita agendada', 'Chamados com equipe da Secretaria e data de visita definidas.', true);
     grid.innerHTML = html;
     return;
   }

@@ -63,8 +63,8 @@
     if (contexto === 'triagem' || st === 'Em análise') {
       return ['Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Garantia de Obra', 'Devolvido para a escola'];
     }
-    if (contexto === 'fila' || st === 'Aguardando visita' || st === 'Em atendimento') {
-      return ['Em atendimento', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Garantia de Obra', 'Devolvido para a escola'];
+    if (contexto === 'fila' || st === 'Aguardando visita' || st === 'Visita agendada') {
+      return ['Visita agendada', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Garantia de Obra', 'Devolvido para a escola'];
     }
     return window.STATUS_TODOS || [st];
   }
@@ -97,8 +97,8 @@
     if (contexto !== 'fila') return false;
     var t = gomTexto_(gomNormalizar_(status));
     // Fluxo correto: Aguardando visita é a fila de espera; ao escolher
-    // "Em atendimento" a Secretaria define equipe e data da visita.
-    return t === 'em atendimento';
+    // "Visita agendada" a Secretaria define equipe e data da visita.
+    return t === 'visita agendada';
   }
 
   function gomOptionsStatus_(item, contexto) {
@@ -450,9 +450,9 @@
       var equipeSelecionadaLinha = equipeAtualLinha ? String(equipeAtualLinha.value || '').trim() : '';
       var dataSelecionadaLinha = dataAtualLinha ? (typeof gomDataParaISO === 'function' ? gomDataParaISO(dataAtualLinha.value || '') : String(dataAtualLinha.value || '').trim()) : '';
 
-      if (contexto === 'fila' && gomNormalizar_(alteracao.situacao) === 'Em atendimento') {
+      if (contexto === 'fila' && gomNormalizar_(alteracao.situacao) === 'Visita agendada') {
         if (!equipeSelecionadaLinha || !dataSelecionadaLinha) {
-          alert('Para mover o chamado #' + id + ' para Em atendimento, selecione a equipe da Secretaria e a data da visita.');
+          alert('Para mover o chamado #' + id + ' para Visita agendada, selecione a equipe da Secretaria e a data da visita.');
           return;
         }
         payload.equipe = equipeSelecionadaLinha;

@@ -109,18 +109,19 @@ var TELAS_WEB = window.TELAS_WEB = ['dashboard','triagem','fila','aprovacao','em
 var TELAS_CHAMADOS = window.TELAS_CHAMADOS = ['triagem','fila','aprovacao','empresa','historico'];
 
 var STATUS_TRIAGEM = window.STATUS_TRIAGEM = ['Em análise'];
-var STATUS_FILA = window.STATUS_FILA = ['Aguardando visita', 'Em atendimento'];
+var STATUS_FILA = window.STATUS_FILA = ['Aguardando visita', 'Visita agendada'];
 var STATUS_APROVACAO = window.STATUS_APROVACAO = ['Orçamento Realizado', 'Serviço Realizado'];
 var STATUS_EMPRESA = window.STATUS_EMPRESA = ['Solicitado Orçamento', 'OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'];
 var STATUS_EMPRESA_DIARIO = window.STATUS_EMPRESA_DIARIO = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'];
 var STATUS_EMPRESA_ORCAMENTO = window.STATUS_EMPRESA_ORCAMENTO = ['Solicitado Orçamento'];
 var STATUS_EMPRESA_GERENCIAL = window.STATUS_EMPRESA_GERENCIAL = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'];
-var STATUS_CAMPO = window.STATUS_CAMPO = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'];
+var STATUS_CAMPO = window.STATUS_CAMPO = ['Aguardando visita', 'Visita agendada', 'OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'];
 var STATUS_MEMORIAL = window.STATUS_MEMORIAL = ['Concluído', 'Encaminhado para outra gerência ou Unidade escolar.', 'A cargo da unidade escolar', 'Duplicado', 'Devolvido para a escola'];
 
 var STATUS_TODOS = window.STATUS_TODOS = [
   'Em análise',
   'Aguardando visita',
+  'Visita agendada',
   'Solicitado Orçamento',
   'Orçamento Realizado',
   'OS emitida',
@@ -138,6 +139,7 @@ var STATUS_TODOS = window.STATUS_TODOS = [
 var configKPIs = window.configKPIs = [
   { key: 'Em análise', title: 'Em análise', cor: 'var(--analise)' },
   { key: 'Aguardando visita', title: 'Aguardando visita', cor: 'var(--visita)' },
+  { key: 'Visita agendada', title: 'Visita agendada', cor: '#00e5ff' },
   { key: 'Solicitado Orçamento', title: 'Orç. solicitado', cor: 'var(--orcamento)' },
   { key: 'Orçamento Realizado', title: 'Aprovação', cor: 'var(--orcamento-realizado)' },
   { key: 'OS emitida', title: 'OS emitida', cor: 'var(--os)' },
@@ -167,7 +169,8 @@ var CORES_STATUS = window.CORES_STATUS = {
   'Aguardando visita': '#14b8a6',
   'Solicitado Orçamento': '#f59e0b',
   'Orçamento Realizado': '#fb923c',
-  'Em atendimento': '#00e5ff',
+  'Visita agendada': '#00e5ff',
+  'Em atendimento': '#00e5ff', // legado: normalizado para Visita agendada
   'Atendimento Emergencial': '#ec4899',
   'OS emitida': '#22d3ee',
   'Serviço Realizado': '#10b981',
