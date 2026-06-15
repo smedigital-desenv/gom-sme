@@ -8196,3 +8196,63 @@ body.gom-modal-open { overflow: hidden; }
     margin-left: 0 !important;
   }
 }
+
+
+/* ==========================================================
+   v50 — Mobile: menus no topo e sem sobreposição lateral
+   Somente celular: oculta a sidebar lateral e move a navegação
+   principal mobile para o topo, abaixo da barra superior.
+   ========================================================== */
+@media (max-width: 768px) {
+  body.gom-area-secretaria .gom-secretaria-sidebar,
+  .gom-secretaria-sidebar {
+    display: none !important;
+  }
+
+  .mobile-bottom-nav {
+    display: grid !important;
+    position: sticky !important;
+    top: 62px !important;
+    bottom: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 1095 !important;
+    width: 100% !important;
+    min-height: 58px !important;
+    padding: 7px 10px !important;
+    gap: 6px !important;
+    border-radius: 0 0 18px 18px !important;
+    border-left: 0 !important;
+    border-right: 0 !important;
+    background: rgba(0, 43, 94, .97) !important;
+    box-shadow: 0 12px 26px rgba(15,23,42,.22) !important;
+  }
+
+  .mobile-nav-item {
+    min-height: 46px !important;
+    border-radius: 14px !important;
+  }
+
+  .mobile-more-panel {
+    top: 128px !important;
+    bottom: auto !important;
+    transform: translateY(-12px) !important;
+    max-height: calc(100vh - 144px) !important;
+    overflow-y: auto !important;
+  }
+
+  .mobile-more-backdrop.show .mobile-more-panel {
+    transform: translateY(0) !important;
+  }
+
+  main.container-fluid,
+  body.gom-area-secretaria main.container-fluid,
+  body.gom-area-secretaria .main-content,
+  body.gom-area-secretaria #main-content {
+    padding-top: 10px !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+    padding-bottom: 18px !important;
+    margin-left: 0 !important;
+  }
+}

@@ -150,7 +150,8 @@
     try {
       var tela = gomGetTelaAtual_();
       if (tela !== 'fila') return;
-      if ((window.statusFiltroClicado || (typeof statusFiltroClicado !== 'undefined' ? statusFiltroClicado : null)) === 'Entrada hoje') {
+      var filtroAtual = window.statusFiltroClicado || (typeof statusFiltroClicado !== 'undefined' ? statusFiltroClicado : null);
+      if (filtroAtual && filtroAtual !== 'Aguardando visita' && filtroAtual !== 'Visita agendada') {
         window.statusFiltroClicado = null;
         try { if (typeof statusFiltroClicado !== 'undefined') statusFiltroClicado = null; } catch(e) {}
       }
@@ -158,7 +159,8 @@
       if (!grid) return;
       Array.prototype.slice.call(grid.querySelectorAll('.kpi-box')).forEach(function(card) {
         var titulo = card.querySelector('.kpi-title');
-        if (titulo && String(titulo.textContent || '').trim().toLowerCase() === 'entrada hoje') card.remove();
+        var t = titulo ? String(titulo.textContent || '').trim() : '';
+        if (t && t !== 'Aguardando visita' && t !== 'Visita agendada') card.remove();
       });
     } catch(e) {}
   }
@@ -588,6 +590,17 @@
     }
 
     var listaTela = typeof filtrarTelaChamados === 'function' ? filtrarTelaChamados(window.listaChamadosGlobal || []) : (window.listaChamadosGlobal || []);
+    if (tela === 'fila') {
+      listaTela = (listaTela || []).filter(function(item) {
+        var st = gomNormalizar_(item.situacao || item.status);
+        return st === 'Aguardando visita' || st === 'Visita agendada';
+      });
+      var filtroAtualFila = window.statusFiltroClicado || (typeof statusFiltroClicado !== 'undefined' ? statusFiltroClicado : null);
+      if (filtroAtualFila && filtroAtualFila !== 'Aguardando visita' && filtroAtualFila !== 'Visita agendada') {
+        window.statusFiltroClicado = null;
+        try { if (typeof statusFiltroClicado !== 'undefined') statusFiltroClicado = null; } catch(e) {}
+      }
+    }
     listaTela = typeof ordenarChamados === 'function' ? ordenarChamados(listaTela) : listaTela;
     if (typeof renderizarKPIsChamados === 'function') renderizarKPIsChamados(listaTela);
     gomTfRemoverKpiEntradaHojeFila_();

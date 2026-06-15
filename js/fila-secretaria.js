@@ -129,41 +129,9 @@
 
   function isStatusSecretaria_(st) {
     st = normalizar_(st);
-    var t = texto_(st);
-
-    // Importante: status de responsabilidade da empresa não devem aparecer
-    // na Agenda/Acompanhamento da Fila da Secretaria.
-    if (isStatusEmpresa_(st)) return false;
-
-    // Status atuais e legados usados pela Fila de Visita.
-    var exatos = [
-      'Aguardando visita',
-      'Fila de visita',
-      'Em atendimento',
-      'Visita agendada',
-      'Agendado para visita',
-      'Aguardando vistoria',
-      'Fila de vistoria',
-      'Visita técnica agendada',
-      'Aguardando visita técnica',
-      'Em vistoria',
-      'Vistoria agendada'
-    ];
-    if (exatos.indexOf(st) >= 0) return true;
-
-    // Cobertura para chamados antigos, importados ou cadastrados com pequenas
-    // variações de texto. Evita perder itens antigos da agenda por diferença
-    // de acento, caixa, ou nomenclatura.
-    if (t.indexOf('aguardando visita') >= 0) return true;
-    if (t.indexOf('fila de visita') >= 0) return true;
-    if (t.indexOf('visita tecnica') >= 0) return true;
-    if (t.indexOf('visita agendada') >= 0) return true;
-    if (t.indexOf('aguardando vistoria') >= 0) return true;
-    if (t.indexOf('vistoria') >= 0) return true;
-    if (t === 'em atendimento' || t.indexOf('em atendimento') >= 0) return true;
-
-    return false;
+    return st === 'Aguardando visita' || st === 'Visita agendada';
   }
+
 
   function isStatusEmpresa_(st) {
     st = normalizar_(st);
@@ -196,8 +164,7 @@
   }
 
   function isStatusAgenda_(st) {
-    var g = grupoResponsavel_(st);
-    return g === 'secretaria' || g === 'empresa';
+    return grupoResponsavel_(st) === 'secretaria';
   }
 
   function statusEmpresaTipo_(st) {
@@ -298,11 +265,9 @@
     lista = listaResponsavel_(lista);
 
     if (resp === 'secretaria') {
-      if (filtro === 'hoje') return lista.filter(function(i){ return i._agendaData === hoje; });
-      if (filtro === 'pos-visita') return lista.filter(function(i){ return i._posVisita && i._posVisita.ativo; });
-      if (filtro === 'sem-equipe') return lista.filter(function(i){ return !i._agendaEquipe; });
-      if (filtro === 'sem-data') return lista.filter(function(i){ return !i._agendaData; });
-      return lista;
+      if (filtro === 'aguardando-visita') return lista.filter(function(i){ return i._agendaStatus === 'Aguardando visita'; });
+      if (filtro === 'visita-agendada') return lista.filter(function(i){ return i._agendaStatus === 'Visita agendada'; });
+      return lista.filter(function(i){ return i._agendaStatus === 'Aguardando visita' || i._agendaStatus === 'Visita agendada'; });
     }
 
     if (filtro === 'orcamentos') return lista.filter(function(i){ return i._agendaEmpresaTipo === 'orcamentos'; });
@@ -345,6 +310,8 @@
     lista = lista || [];
     return {
       total: lista.length,
+      aguardandoVisita: lista.filter(function(i){ return i._agendaStatus === 'Aguardando visita'; }).length,
+      visitaAgendada: lista.filter(function(i){ return i._agendaStatus === 'Visita agendada'; }).length,
       hoje: lista.filter(function(i){ return i._agendaData === hoje; }).length,
       semData: lista.filter(function(i){ return !i._agendaData; }).length,
       semEquipe: lista.filter(function(i){ return !i._agendaEquipe; }).length,
@@ -387,11 +354,11 @@
     var html = '';
 
     if (resp === 'secretaria') {
-      html += montarKpiAgendaCard_('todos', 'Agenda Secretaria', c.total, 'var(--primary)', f === 'todos', 'Visitas e acompanhamentos que estão sob responsabilidade da Secretaria/GOM.', 'bi-calendar2-week');
-      html += montarKpiAgendaCard_('hoje', 'Hoje', c.hoje, 'var(--visita)', f === 'hoje', 'Visitas da Secretaria vinculadas ao dia atual.', 'bi-calendar-day');
-      html += montarKpiAgendaCard_('pos-visita', 'Pós-visita sem andamento', c.semAndamento + c.justificados, c.criticos ? '#dc2626' : '#f59e0b', f === 'pos-visita', 'Visitas já vencidas que ainda precisam de andamento, justificativa ou novo encaminhamento.', 'bi-exclamation-triangle');
-      html += montarKpiAgendaCard_('sem-equipe', 'Sem equipe', c.semEquipe, '#f59e0b', f === 'sem-equipe', 'Visitas da Secretaria que ainda não têm equipe definida.', 'bi-people');
-      html += montarKpiAgendaCard_('sem-data', 'Sem data', c.semData, '#64748b', f === 'sem-data', 'Chamados da Secretaria que precisam de data ou previsão de visita.', 'bi-calendar-x');
+      if (f !== 'aguardando-visita' && f !== 'visita-agendada') {
+        window.filaAgendaFiltroAtual = f = 'aguardando-visita';
+      }
+      html += montarKpiAgendaCard_('aguardando-visita', 'Aguardando visita', c.aguardandoVisita, cor_('Aguardando visita'), f === 'aguardando-visita', 'Chamados que saíram da triagem e ainda aguardam definição de visita.', 'bi-calendar2-week');
+      html += montarKpiAgendaCard_('visita-agendada', 'Visita agendada', c.visitaAgendada, cor_('Visita agendada'), f === 'visita-agendada', 'Chamados com equipe da Secretaria e data de visita definidas.', 'bi-calendar-check');
     } else {
       html += montarKpiAgendaCard_('todos', 'Agenda Empresa', c.total, 'var(--primary)', f === 'todos', 'Chamados sob responsabilidade da empresa, sem misturar com a fila da Secretaria.', 'bi-building');
       html += montarKpiAgendaCard_('orcamentos', 'Orçamentos', c.orcamentos, 'var(--orcamento)', f === 'orcamentos', 'Solicitações de orçamento que dependem de retorno ou ação da empresa.', 'bi-cash-coin');
@@ -421,12 +388,8 @@
     }
     return [
       '<div class="fila-agenda-resumo fila-agenda-resumo-v14">',
-        '<span><strong>' + c.total + '</strong> total secretaria</span>',
-        '<span><strong>' + c.hoje + '</strong> hoje</span>',
-        '<span class="' + (c.semEquipe ? 'is-alerta' : '') + '"><strong>' + c.semEquipe + '</strong> sem equipe</span>',
-        '<span class="' + (c.semData ? 'is-alerta' : '') + '"><strong>' + c.semData + '</strong> sem data</span>',
-        '<span class="' + (c.semAndamento ? 'is-critico' : '') + '"><strong>' + c.semAndamento + '</strong> pós-visita sem andamento</span>',
-        '<span class="' + (c.justificados ? 'is-info' : '') + '"><strong>' + c.justificados + '</strong> justificados</span>',
+        '<span><strong>' + c.aguardandoVisita + '</strong> aguardando visita</span>',
+        '<span><strong>' + c.visitaAgendada + '</strong> visita agendada</span>',
       '</div>'
     ].join('');
   }
@@ -456,11 +419,8 @@
         + '</div>';
     }
     return '<div class="agenda-filter-bar agenda-filter-bar-v14">'
-      + btn('todos', 'Todos da Secretaria', c.total, 'bi-diagram-3')
-      + btn('hoje', 'Hoje', c.hoje, 'bi-calendar-day')
-      + btn('pos-visita', 'Pós-visita sem andamento', c.semAndamento + c.justificados, 'bi-exclamation-triangle')
-      + btn('sem-equipe', 'Sem equipe', c.semEquipe, 'bi-people')
-      + btn('sem-data', 'Sem data', c.semData, 'bi-calendar-x')
+      + btn('aguardando-visita', 'Aguardando visita', c.aguardandoVisita, 'bi-calendar2-week')
+      + btn('visita-agendada', 'Visita agendada', c.visitaAgendada, 'bi-calendar-check')
       + '</div>';
   }
 
@@ -476,6 +436,9 @@
     }
 
     window.filaAgendaResponsavelAtual = 'secretaria';
+    if (window.filaAgendaFiltroAtual !== 'aguardando-visita' && window.filaAgendaFiltroAtual !== 'visita-agendada') {
+      window.filaAgendaFiltroAtual = 'aguardando-visita';
+    }
     var listaCompleta = listaAgenda_();
     var listaResp = listaResponsavel_(listaCompleta);
     var lista = filtrarAgenda_(listaCompleta);
@@ -485,10 +448,10 @@
 
     var resp = window.filaAgendaResponsavelAtual || 'secretaria';
     var atualizado = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    var tituloTela = resp === 'empresa' ? 'Agenda e Acompanhamento da Empresa' : 'Agenda e Pós-visita da Secretaria';
+    var tituloTela = resp === 'empresa' ? 'Agenda e Acompanhamento da Empresa' : 'Atendimento da Secretaria';
     var descTela = resp === 'empresa'
       ? 'Somente chamados que já estão sob responsabilidade da empresa: orçamento, OS, emergência, garantia e execução.'
-      : 'Somente fila de visita e pós-visita sob responsabilidade da Secretaria/GOM, sem misturar com demandas da empresa.';
+      : 'Somente chamados em Aguardando visita ou Visita agendada, sem misturar com Memorial, Empresa ou outros fluxos.';
 
     var grupos = {};
     lista.forEach(function(item) {
@@ -585,6 +548,61 @@
     return atual ? atual + '\n' + obs : obs;
   }
 
+
+  function camposDataSecretaria_(iso) {
+    iso = normalizarDataISO_(iso);
+    if (!iso) return {};
+    return {
+      dataAgendamentoVisita: iso,
+      dataAgendamentoVisitaRaw: iso,
+      data_agendamento_visita: iso,
+      dataVisita: iso,
+      data_visita: iso,
+      previsaoVisita: iso,
+      previsao_visita: iso
+    };
+  }
+
+  async function confirmarDataSecretariaNoBanco_(id, iso) {
+    iso = normalizarDataISO_(iso);
+    if (!id || !iso) return { ok: false, motivo: 'dados_invalidos' };
+    if (!window.SB || typeof window.SB.from !== 'function') {
+      return { ok: false, motivo: 'supabase_indisponivel' };
+    }
+    try {
+      var r = await window.SB
+        .from('solicitacoes')
+        .update({
+          data_agendamento_visita: iso,
+          data_hora_ultima_acao: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select('id,data_agendamento_visita')
+        .maybeSingle();
+      if (r && r.error) return { ok: false, erro: r.error.message || String(r.error) };
+      var salva = normalizarDataISO_(r && r.data && r.data.data_agendamento_visita);
+      return { ok: salva === iso, data: salva, raw: r && r.data };
+    } catch (e) {
+      return { ok: false, erro: e && e.message ? e.message : String(e) };
+    }
+  }
+
+  function confirmarVisualDataSalva_(btn, iso, confirmacao) {
+    var msg = 'Salvo: ' + dataBr_(iso);
+    if (confirmacao && confirmacao.ok) msg = 'Confirmado: ' + dataBr_(iso);
+    if (btn && typeof gomMostrarSucessoBotao === 'function') {
+      gomMostrarSucessoBotao(btn, msg, 1600);
+    }
+    if (window.console && console.info) {
+      console.info('[GOM] Data da visita confirmada', {
+        dataSelecionada: iso,
+        dataSelecionadaBR: dataBr_(iso),
+        dataSalvaBanco: confirmacao && confirmacao.data,
+        confirmada: !!(confirmacao && confirmacao.ok)
+      });
+    }
+  }
+
   function salvarAcao_(payload, camposLocais, btn, textoLoading) {
     if (!payload || !payload.id) return;
     if (!window.google || !google.script || !google.script.run || typeof google.script.run.atualizarChamadoWorkflow !== 'function') {
@@ -595,12 +613,36 @@
     else if (btn) btn.disabled = true;
 
     google.script.run
-      .withSuccessHandler(function() {
-        if (typeof gomMostrarSucessoBotao === 'function') gomMostrarSucessoBotao(btn, 'Salvo', 900);
-        else if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(btn);
+      .withSuccessHandler(async function() {
+        var dataReagendada = normalizarDataISO_(payload.dataAgendamentoVisita || '');
+        var campos = Object.assign({}, camposLocais || {});
+        var confirmacao = null;
+
+        if (dataReagendada) {
+          // Garante que a agenda da Secretaria use somente a data da visita da Secretaria
+          // e confirma no banco antes de redesenhar a tela.
+          Object.assign(campos, camposDataSecretaria_(dataReagendada));
+          confirmacao = await confirmarDataSecretariaNoBanco_(payload.id, dataReagendada);
+          if (!confirmacao.ok) {
+            if (window.console && console.warn) console.warn('[GOM] Não foi possível confirmar a data salva no banco:', confirmacao);
+            alert('A data foi enviada, mas o sistema não conseguiu confirmar a gravação no banco. Clique em Atualizar e confira o chamado antes de seguir.');
+          }
+        }
+
+        if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(btn);
         else if (btn) btn.disabled = false;
-        atualizarLocal_(payload.id, camposLocais || {});
-        if (typeof window.renderizarTela === 'function') window.renderizarTela();
+
+        atualizarLocal_(payload.id, campos);
+
+        if (dataReagendada) confirmarVisualDataSalva_(btn, dataReagendada, confirmacao);
+        else if (typeof gomMostrarSucessoBotao === 'function') gomMostrarSucessoBotao(btn, 'Salvo', 900);
+
+        if (window.filaSubmodoAtual === 'agenda' && typeof renderAgenda_ === 'function') {
+          renderAgenda_();
+        } else if (typeof window.renderizarTela === 'function') {
+          window.renderizarTela();
+        }
+
         if (typeof refreshChamados === 'function') refreshChamados(null, null);
         else window.gomFilaAtualizarEmBackground(250);
       })
@@ -698,13 +740,9 @@
       var nova = await abrirModalReagendarVisita_(item, atual);
       if (!nova) return;
       var obsReag = '[PÓS-VISITA] Visita reagendada para ' + dataBr_(nova) + '.';
-      salvarAcao_({ id: id, dataAgendamentoVisita: nova, dataAgendamento: nova, dataVisita: nova, observacoes: obsReag }, {
-        dataAgendamentoVisita: nova,
-        dataAgendamentoVisitaRaw: nova,
-        dataAgendamento: nova,
-        dataVisita: nova,
-        observacoes: anexarObsLocal_(item, obsReag)
-      }, btn, 'Reagendando...');
+      var camposData = camposDataSecretaria_(nova);
+      camposData.observacoes = anexarObsLocal_(item, obsReag);
+      salvarAcao_({ id: id, dataAgendamentoVisita: nova, observacoes: obsReag }, camposData, btn, 'Reagendando...');
       return;
     }
 

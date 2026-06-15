@@ -14,6 +14,9 @@ function renderizarTela() {
   }
 
   let listaTela = filtrarTelaChamados(listaChamadosGlobal);
+  if (telaAtual === 'fila') {
+    listaTela = (listaTela || []).filter(item => ['Aguardando visita', 'Visita agendada'].includes(normalizarSituacaoSistema(item.situacao || item.status)));
+  }
   listaTela = ordenarChamados(listaTela);
   renderizarKPIsChamados(listaTela);
 
@@ -108,13 +111,12 @@ function renderizarKPIsChamados(listaTela) {
   let html = '';
 
   if (telaAtual === 'fila') {
-    if (statusFiltroClicado === 'Entrada hoje' || statusFiltroClicado === 'A revisar') {
+    if (statusFiltroClicado && ['Aguardando visita', 'Visita agendada'].indexOf(statusFiltroClicado) === -1) {
       statusFiltroClicado = window.statusFiltroClicado = null;
     }
     const aguardandoVisita = cont['Aguardando visita'] || 0;
     const visitaAgendada = cont['Visita agendada'] || 0;
-    html += montarKpiCard(null, 'Atendimento', listaTela.length, 'var(--primary)', statusFiltroClicado === null, 'Exibir todos os chamados da tela de atendimento.', true);
-    html += montarKpiCard('Aguardando visita', 'Aguardando visita', aguardandoVisita, getCorStatus('Aguardando visita'), statusFiltroClicado === 'Aguardando visita', 'Chamados aguardando definição de encaminhamento da visita.', true);
+    html += montarKpiCard('Aguardando visita', 'Aguardando visita', aguardandoVisita, getCorStatus('Aguardando visita'), statusFiltroClicado === 'Aguardando visita', 'Chamados que saíram da triagem e ainda aguardam definição de visita.', true);
     html += montarKpiCard('Visita agendada', 'Visita agendada', visitaAgendada, getCorStatus('Visita agendada'), statusFiltroClicado === 'Visita agendada', 'Chamados com equipe da Secretaria e data de visita definidas.', true);
     grid.innerHTML = html;
     return;
