@@ -35,8 +35,8 @@ jobs:
 
       - name: Montar site com produção e homologação
         run: |
-          mkdir -p site/gom-sme
-          mkdir -p site/gom-sme-teste
+          mkdir -p site
+          mkdir -p site/teste
 
           rsync -a \
             --exclude='.git' \
@@ -45,7 +45,7 @@ jobs:
             --exclude='docs' \
             --exclude='*.zip' \
             --exclude='README.md' \
-            main/ site/gom-sme/
+            main/ site/
 
           rsync -a \
             --exclude='.git' \
@@ -54,7 +54,7 @@ jobs:
             --exclude='docs' \
             --exclude='*.zip' \
             --exclude='README.md' \
-            homologacao/ site/gom-sme-teste/
+            homologacao/ site/teste/
 
           touch site/.nojekyll
 
