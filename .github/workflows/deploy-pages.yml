@@ -1,0 +1,80 @@
+name: Deploy GOM Pages
+
+on:
+  push:
+    branches:
+      - main
+      - homologacao
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: gom-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout produção
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main
+
+      - name: Checkout homologação
+        uses: actions/checkout@v4
+        with:
+          ref: homologacao
+          path: homologacao
+
+      - name: Montar site com produção e homologação
+        run: |
+          mkdir -p site/gom-sme
+          mkdir -p site/gom-sme-teste
+
+          rsync -a \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='sql' \
+            --exclude='docs' \
+            --exclude='*.zip' \
+            --exclude='README.md' \
+            main/ site/gom-sme/
+
+          rsync -a \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='sql' \
+            --exclude='docs' \
+            --exclude='*.zip' \
+            --exclude='README.md' \
+            homologacao/ site/gom-sme-teste/
+
+          touch site/.nojekyll
+
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Enviar artefato para Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Publicar no GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
