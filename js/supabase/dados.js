@@ -532,8 +532,8 @@ window.GomDados = (function () {
     if (p.dataPrevistaConclusao !== undefined) u.data_prevista_conclusao = _date(p.dataPrevistaConclusao);
     if (p.equipe !== undefined) { u.equipe_responsavel = p.equipe || ''; if (p.equipe) u.data_equipe = _nowISO(); }
     if (p.dataAgendamentoVisita !== undefined && p.dataAgendamentoVisita !== '') u.data_agendamento_visita = _date(p.dataAgendamentoVisita);
-    if (['Aguardando visita', 'Em atendimento'].includes(stNovo) && !atual.data_hora_entrada_fila) u.data_hora_entrada_fila = _nowISO();
-    if (['Solicitado Orçamento', 'Atendimento Emergencial', 'OS emitida', 'Aguardando visita', 'Garantia de Obra', 'Garantia de Serviço'].includes(stNovo) && mudou) u.data_hora_encaminhamento = _nowISO();
+    if (['Aguardando visita', 'Visita agendada', 'Em atendimento'].includes(stNovo) && !atual.data_hora_entrada_fila) u.data_hora_entrada_fila = _nowISO();
+    if (['Solicitado Orçamento', 'Atendimento Emergencial', 'OS emitida', 'Aguardando visita', 'Visita agendada', 'Garantia de Obra', 'Garantia de Serviço'].includes(stNovo) && mudou) u.data_hora_encaminhamento = _nowISO();
     if (stNovo === 'Devolvido para a escola') u.data_conclusao_os = _nowISO();
     const _anexosAtual = p.anexosAtualizacao || p.anexos || [];
     if (Array.isArray(_anexosAtual) && _anexosAtual.length) {
@@ -550,7 +550,7 @@ window.GomDados = (function () {
   async function criarSolicitacao(p) {
     const esc = await _escolaIdPorNome(p.unidade);
     const origem = p.sistema === 'Solar' ? ('Solar ' + (p.num_processo || '')).trim() : (p.sistema || 'Cadastro interno');
-    const situacao = M.normalizarStatus(p.situacao || 'Em análise');
+    const situacao = 'Em análise';
     const ins = await window.SB.from('solicitacoes').insert({
       data_abertura: _nowISO(), origem, escola_id: esc ? esc.id : null, tipo: p.tipo || (esc ? esc.tipo : ''),
       detalhamento: p.detalhamento || '', situacao, observacoes: M.appendObservacao('', p.observacoes, 'Cadastro interno'),

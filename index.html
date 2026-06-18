@@ -774,9 +774,8 @@
   <div class="tab-pane fade" id="cad-interno">
     <form class="form-card" id="formCadastro" onsubmit="enviarFormularioInterno(event)">
       <div class="row g-3">
-        <div class="col-md-4"><label class="form-label">Data</label><input type="date" class="form-control" name="data" required></div>
-        <div class="col-md-4"><label class="form-label">Origem</label><select class="form-select" name="sistema" id="selectSistema" onchange="toggleCamposSistema()"><option value="Email" selected>Email</option><option value="Solar">Solar</option><option value="Solicitação por">Solicitação por...</option></select></div>
-        <div class="col-md-4"><label class="form-label">Situação Inicial</label><select class="form-select" name="situacao" id="selectSituacaoCadastro"></select></div>
+        <div class="col-md-6"><label class="form-label">Data</label><input type="date" class="form-control" name="data" required></div>
+        <div class="col-md-6"><label class="form-label">Origem</label><select class="form-select" name="sistema" id="selectSistema" onchange="toggleCamposSistema()"><option value="Email" selected>Email</option><option value="Solar">Solar</option><option value="Solicitação por">Solicitação por...</option></select></div>
         <div class="col-12" id="divSolar" style="display:none;"><input type="text" class="form-control" name="num_processo" placeholder="Nº Processo Solar"></div>
         <div class="col-12" id="divSolicitacaoPor" style="display:none;"><input type="text" class="form-control" name="nome_especifico" placeholder="Nome do Solicitante"></div>
         <div class="col-md-9"><label class="form-label">Unidade Escolar</label><select class="form-select" name="unidade" id="selectUnidade" onchange="setTipoEscola()"><option value="">Selecione...</option></select></div>

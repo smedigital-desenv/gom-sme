@@ -1,8 +1,6 @@
 function inicializarTelaCadastro() {
   preencherSelectEscolas('selectUnidade');
   preencherSelectEscolas('selectUnidadeEscola');
-  const sS = document.getElementById('selectSituacaoCadastro');
-  if (sS) sS.innerHTML = STATUS_TODOS.map(s=>`<option value="${escapeHtml(s)}" ${s==='Em análise'?'selected':''}>${escapeHtml(s)}</option>`).join('');
 }
 function preencherSelectEscolas(id) {
   const el = document.getElementById(id); if (!el) return;
@@ -27,6 +25,8 @@ async function enviarFormularioInterno(e) {
 
   try {
     const payload = formToObject(form);
+    // Situação inicial é fixa por regra de negócio: todo chamado entra em análise.
+    payload.situacao = 'Em análise';
     payload.anexos = await arquivosInputParaBase64(form.querySelector('[name="anexos"]'));
     google.script.run
       .withSuccessHandler(res=>{
