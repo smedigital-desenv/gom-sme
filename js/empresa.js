@@ -1005,6 +1005,16 @@ function setTipoEquipesGerencial(tipo, botao) {
   }
   if (origem === 'empresa') window.empresaEquipesTipoAtual = 'empresa';
   else window.adminEquipesTipoAtual = tipo === 'secretaria' ? 'secretaria' : 'empresa';
+
+  // Correção produção: ao alternar entre Empresa e Secretaria/GOM, atualiza também
+  // o formulário de cadastro. Antes, o hidden continuava com o tipo anterior e
+  // uma equipe criada na aba Secretaria podia ser salva como empresa.
+  var tipoAtual = getTipoEquipesGerencialAtual_();
+  var hiddenTipo = document.getElementById('tipoNovaEquipeGerencial');
+  if (hiddenTipo) hiddenTipo.value = tipoAtual;
+  var labelTipo = document.getElementById('tipoNovaEquipeGerencialLabel');
+  if (labelTipo) labelTipo.value = tipoAtual === 'secretaria' ? 'Secretaria/GOM' : 'Empresa';
+
   document.querySelectorAll('#empresaEquipeTipoTabs .nav-link').forEach(function(btn) { btn.classList.remove('active'); });
   if (botao) botao.classList.add('active');
   carregarEquipesGerenciais({ forcar: true });
@@ -1064,7 +1074,7 @@ function renderGestaoEquipes(opcoes) {
             '<h5 class="fw-bold text-dark mb-3"><i class="bi bi-plus-circle-fill text-info me-2"></i>Cadastrar equipe</h5>',
             '<form onsubmit="salvarEquipeGerencialForm(event)">',
               '<input type="hidden" id="tipoNovaEquipeGerencial" value="' + escapeHtml(tipo) + '">',
-              '<div class="mb-2"><label class="form-label text-muted small fw-bold">TIPO</label><input type="text" class="form-control bg-light" value="' + escapeHtml(tituloTipo) + '" disabled></div>',
+              '<div class="mb-2"><label class="form-label text-muted small fw-bold">TIPO</label><input type="text" id="tipoNovaEquipeGerencialLabel" class="form-control bg-light" value="' + escapeHtml(tituloTipo) + '" disabled></div>',
               '<div class="mb-3"><label class="form-label text-muted small fw-bold">NOME DA EQUIPE</label><input type="text" id="nomeNovaEquipeGerencial" class="form-control form-control-lg bg-light" placeholder="Ex: Equipe Elétrica" required></div>',
               '<button type="submit" class="btn btn-info text-white w-100 fw-bold shadow-sm"><i class="bi bi-check2-circle me-1"></i>Salvar equipe</button>',
             '</form>',
@@ -1221,7 +1231,8 @@ function salvarEquipeGerencialForm(e) {
   var input = document.getElementById('nomeNovaEquipeGerencial');
   var tipoInput = document.getElementById('tipoNovaEquipeGerencial');
   var nome = input ? input.value.trim() : '';
-  var tipo = tipoInput ? tipoInput.value : getTipoEquipesGerencialAtual_();
+  var tipo = getTipoEquipesGerencialAtual_();
+  if (tipoInput) tipoInput.value = tipo;
   if (!nome) return;
   if (tipo === 'secretaria' && !usuarioPodeGerenciarEquipeSecretaria_()) {
     alert('Seu perfil pode gerenciar somente equipes da empresa.');
