@@ -383,6 +383,7 @@ function abrirModalAnalise(id) {
   // Botão "Salvar observação" — sempre visível quando não é aprovação
   const btnObs = document.getElementById('mdlBtnSalvarObs');
   if (btnObs) btnObs.style.display = emAprovacaoModal ? 'none' : '';
+  if (typeof atualizarBotaoOrdemServicoModal === 'function') atualizarBotaoOrdemServicoModal(c);
   document.querySelectorAll('.modal-extra-aprovacao').forEach(el => { el.style.display = emAprovacaoModal ? '' : 'none'; });
   if (emAprovacaoModal) atualizarCamposModalAprovacao();
   new bootstrap.Modal(document.getElementById('modalAnalise')).show();

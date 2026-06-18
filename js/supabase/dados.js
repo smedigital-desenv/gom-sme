@@ -8,7 +8,7 @@
 window.GomDados = (function () {
   'use strict';
   const M = window.GomMap;
-  const SEL_CHAMADO = '*, escola:escolas(nome,tipo)';
+  const SEL_CHAMADO = '*, escola:escolas(nome,tipo,endereco)';
 
   const CONFIGS_PADRAO = [
     ['LOGIN_ATIVO','SIM','Login','Ativa a tela de login obrigatória antes de exibir informações do sistema.',true],
@@ -46,7 +46,12 @@ window.GomDados = (function () {
     ['LIMITE_ANEXOS','5','Anexos','Quantidade máxima de arquivos por envio.',true],
     ['TAMANHO_MAX_MB','8','Anexos','Tamanho máximo de cada anexo em MB.',true],
     ['STATUS_PADRAO_NOVO_CHAMADO','Em análise','Status','Status inicial padrão para novos chamados.',true],
-    ['STATUS_DEVOLVIDO_MEMORIAL','Devolvido para a escola','Status','Status usado quando a solicitação é devolvida para a unidade e encerrada no Memorial.',true]
+    ['STATUS_DEVOLVIDO_MEMORIAL','Devolvido para a escola','Status','Status usado quando a solicitação é devolvida para a unidade e encerrada no Memorial.',true],
+    ['OS_EMPRESA_NOME','ATLÂNTICA CONSTRUÇÕES, COMÉRCIO E SERVIÇOS LTDA','Ordem de Serviço','Nome da empresa destinatária exibido na Ordem de Serviço.',true],
+    ['OS_PC_NUMERO','0290/2024','Ordem de Serviço','Número do PC usado na Ordem de Serviço.',true],
+    ['OS_PREGAO_ELETRONICO','0157/2024','Ordem de Serviço','Número do Pregão Eletrônico usado na Ordem de Serviço.',true],
+    ['OS_ATA_REGISTRO_PRECOS','177-01/2024','Ordem de Serviço','Ata de Registro de Preços usada na Ordem de Serviço.',true],
+    ['OS_PRAZO_EXECUCAO','45 DIAS','Ordem de Serviço','Prazo de execução padrão exibido na Ordem de Serviço.',true]
   ];
 
   // ── Helpers ─────────────────────────────────────────────────────────────────

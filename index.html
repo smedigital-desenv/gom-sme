@@ -182,7 +182,8 @@
               <small>Opcional: envie fotos, PDFs ou documentos para complementar esta atualização. Limite: até 5 arquivos de 8 MB cada.</small>
             </div>
           </div>
-          <div class="col-12 text-end d-flex justify-content-end gap-2">
+          <div class="col-12 text-end d-flex justify-content-end gap-2 flex-wrap">
+            <button id="mdlBtnBaixarOS" class="btn btn-success fw-bold px-3" style="display:none;" onclick="baixarOrdemServicoChamadoModal(this)" title="Gera a Ordem de Serviço preenchida com os dados do chamado"><i class="bi bi-file-earmark-word me-1"></i>Baixar OS</button>
             <button id="mdlBtnSalvarObs" class="btn btn-outline-primary fw-bold px-3" onclick="salvarApenasObservacao(this)" title="Salva a observação sem alterar o status do chamado"><i class="bi bi-chat-left-text me-1"></i>Salvar observação</button>
             <button id="mdlBtnAtualizar" class="btn btn-primary fw-bold px-4" onclick="salvarStatusDoModal(this)">ATUALIZAR STATUS</button>
           </div>
@@ -966,6 +967,7 @@
   <script src="js/date-br.js"></script>
   <script src="js/render-chamados.js"></script>
   <script src="js/modal-chamados.js"></script>
+  <script src="js/os-documento.js"></script>
   <script src="js/empresa.js"></script>
   <script src="js/formularios.js"></script>
   <script src="js/obras.js"></script>

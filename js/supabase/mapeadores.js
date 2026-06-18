@@ -147,6 +147,8 @@ window.GomMap = (function () {
       dataHora: fmtDataHora(row.data_abertura),
       sistema: row.origem || '',
       unidade: (escola && escola.nome) || row.unidade_escolar || '',
+      enderecoEscola: (escola && escola.endereco) || row.endereco || '',
+      endereco: (escola && escola.endereco) || row.endereco || '',
       detalhamento: row.detalhamento || '',
       classificacao: row.classificacao || '',
       resolvido: row.resolvido === true ? 'Sim' : (row.resolvido === false ? '' : (row.resolvido || '')),
