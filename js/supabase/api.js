@@ -58,6 +58,7 @@
 
       /* ── Escritas ── */
       case 'atualizarChamadoWorkflow': return D.atualizarChamado(p);
+      case 'editarObservacoesChamado': return D.editarObservacoesChamado(p);
       case 'gomAtualizarChamadosLoteV1': {
         const lista = typeof p === 'string' ? JSON.parse(p) : (Array.isArray(p) ? p : [p]);
         // cada item é um payload de atualizarChamado

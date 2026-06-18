@@ -76,6 +76,103 @@ function limparAnexosModalAtualizacao_() {
   if (input) input.value = '';
 }
 
+
+function normalizarPerfilObservacoesModal_(perfil) {
+  var p = String(perfil || '').trim().toUpperCase().replace(/[\s-]+/g, '_');
+  if (p === 'ADMINISTRADOR_GOM') p = 'ADMIN_GOM';
+  if (p === 'GOM') p = 'SECRETARIA';
+  return p;
+}
+
+function usuarioPodeEditarObservacoesChamado_() {
+  var perfil = '';
+  try { perfil = (window.GomAuth && window.GomAuth.perfil) || ''; } catch(e) {}
+  if (!perfil) {
+    try { perfil = (window.usuarioAtualGom && window.usuarioAtualGom.perfil) || ''; } catch(e) {}
+  }
+  perfil = normalizarPerfilObservacoesModal_(perfil);
+  return perfil === 'ADMIN_GOM' || perfil === 'SECRETARIA';
+}
+
+function fecharEdicaoObservacoesChamado_() {
+  var box = document.getElementById('mdlObsEditBox');
+  var obsBox = document.getElementById('mdlObservacoes');
+  var btn = document.getElementById('mdlBtnEditarObservacoes');
+  if (box) box.style.display = 'none';
+  if (obsBox) obsBox.style.display = '';
+  if (btn) btn.style.display = usuarioPodeEditarObservacoesChamado_() ? '' : 'none';
+}
+
+function abrirEdicaoObservacoesChamado() {
+  if (!usuarioPodeEditarObservacoesChamado_()) {
+    alert('Apenas Secretaria/GOM e Administrador GOM podem editar o campo observações.');
+    return;
+  }
+  var chamadoAtual = (window.listaChamadosGlobal || []).find(function(x) { return String(x.id) === String(idChamadoAberto); }) || {};
+  var textarea = document.getElementById('mdlObservacoesEditadas');
+  var box = document.getElementById('mdlObsEditBox');
+  var obsBox = document.getElementById('mdlObservacoes');
+  var btn = document.getElementById('mdlBtnEditarObservacoes');
+  if (textarea) textarea.value = String(chamadoAtual.observacoes || '');
+  if (box) box.style.display = '';
+  if (obsBox) obsBox.style.display = 'none';
+  if (btn) btn.style.display = 'none';
+  if (textarea) setTimeout(function(){ textarea.focus(); }, 50);
+}
+
+function cancelarEdicaoObservacoesChamado() {
+  fecharEdicaoObservacoesChamado_();
+}
+
+async function salvarEdicaoObservacoesChamado(botao) {
+  if (!usuarioPodeEditarObservacoesChamado_()) {
+    alert('Apenas Secretaria/GOM e Administrador GOM podem editar o campo observações.');
+    return;
+  }
+
+  var chamadoAtual = (window.listaChamadosGlobal || []).find(function(x) { return String(x.id) === String(idChamadoAberto); }) || {};
+  var textarea = document.getElementById('mdlObservacoesEditadas');
+  var novoTexto = textarea ? String(textarea.value || '').replace(/\r\n/g, '\n').trim() : '';
+  var textoAtual = String(chamadoAtual.observacoes || '').replace(/\r\n/g, '\n').trim();
+
+  if (novoTexto === textoAtual) {
+    alert('Nenhuma alteração foi feita no campo observações.');
+    return;
+  }
+
+  if (!novoTexto && textoAtual && !confirm('As observações atuais serão apagadas. Confirmar alteração?')) return;
+
+  var payload = { id: idChamadoAberto, observacoesNova: novoTexto };
+
+  if (typeof gomSetButtonLoading === 'function') gomSetButtonLoading(botao, 'Salvando alteração...');
+  else if (botao) botao.disabled = true;
+
+  google.script.run
+    .withSuccessHandler(function() {
+      if (typeof gomMostrarSucessoBotao === 'function') gomMostrarSucessoBotao(botao, 'Observações atualizadas');
+      else if (botao) botao.disabled = false;
+
+      if (typeof gomAtualizarChamadoLocal === 'function') {
+        gomAtualizarChamadoLocal(idChamadoAberto, { observacoes: novoTexto });
+      } else {
+        chamadoAtual.observacoes = novoTexto;
+      }
+
+      var obsBox = document.getElementById('mdlObservacoes');
+      if (obsBox) obsBox.innerText = novoTexto || 'Sem observações';
+      fecharEdicaoObservacoesChamado_();
+      carregarTimelineChamadoModal_(idChamadoAberto);
+      if (typeof refreshChamados === 'function') refreshChamados(function() { atualizarModalChamadoAbertoAposRefresh_(); }, null);
+    })
+    .withFailureHandler(function(err) {
+      if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(botao);
+      else if (botao) botao.disabled = false;
+      if (typeof gomMostrarErroAcao === 'function') gomMostrarErroAcao(err, 'Não foi possível editar as observações.');
+      else alert((err && err.message) || err);
+    })
+    .editarObservacoesChamado(payload);
+}
+
 async function coletarAnexosModalAtualizacao_() {
   var input = document.getElementById('mdlAnexosAtualizacao');
   if (!input || !input.files || !input.files.length) return [];
@@ -256,6 +353,7 @@ function abrirModalAnalise(id) {
   document.getElementById('mdlData').innerText = c.dataHoraEncaminhamento || c.dataHoraEntradaFila || c.dataHora || c.data || '';
   document.getElementById('mdlDetalhe').innerText = c.detalhamento || 'Sem detalhe';
   document.getElementById('mdlObservacoes').innerText = c.observacoes || 'Sem observações';
+  fecharEdicaoObservacoesChamado_();
   document.getElementById('mdlAnexosBox').innerHTML = renderAnexosDetalhesChamadoModal_(c);
   carregarTimelineChamadoModal_(c.id);
   preencherSelectStatusModal(c);
@@ -521,6 +619,9 @@ async function salvarApenasObservacao(botao) {
 }
 
 window.salvarApenasObservacao = salvarApenasObservacao;
+window.abrirEdicaoObservacoesChamado = abrirEdicaoObservacoesChamado;
+window.cancelarEdicaoObservacoesChamado = cancelarEdicaoObservacoesChamado;
+window.salvarEdicaoObservacoesChamado = salvarEdicaoObservacoesChamado;
 window.atualizarCamposModalAprovacao = atualizarCamposModalAprovacao;
 window.salvarStatusDoModal = salvarStatusDoModal;
 

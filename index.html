@@ -148,8 +148,20 @@
         <div class="modal-label">Detalhamento</div>
         <div class="bg-white p-3 border rounded mb-3" id="mdlDetalhe" style="min-height:80px; white-space:pre-line;"></div>
         <div id="mdlAnexosBox"></div>
-        <div class="modal-label">Observações</div>
+        <div class="modal-label d-flex align-items-center justify-content-between gap-2">
+          <span>Observações</span>
+          <button type="button" class="btn btn-light border btn-sm fw-bold" id="mdlBtnEditarObservacoes" style="display:none;" onclick="abrirEdicaoObservacoesChamado()"><i class="bi bi-pencil-square me-1"></i>Editar observações</button>
+        </div>
         <div class="bg-white p-3 border rounded mb-3 text-muted" id="mdlObservacoes" style="min-height:70px; white-space:pre-line;"></div>
+        <div class="bg-white p-3 border rounded mb-3" id="mdlObsEditBox" style="display:none;">
+          <label class="modal-label text-primary" for="mdlObservacoesEditadas"><i class="bi bi-pencil-square me-1"></i>Editar campo observações</label>
+          <textarea class="form-control" id="mdlObservacoesEditadas" rows="6" placeholder="Edite o campo observações completo do chamado..."></textarea>
+          <small class="text-muted d-block mt-2">A alteração substituirá o campo observações atual. O conteúdo anterior e o novo conteúdo serão registrados no histórico do chamado.</small>
+          <div class="text-end mt-3 d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-light border fw-bold" onclick="cancelarEdicaoObservacoesChamado()"><i class="bi bi-x-circle me-1"></i>Cancelar</button>
+            <button type="button" class="btn btn-primary fw-bold" id="mdlBtnSalvarEdicaoObservacoes" onclick="salvarEdicaoObservacoesChamado(this)"><i class="bi bi-save me-1"></i>Salvar alteração</button>
+          </div>
+        </div>
         <div class="modal-label d-flex align-items-center justify-content-between">
           <span>Linha do tempo</span>
           <button type="button" class="btn btn-light border btn-sm fw-bold" onclick="recarregarTimelineModal()"><i class="bi bi-arrow-clockwise me-1"></i>Atualizar</button>

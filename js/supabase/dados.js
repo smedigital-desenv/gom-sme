@@ -377,7 +377,11 @@ window.GomDados = (function () {
     const r = await window.SB.from('log_acoes').select('*').eq('solicitacao_id', id).order('registrado_em', { ascending: true });
     if (r.error) return JSON.stringify({ ok: false, eventos: [], erro: r.error.message });
     const eventos = (r.data || []).map(x => ({
-      data: M.fmtDataHora(x.registrado_em), usuario: x.usuario || '', acao: x.acao || '',
+      tipo: 'log',
+      data: M.fmtDataHora(x.registrado_em),
+      titulo: x.acao || 'Registro do sistema',
+      descricao: x.observacao || '',
+      usuario: x.usuario || '', acao: x.acao || '', origem: x.origem || '',
       statusAnterior: x.status_anterior || '', statusNovo: x.status_novo || '',
       observacao: x.observacao || '', equipe: x.equipe || '', valorOrcamento: x.valor_orcamento || ''
     }));
@@ -515,6 +519,68 @@ window.GomDados = (function () {
   }
 
   /* ══════════════════════════ ESCRITAS ══════════════════════════ */
+
+  function _perfilAtualNormalizado() {
+    let perfil = '';
+    try { perfil = (window.GomAuth && window.GomAuth.perfil) || ''; } catch (e) {}
+    if (!perfil) {
+      try { perfil = (window.usuarioAtualGom && window.usuarioAtualGom.perfil) || ''; } catch (e) {}
+    }
+    perfil = String(perfil || '').trim().toUpperCase().replace(/[\s-]+/g, '_');
+    if (perfil === 'ADMINISTRADOR_GOM') perfil = 'ADMIN_GOM';
+    if (perfil === 'GOM') perfil = 'SECRETARIA';
+    return perfil;
+  }
+
+  function _podeEditarObservacoesSecretaria() {
+    const perfil = _perfilAtualNormalizado();
+    return perfil === 'ADMIN_GOM' || perfil === 'SECRETARIA';
+  }
+
+  function _limitarTextoLog(txt, max) {
+    txt = String(txt == null ? '' : txt);
+    max = Number(max || 8000);
+    if (txt.length <= max) return txt;
+    return txt.slice(0, max - 80) + '\n...[texto reduzido para registro do histórico]';
+  }
+
+  async function editarObservacoesChamado(p) {
+    if (!_podeEditarObservacoesSecretaria()) {
+      throw new Error('Apenas Secretaria/GOM e Administrador GOM podem editar o campo observações.');
+    }
+
+    const id = p.id;
+    const atual = await _getChamado(id);
+    const anterior = String(atual.observacoes || '').replace(/\r\n/g, '\n').trim();
+    const nova = String((p.observacoesNova !== undefined ? p.observacoesNova : p.observacoes) || '').replace(/\r\n/g, '\n').trim();
+
+    if (nova === anterior) return { ok: true, id, semAlteracao: true, observacoes: nova };
+
+    await _update(id, { observacoes: nova });
+
+    const usuario = (window.GomAuth && window.GomAuth.email) || (window.usuarioAtualGom && window.usuarioAtualGom.email) || '';
+    const historico = [
+      'Campo observações alterado pela Secretaria/GOM.',
+      '',
+      'ANTES:',
+      anterior || '(vazio)',
+      '',
+      'DEPOIS:',
+      nova || '(vazio)'
+    ].join('\n');
+
+    await _log({
+      solicitacao_id: id,
+      acao: 'Observações editadas',
+      status_anterior: atual.situacao || '',
+      status_novo: atual.situacao || '',
+      observacao: _limitarTextoLog(historico, 8000),
+      origem: 'edicao_observacoes',
+      usuario
+    });
+
+    return { ok: true, id, observacoes: nova };
+  }
 
   async function atualizarChamado(p) {
     const id = p.id; const atual = await _getChamado(id);
@@ -874,7 +940,7 @@ window.GomDados = (function () {
   return {
     listarChamados, getDadosIniciais, usuarioAtual, listarObras, listarCampo, listarConfiguracoes, timeline,
     consultarProtocoloEscola,
-    atualizarChamado, criarSolicitacao, criarSolicitacaoEscola, salvarEquipeDiaEmpresa, salvarEquipesDiaEmpresaLote,
+    atualizarChamado, editarObservacoesChamado, criarSolicitacao, criarSolicitacaoEscola, salvarEquipeDiaEmpresa, salvarEquipesDiaEmpresaLote,
     salvarRespostaOrcamentoEmpresa, salvarServicoRealizadoEmpresa, aprovarOrcamento, salvarDecisaoAprovacao,
     atualizarPrevisaoOsEmpresa, finalizarOsEmpresa, salvarNovaEquipe,
     listarEquipesGerencial, salvarEquipeGerencial, salvarMembroEquipeGerencial, alterarStatusEquipeGerencial, alterarStatusMembroEquipeGerencial,
