@@ -175,6 +175,16 @@
           <div class="col-md-6 modal-extra-aprovacao"><label class="modal-label text-primary" id="mdlNumeroOsLabel">Nº da OS</label><input class="form-control" id="mdlNumeroOs" placeholder="Obrigatório ao aprovar orçamento"></div>
           <div class="col-md-6 modal-extra-aprovacao"><label class="modal-label text-primary">Previsão de conclusão</label><input class="form-control gom-date-br-input" type="date" id="mdlDataPrevistaConclusao" onchange="gomNormalizarDataBrInput(this)"></div>
           <div class="col-md-6 modal-extra-fila" style="display:none;"><label class="modal-label text-primary"><i class="bi bi-calendar-check me-1"></i>Agendamento da visita</label><input class="form-control gom-date-br-input" type="date" id="mdlDataAgendamentoVisita" onchange="gomNormalizarDataBrInput(this)"></div>
+          <div class="col-12" id="mdlOsLegadoBox" style="display:none;">
+            <div class="bg-warning-subtle border border-warning rounded p-3">
+              <label class="modal-label text-dark" for="mdlNumeroOsLegado"><i class="bi bi-pencil-square me-1"></i>Regularizar número da OS antiga</label>
+              <div class="input-group">
+                <input class="form-control fw-bold" id="mdlNumeroOsLegado" placeholder="Ex.: 213/2026">
+                <button type="button" class="btn btn-warning fw-bold" id="mdlBtnSalvarNumeroOsLegado" onclick="salvarNumeroOsLegadoChamado(this)"><i class="bi bi-save me-1"></i>Salvar nº OS</button>
+              </div>
+              <small class="text-muted d-block mt-2">Use apenas para chamados antigos que já estão como OS emitida e ficaram sem número. Novas OS são numeradas automaticamente pelo sistema.</small>
+            </div>
+          </div>
           <div class="col-12">
             <div class="modal-anexo-upload-box">
               <label class="modal-label text-primary" for="mdlAnexosAtualizacao"><i class="bi bi-paperclip me-1"></i>Adicionar anexos ao chamado</label>

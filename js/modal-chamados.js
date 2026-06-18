@@ -58,11 +58,11 @@ function atualizarCamposModalAprovacao() {
   var dataPrev = document.getElementById('mdlDataPrevistaConclusao');
 
   if (numeroOs) {
-    var precisaOs = decisao === 'aprovar';
-    numeroOs.disabled = !precisaOs;
-    numeroOs.required = precisaOs;
-    numeroOs.placeholder = precisaOs ? 'Obrigatório ao aprovar' : 'Não se aplica nesta decisão';
-    if (!precisaOs) numeroOs.value = '';
+    var aprovando = decisao === 'aprovar';
+    numeroOs.disabled = true;
+    numeroOs.required = false;
+    numeroOs.placeholder = aprovando ? 'Gerado automaticamente pelo sistema' : 'Não se aplica nesta decisão';
+    numeroOs.value = '';
   }
 
   if (dataPrev) {
@@ -92,6 +92,69 @@ function usuarioPodeEditarObservacoesChamado_() {
   }
   perfil = normalizarPerfilObservacoesModal_(perfil);
   return perfil === 'ADMIN_GOM' || perfil === 'SECRETARIA';
+}
+
+
+function usuarioPodeCorrigirNumeroOsLegado_() {
+  return usuarioPodeEditarObservacoesChamado_();
+}
+
+function atualizarBoxNumeroOsLegado_(chamado) {
+  var box = document.getElementById('mdlOsLegadoBox');
+  var input = document.getElementById('mdlNumeroOsLegado');
+  if (!box) return;
+  var st = normalizarSituacaoSistema(chamado && (chamado.situacao || chamado.status));
+  var numero = String((chamado && (chamado.numeroOs || chamado.numero_os || chamado.auxiliar)) || '').trim();
+  var pode = usuarioPodeCorrigirNumeroOsLegado_() && st === 'OS emitida' && !numero;
+  box.style.display = pode ? '' : 'none';
+  if (input) input.value = '';
+}
+
+async function salvarNumeroOsLegadoChamado(botao) {
+  if (!usuarioPodeCorrigirNumeroOsLegado_()) {
+    alert('Seu perfil não tem permissão para alterar o número da OS.');
+    return;
+  }
+  var chamadoAtual = (window.listaChamadosGlobal || []).find(function(x) { return String(x.id) === String(idChamadoAberto); }) || {};
+  var st = normalizarSituacaoSistema(chamadoAtual.situacao || chamadoAtual.status);
+  if (st !== 'OS emitida') {
+    alert('A regularização manual do número só está disponível para chamados antigos com OS emitida.');
+    return;
+  }
+  if (String(chamadoAtual.numeroOs || '').trim()) {
+    alert('Este chamado já possui número de OS. Novas alterações não são permitidas por esta tela.');
+    return;
+  }
+  var input = document.getElementById('mdlNumeroOsLegado');
+  var numero = input ? String(input.value || '').trim() : '';
+  if (!numero) {
+    alert('Informe o número da OS. Ex.: 213/2026');
+    if (input) input.focus();
+    return;
+  }
+
+  if (typeof gomSetButtonLoading === 'function') gomSetButtonLoading(botao, 'Salvando nº OS...');
+  else if (botao) botao.disabled = true;
+
+  google.script.run
+    .withSuccessHandler(function() {
+      if (typeof gomMostrarSucessoBotao === 'function') gomMostrarSucessoBotao(botao, 'Nº OS salvo');
+      var camposLocais = { numeroOs: numero, auxiliar: numero };
+      if (typeof gomAtualizarChamadoLocal === 'function') gomAtualizarChamadoLocal(idChamadoAberto, camposLocais);
+      refreshChamados(function() {
+        var atualizado = (window.listaChamadosGlobal || []).find(function(x) { return String(x.id) === String(idChamadoAberto); });
+        atualizarBoxNumeroOsLegado_(atualizado || chamadoAtual);
+        if (typeof atualizarBotaoOrdemServicoModal === 'function') atualizarBotaoOrdemServicoModal(atualizado || chamadoAtual);
+        carregarTimelineChamadoModal_(idChamadoAberto);
+      }, { id: idChamadoAberto, campos: camposLocais });
+    })
+    .withFailureHandler(function(err) {
+      if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(botao);
+      else if (botao) botao.disabled = false;
+      if (typeof gomMostrarErroAcao === 'function') gomMostrarErroAcao(err, 'Não foi possível salvar o número da OS.');
+      else alert((err && err.message) || err);
+    })
+    .corrigirNumeroOsLegado({ id: idChamadoAberto, numeroOs: numero });
 }
 
 function fecharEdicaoObservacoesChamado_() {
@@ -380,6 +443,7 @@ function abrirModalAnalise(id) {
     const valorAgend = c.dataAgendamentoVisitaRaw || c.dataAgendamentoVisita || '';
     dataAgend.value = gomFormatarInputDateModal_(valorAgend);
   }
+  atualizarBoxNumeroOsLegado_(c);
   // Botão "Salvar observação" — sempre visível quando não é aprovação
   const btnObs = document.getElementById('mdlBtnSalvarObs');
   if (btnObs) btnObs.style.display = emAprovacaoModal ? 'none' : '';
@@ -460,12 +524,7 @@ async function salvarStatusDoModal(botao) {
     };
 
     if (decisao === 'aprovar') {
-      payload.numeroOs = numeroOs ? String(numeroOs.value || '').trim() : '';
-      if (!payload.numeroOs) {
-        alert('Informe o número da OS para aprovar o orçamento.');
-        if (numeroOs) numeroOs.focus();
-        return;
-      }
+      // Número da OS é gerado automaticamente na camada de dados.
       if (dataPrev && dataPrev.value) payload.dataPrevistaConclusao = gomModalDataParaISO_(dataPrev.value);
     }
 
@@ -508,7 +567,7 @@ async function salvarStatusDoModal(botao) {
   // Só inclui situacao no payload se realmente mudou — evita transição indesejada
   const payload = { id: idChamadoAberto, observacoes: obs };
   if (statusMudou) payload.situacao = status;
-  if (numeroOs && numeroOs.value) payload.numeroOs = numeroOs.value;
+  // Número de OS novo não é digitado manualmente. Para legado sem número, use o bloco específico de regularização.
   if (dataPrev && dataPrev.value) payload.dataPrevistaConclusao = gomModalDataParaISO_(dataPrev.value);
 
   // Data de agendamento de visita (campo exclusivo da fila)
@@ -620,6 +679,7 @@ async function salvarApenasObservacao(botao) {
 }
 
 window.salvarApenasObservacao = salvarApenasObservacao;
+window.salvarNumeroOsLegadoChamado = salvarNumeroOsLegadoChamado;
 window.abrirEdicaoObservacoesChamado = abrirEdicaoObservacoesChamado;
 window.cancelarEdicaoObservacoesChamado = cancelarEdicaoObservacoesChamado;
 window.salvarEdicaoObservacoesChamado = salvarEdicaoObservacoesChamado;

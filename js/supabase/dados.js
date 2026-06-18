@@ -587,6 +587,40 @@ window.GomDados = (function () {
     return { ok: true, id, observacoes: nova };
   }
 
+
+  async function corrigirNumeroOsLegado(p) {
+    const id = p && p.id;
+    const numeroOs = String((p && p.numeroOs) || '').trim();
+    if (!id) throw new Error('ID do chamado não informado.');
+    if (!numeroOs) throw new Error('Informe o número da OS.');
+
+    const atual = await _getChamado(id);
+    const stAtual = M.normalizarStatus(atual.situacao);
+    if (stAtual !== 'OS emitida') throw new Error('A correção manual do número só é permitida para chamados com OS emitida.');
+    if (String(atual.numero_os || '').trim()) throw new Error('Este chamado já possui número de OS. Não é permitido alterar por esta rotina.');
+
+    const duplicado = await window.SB
+      .from('solicitacoes')
+      .select('id,numero_os')
+      .ilike('numero_os', numeroOs)
+      .neq('id', id)
+      .limit(1);
+    if (duplicado.error) _err('Verificar número da OS', duplicado.error);
+    if ((duplicado.data || []).length) throw new Error('Já existe outro chamado com o número de OS informado.');
+
+    await _update(id, { numero_os: numeroOs, data_hora_ultima_acao: _nowISO() });
+    await _log({
+      solicitacao_id: id,
+      acao: 'Número da OS legado informado',
+      status_anterior: stAtual,
+      status_novo: stAtual,
+      observacao: 'Número da OS informado manualmente para chamado antigo sem numeração: ' + numeroOs,
+      origem: 'correcao_numero_os_legado',
+      usuario: (window.GomAuth && window.GomAuth.email) || ''
+    });
+    return { ok: true, id, numeroOs };
+  }
+
   async function atualizarChamado(p) {
     const id = p.id; const atual = await _getChamado(id);
     const stAnt = M.normalizarStatus(atual.situacao);
@@ -599,12 +633,13 @@ window.GomDados = (function () {
     if (recebida && mudou) u.situacao = stNovo;
     if (p.observacoes !== undefined) u.observacoes = M.appendObservacao(atual.observacoes, p.observacoes, stNovo);
     if (p.valorOrcamento !== undefined && p.valorOrcamento !== '') u.valor_orcamento = _num(p.valorOrcamento);
-    if (p.numeroOs !== undefined) u.numero_os = p.numeroOs || '';
+    // Número de OS novo é gerado automaticamente; correção manual fica restrita à função corrigirNumeroOsLegado().
     if (p.dataPrevistaConclusao !== undefined) u.data_prevista_conclusao = _date(p.dataPrevistaConclusao);
     if (p.equipe !== undefined) { u.equipe_responsavel = p.equipe || ''; if (p.equipe) u.data_equipe = _nowISO(); }
     if (p.dataAgendamentoVisita !== undefined && p.dataAgendamentoVisita !== '') u.data_agendamento_visita = _date(p.dataAgendamentoVisita);
     if (['Aguardando visita', 'Visita agendada', 'Em atendimento'].includes(stNovo) && !atual.data_hora_entrada_fila) u.data_hora_entrada_fila = _nowISO();
     if (['Solicitado Orçamento', 'Atendimento Emergencial', 'OS emitida', 'Aguardando visita', 'Visita agendada', 'Garantia de Obra', 'Garantia de Serviço'].includes(stNovo) && mudou) u.data_hora_encaminhamento = _nowISO();
+    if (stNovo === 'OS emitida' && mudou) { let n = String(atual.numero_os || '').trim(); if (!n) n = await _gerarNumeroOsAutomatico(); if (!n) n = String(id) + '/' + new Date().getFullYear(); u.numero_os = n; }
     if (stNovo === 'Devolvido para a escola') u.data_conclusao_os = _nowISO();
     const _anexosAtual = p.anexosAtualizacao || p.anexos || [];
     if (Array.isArray(_anexosAtual) && _anexosAtual.length) {
@@ -713,7 +748,7 @@ window.GomDados = (function () {
 
   async function aprovarOrcamento(p) {
     const id = p.id; const atual = await _getChamado(id);
-    let numeroOs = String(p.numeroOs || atual.numero_os || '').trim();
+    let numeroOs = String(atual.numero_os || '').trim();
     if (!numeroOs) numeroOs = await _gerarNumeroOsAutomatico();
     if (!numeroOs) numeroOs = String(id) + '/' + new Date().getFullYear();
     const u = { situacao: 'OS emitida', numero_os: numeroOs, observacoes: M.appendObservacao(atual.observacoes, p.observacoes, 'Orçamento aprovado'), data_hora_ultima_acao: _nowISO(), data_hora_encaminhamento: _nowISO() };
@@ -733,7 +768,7 @@ window.GomDados = (function () {
     const r = mapa[dec]; if (!r) throw new Error('Decisão inválida.');
     const [stNovo, rotulo] = r;
     const u = { situacao: stNovo, observacoes: M.appendObservacao(atual.observacoes, parecer, rotulo), data_hora_ultima_acao: _nowISO() };
-    if (stNovo === 'OS emitida') { let n = String(p.numeroOs || atual.numero_os || '').trim(); if (!n) n = await _gerarNumeroOsAutomatico(); if (!n) n = String(id) + '/' + new Date().getFullYear(); u.numero_os = n; u.data_hora_encaminhamento = _nowISO(); if (p.dataPrevistaConclusao) u.data_prevista_conclusao = _date(p.dataPrevistaConclusao); }
+    if (stNovo === 'OS emitida') { let n = String(atual.numero_os || '').trim(); if (!n) n = await _gerarNumeroOsAutomatico(); if (!n) n = String(id) + '/' + new Date().getFullYear(); u.numero_os = n; u.data_hora_encaminhamento = _nowISO(); if (p.dataPrevistaConclusao) u.data_prevista_conclusao = _date(p.dataPrevistaConclusao); }
     if (stNovo === 'Solicitado Orçamento') u.data_hora_encaminhamento = _nowISO();
     if (['A cargo da unidade escolar', 'Devolvido para a escola'].includes(stNovo)) u.data_conclusao_os = _nowISO();
     const _anexosAtual = p.anexosAtualizacao || p.anexos || [];
@@ -945,7 +980,7 @@ window.GomDados = (function () {
   return {
     listarChamados, getDadosIniciais, usuarioAtual, listarObras, listarCampo, listarConfiguracoes, timeline,
     consultarProtocoloEscola,
-    atualizarChamado, editarObservacoesChamado, criarSolicitacao, criarSolicitacaoEscola, salvarEquipeDiaEmpresa, salvarEquipesDiaEmpresaLote,
+    atualizarChamado, editarObservacoesChamado, corrigirNumeroOsLegado, criarSolicitacao, criarSolicitacaoEscola, salvarEquipeDiaEmpresa, salvarEquipesDiaEmpresaLote,
     salvarRespostaOrcamentoEmpresa, salvarServicoRealizadoEmpresa, aprovarOrcamento, salvarDecisaoAprovacao,
     atualizarPrevisaoOsEmpresa, finalizarOsEmpresa, salvarNovaEquipe,
     listarEquipesGerencial, salvarEquipeGerencial, salvarMembroEquipeGerencial, alterarStatusEquipeGerencial, alterarStatusMembroEquipeGerencial,
