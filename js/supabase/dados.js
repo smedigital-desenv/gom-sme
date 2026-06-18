@@ -8,7 +8,7 @@
 window.GomDados = (function () {
   'use strict';
   const M = window.GomMap;
-  const SEL_CHAMADO = '*, escola:escolas(nome,tipo)';
+  const SEL_CHAMADO = '*, escola:escolas(nome,tipo,endereco)';
 
   const CONFIGS_PADRAO = [
     ['LOGIN_ATIVO','SIM','Login','Ativa a tela de login obrigatória antes de exibir informações do sistema.',true],
@@ -46,7 +46,12 @@ window.GomDados = (function () {
     ['LIMITE_ANEXOS','5','Anexos','Quantidade máxima de arquivos por envio.',true],
     ['TAMANHO_MAX_MB','8','Anexos','Tamanho máximo de cada anexo em MB.',true],
     ['STATUS_PADRAO_NOVO_CHAMADO','Em análise','Status','Status inicial padrão para novos chamados.',true],
-    ['STATUS_DEVOLVIDO_MEMORIAL','Devolvido para a escola','Status','Status usado quando a solicitação é devolvida para a unidade e encerrada no Memorial.',true]
+    ['STATUS_DEVOLVIDO_MEMORIAL','Devolvido para a escola','Status','Status usado quando a solicitação é devolvida para a unidade e encerrada no Memorial.',true],
+    ['OS_EMPRESA_NOME','ATLÂNTICA CONSTRUÇÕES, COMÉRCIO E SERVIÇOS LTDA','Ordem de Serviço','Nome da empresa destinatária exibido na Ordem de Serviço.',true],
+    ['OS_PC_NUMERO','0290/2024','Ordem de Serviço','Número do PC usado na Ordem de Serviço.',true],
+    ['OS_PREGAO_ELETRONICO','0157/2024','Ordem de Serviço','Número do Pregão Eletrônico usado na Ordem de Serviço.',true],
+    ['OS_ATA_REGISTRO_PRECOS','177-01/2024','Ordem de Serviço','Ata de Registro de Preços usada na Ordem de Serviço.',true],
+    ['OS_PRAZO_EXECUCAO','45 DIAS','Ordem de Serviço','Prazo de execução padrão exibido na Ordem de Serviço.',true]
   ];
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -377,7 +382,11 @@ window.GomDados = (function () {
     const r = await window.SB.from('log_acoes').select('*').eq('solicitacao_id', id).order('registrado_em', { ascending: true });
     if (r.error) return JSON.stringify({ ok: false, eventos: [], erro: r.error.message });
     const eventos = (r.data || []).map(x => ({
-      data: M.fmtDataHora(x.registrado_em), usuario: x.usuario || '', acao: x.acao || '',
+      tipo: 'log',
+      data: M.fmtDataHora(x.registrado_em),
+      titulo: x.acao || 'Registro do sistema',
+      descricao: x.observacao || '',
+      usuario: x.usuario || '', acao: x.acao || '', origem: x.origem || '',
       statusAnterior: x.status_anterior || '', statusNovo: x.status_novo || '',
       observacao: x.observacao || '', equipe: x.equipe || '', valorOrcamento: x.valor_orcamento || ''
     }));
@@ -516,6 +525,102 @@ window.GomDados = (function () {
 
   /* ══════════════════════════ ESCRITAS ══════════════════════════ */
 
+  function _perfilAtualNormalizado() {
+    let perfil = '';
+    try { perfil = (window.GomAuth && window.GomAuth.perfil) || ''; } catch (e) {}
+    if (!perfil) {
+      try { perfil = (window.usuarioAtualGom && window.usuarioAtualGom.perfil) || ''; } catch (e) {}
+    }
+    perfil = String(perfil || '').trim().toUpperCase().replace(/[\s-]+/g, '_');
+    if (perfil === 'ADMINISTRADOR_GOM') perfil = 'ADMIN_GOM';
+    if (perfil === 'GOM') perfil = 'SECRETARIA';
+    return perfil;
+  }
+
+  function _podeEditarObservacoesSecretaria() {
+    const perfil = _perfilAtualNormalizado();
+    return perfil === 'ADMIN_GOM' || perfil === 'SECRETARIA';
+  }
+
+  function _limitarTextoLog(txt, max) {
+    txt = String(txt == null ? '' : txt);
+    max = Number(max || 8000);
+    if (txt.length <= max) return txt;
+    return txt.slice(0, max - 80) + '\n...[texto reduzido para registro do histórico]';
+  }
+
+  async function editarObservacoesChamado(p) {
+    if (!_podeEditarObservacoesSecretaria()) {
+      throw new Error('Apenas Secretaria/GOM e Administrador GOM podem editar o campo observações.');
+    }
+
+    const id = p.id;
+    const atual = await _getChamado(id);
+    const anterior = String(atual.observacoes || '').replace(/\r\n/g, '\n').trim();
+    const nova = String((p.observacoesNova !== undefined ? p.observacoesNova : p.observacoes) || '').replace(/\r\n/g, '\n').trim();
+
+    if (nova === anterior) return { ok: true, id, semAlteracao: true, observacoes: nova };
+
+    await _update(id, { observacoes: nova });
+
+    const usuario = (window.GomAuth && window.GomAuth.email) || (window.usuarioAtualGom && window.usuarioAtualGom.email) || '';
+    const historico = [
+      'Campo observações alterado pela Secretaria/GOM.',
+      '',
+      'ANTES:',
+      anterior || '(vazio)',
+      '',
+      'DEPOIS:',
+      nova || '(vazio)'
+    ].join('\n');
+
+    await _log({
+      solicitacao_id: id,
+      acao: 'Observações editadas',
+      status_anterior: atual.situacao || '',
+      status_novo: atual.situacao || '',
+      observacao: _limitarTextoLog(historico, 8000),
+      origem: 'edicao_observacoes',
+      usuario
+    });
+
+    return { ok: true, id, observacoes: nova };
+  }
+
+
+  async function corrigirNumeroOsLegado(p) {
+    const id = p && p.id;
+    const numeroOs = String((p && p.numeroOs) || '').trim();
+    if (!id) throw new Error('ID do chamado não informado.');
+    if (!numeroOs) throw new Error('Informe o número da OS.');
+
+    const atual = await _getChamado(id);
+    const stAtual = M.normalizarStatus(atual.situacao);
+    if (stAtual !== 'OS emitida') throw new Error('A correção manual do número só é permitida para chamados com OS emitida.');
+    if (String(atual.numero_os || '').trim()) throw new Error('Este chamado já possui número de OS. Não é permitido alterar por esta rotina.');
+
+    const duplicado = await window.SB
+      .from('solicitacoes')
+      .select('id,numero_os')
+      .ilike('numero_os', numeroOs)
+      .neq('id', id)
+      .limit(1);
+    if (duplicado.error) _err('Verificar número da OS', duplicado.error);
+    if ((duplicado.data || []).length) throw new Error('Já existe outro chamado com o número de OS informado.');
+
+    await _update(id, { numero_os: numeroOs, data_hora_ultima_acao: _nowISO() });
+    await _log({
+      solicitacao_id: id,
+      acao: 'Número da OS legado informado',
+      status_anterior: stAtual,
+      status_novo: stAtual,
+      observacao: 'Número da OS informado manualmente para chamado antigo sem numeração: ' + numeroOs,
+      origem: 'correcao_numero_os_legado',
+      usuario: (window.GomAuth && window.GomAuth.email) || ''
+    });
+    return { ok: true, id, numeroOs };
+  }
+
   async function atualizarChamado(p) {
     const id = p.id; const atual = await _getChamado(id);
     const stAnt = M.normalizarStatus(atual.situacao);
@@ -528,12 +633,13 @@ window.GomDados = (function () {
     if (recebida && mudou) u.situacao = stNovo;
     if (p.observacoes !== undefined) u.observacoes = M.appendObservacao(atual.observacoes, p.observacoes, stNovo);
     if (p.valorOrcamento !== undefined && p.valorOrcamento !== '') u.valor_orcamento = _num(p.valorOrcamento);
-    if (p.numeroOs !== undefined) u.numero_os = p.numeroOs || '';
+    // Número de OS novo é gerado automaticamente; correção manual fica restrita à função corrigirNumeroOsLegado().
     if (p.dataPrevistaConclusao !== undefined) u.data_prevista_conclusao = _date(p.dataPrevistaConclusao);
     if (p.equipe !== undefined) { u.equipe_responsavel = p.equipe || ''; if (p.equipe) u.data_equipe = _nowISO(); }
     if (p.dataAgendamentoVisita !== undefined && p.dataAgendamentoVisita !== '') u.data_agendamento_visita = _date(p.dataAgendamentoVisita);
-    if (['Aguardando visita', 'Em atendimento'].includes(stNovo) && !atual.data_hora_entrada_fila) u.data_hora_entrada_fila = _nowISO();
-    if (['Solicitado Orçamento', 'Atendimento Emergencial', 'OS emitida', 'Aguardando visita', 'Garantia de Obra', 'Garantia de Serviço'].includes(stNovo) && mudou) u.data_hora_encaminhamento = _nowISO();
+    if (['Aguardando visita', 'Visita agendada', 'Em atendimento'].includes(stNovo) && !atual.data_hora_entrada_fila) u.data_hora_entrada_fila = _nowISO();
+    if (['Solicitado Orçamento', 'Atendimento Emergencial', 'OS emitida', 'Aguardando visita', 'Visita agendada', 'Garantia de Obra', 'Garantia de Serviço'].includes(stNovo) && mudou) u.data_hora_encaminhamento = _nowISO();
+    if (stNovo === 'OS emitida' && mudou) { let n = String(atual.numero_os || '').trim(); if (!n) n = await _gerarNumeroOsAutomatico(); if (!n) n = String(id) + '/' + new Date().getFullYear(); u.numero_os = n; }
     if (stNovo === 'Devolvido para a escola') u.data_conclusao_os = _nowISO();
     const _anexosAtual = p.anexosAtualizacao || p.anexos || [];
     if (Array.isArray(_anexosAtual) && _anexosAtual.length) {
@@ -550,7 +656,7 @@ window.GomDados = (function () {
   async function criarSolicitacao(p) {
     const esc = await _escolaIdPorNome(p.unidade);
     const origem = p.sistema === 'Solar' ? ('Solar ' + (p.num_processo || '')).trim() : (p.sistema || 'Cadastro interno');
-    const situacao = M.normalizarStatus(p.situacao || 'Em análise');
+    const situacao = 'Em análise';
     const ins = await window.SB.from('solicitacoes').insert({
       data_abertura: _nowISO(), origem, escola_id: esc ? esc.id : null, tipo: p.tipo || (esc ? esc.tipo : ''),
       detalhamento: p.detalhamento || '', situacao, observacoes: M.appendObservacao('', p.observacoes, 'Cadastro interno'),
@@ -642,7 +748,7 @@ window.GomDados = (function () {
 
   async function aprovarOrcamento(p) {
     const id = p.id; const atual = await _getChamado(id);
-    let numeroOs = String(p.numeroOs || atual.numero_os || '').trim();
+    let numeroOs = String(atual.numero_os || '').trim();
     if (!numeroOs) numeroOs = await _gerarNumeroOsAutomatico();
     if (!numeroOs) numeroOs = String(id) + '/' + new Date().getFullYear();
     const u = { situacao: 'OS emitida', numero_os: numeroOs, observacoes: M.appendObservacao(atual.observacoes, p.observacoes, 'Orçamento aprovado'), data_hora_ultima_acao: _nowISO(), data_hora_encaminhamento: _nowISO() };
@@ -662,7 +768,7 @@ window.GomDados = (function () {
     const r = mapa[dec]; if (!r) throw new Error('Decisão inválida.');
     const [stNovo, rotulo] = r;
     const u = { situacao: stNovo, observacoes: M.appendObservacao(atual.observacoes, parecer, rotulo), data_hora_ultima_acao: _nowISO() };
-    if (stNovo === 'OS emitida') { let n = String(p.numeroOs || atual.numero_os || '').trim(); if (!n) n = await _gerarNumeroOsAutomatico(); if (!n) n = String(id) + '/' + new Date().getFullYear(); u.numero_os = n; u.data_hora_encaminhamento = _nowISO(); if (p.dataPrevistaConclusao) u.data_prevista_conclusao = _date(p.dataPrevistaConclusao); }
+    if (stNovo === 'OS emitida') { let n = String(atual.numero_os || '').trim(); if (!n) n = await _gerarNumeroOsAutomatico(); if (!n) n = String(id) + '/' + new Date().getFullYear(); u.numero_os = n; u.data_hora_encaminhamento = _nowISO(); if (p.dataPrevistaConclusao) u.data_prevista_conclusao = _date(p.dataPrevistaConclusao); }
     if (stNovo === 'Solicitado Orçamento') u.data_hora_encaminhamento = _nowISO();
     if (['A cargo da unidade escolar', 'Devolvido para a escola'].includes(stNovo)) u.data_conclusao_os = _nowISO();
     const _anexosAtual = p.anexosAtualizacao || p.anexos || [];
@@ -874,7 +980,7 @@ window.GomDados = (function () {
   return {
     listarChamados, getDadosIniciais, usuarioAtual, listarObras, listarCampo, listarConfiguracoes, timeline,
     consultarProtocoloEscola,
-    atualizarChamado, criarSolicitacao, criarSolicitacaoEscola, salvarEquipeDiaEmpresa, salvarEquipesDiaEmpresaLote,
+    atualizarChamado, editarObservacoesChamado, corrigirNumeroOsLegado, criarSolicitacao, criarSolicitacaoEscola, salvarEquipeDiaEmpresa, salvarEquipesDiaEmpresaLote,
     salvarRespostaOrcamentoEmpresa, salvarServicoRealizadoEmpresa, aprovarOrcamento, salvarDecisaoAprovacao,
     atualizarPrevisaoOsEmpresa, finalizarOsEmpresa, salvarNovaEquipe,
     listarEquipesGerencial, salvarEquipeGerencial, salvarMembroEquipeGerencial, alterarStatusEquipeGerencial, alterarStatusMembroEquipeGerencial,

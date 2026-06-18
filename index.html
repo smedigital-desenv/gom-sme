@@ -148,8 +148,20 @@
         <div class="modal-label">Detalhamento</div>
         <div class="bg-white p-3 border rounded mb-3" id="mdlDetalhe" style="min-height:80px; white-space:pre-line;"></div>
         <div id="mdlAnexosBox"></div>
-        <div class="modal-label">Observações</div>
+        <div class="modal-label d-flex align-items-center justify-content-between gap-2">
+          <span>Observações</span>
+          <button type="button" class="btn btn-light border btn-sm fw-bold" id="mdlBtnEditarObservacoes" style="display:none;" onclick="abrirEdicaoObservacoesChamado()"><i class="bi bi-pencil-square me-1"></i>Editar observações</button>
+        </div>
         <div class="bg-white p-3 border rounded mb-3 text-muted" id="mdlObservacoes" style="min-height:70px; white-space:pre-line;"></div>
+        <div class="bg-white p-3 border rounded mb-3" id="mdlObsEditBox" style="display:none;">
+          <label class="modal-label text-primary" for="mdlObservacoesEditadas"><i class="bi bi-pencil-square me-1"></i>Editar campo observações</label>
+          <textarea class="form-control" id="mdlObservacoesEditadas" rows="6" placeholder="Edite o campo observações completo do chamado..."></textarea>
+          <small class="text-muted d-block mt-2">A alteração substituirá o campo observações atual. O conteúdo anterior e o novo conteúdo serão registrados no histórico do chamado.</small>
+          <div class="text-end mt-3 d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-light border fw-bold" onclick="cancelarEdicaoObservacoesChamado()"><i class="bi bi-x-circle me-1"></i>Cancelar</button>
+            <button type="button" class="btn btn-primary fw-bold" id="mdlBtnSalvarEdicaoObservacoes" onclick="salvarEdicaoObservacoesChamado(this)"><i class="bi bi-save me-1"></i>Salvar alteração</button>
+          </div>
+        </div>
         <div class="modal-label d-flex align-items-center justify-content-between">
           <span>Linha do tempo</span>
           <button type="button" class="btn btn-light border btn-sm fw-bold" onclick="recarregarTimelineModal()"><i class="bi bi-arrow-clockwise me-1"></i>Atualizar</button>
@@ -163,6 +175,16 @@
           <div class="col-md-6 modal-extra-aprovacao"><label class="modal-label text-primary" id="mdlNumeroOsLabel">Nº da OS</label><input class="form-control" id="mdlNumeroOs" placeholder="Obrigatório ao aprovar orçamento"></div>
           <div class="col-md-6 modal-extra-aprovacao"><label class="modal-label text-primary">Previsão de conclusão</label><input class="form-control gom-date-br-input" type="date" id="mdlDataPrevistaConclusao" onchange="gomNormalizarDataBrInput(this)"></div>
           <div class="col-md-6 modal-extra-fila" style="display:none;"><label class="modal-label text-primary"><i class="bi bi-calendar-check me-1"></i>Agendamento da visita</label><input class="form-control gom-date-br-input" type="date" id="mdlDataAgendamentoVisita" onchange="gomNormalizarDataBrInput(this)"></div>
+          <div class="col-12" id="mdlOsLegadoBox" style="display:none;">
+            <div class="bg-warning-subtle border border-warning rounded p-3">
+              <label class="modal-label text-dark" for="mdlNumeroOsLegado"><i class="bi bi-pencil-square me-1"></i>Regularizar número da OS antiga</label>
+              <div class="input-group">
+                <input class="form-control fw-bold" id="mdlNumeroOsLegado" placeholder="Ex.: 213/2026">
+                <button type="button" class="btn btn-warning fw-bold" id="mdlBtnSalvarNumeroOsLegado" onclick="salvarNumeroOsLegadoChamado(this)"><i class="bi bi-save me-1"></i>Salvar nº OS</button>
+              </div>
+              <small class="text-muted d-block mt-2">Use apenas para chamados antigos que já estão como OS emitida e ficaram sem número. Novas OS são numeradas automaticamente pelo sistema.</small>
+            </div>
+          </div>
           <div class="col-12">
             <div class="modal-anexo-upload-box">
               <label class="modal-label text-primary" for="mdlAnexosAtualizacao"><i class="bi bi-paperclip me-1"></i>Adicionar anexos ao chamado</label>
@@ -170,7 +192,8 @@
               <small>Opcional: envie fotos, PDFs ou documentos para complementar esta atualização. Limite: até 5 arquivos de 8 MB cada.</small>
             </div>
           </div>
-          <div class="col-12 text-end d-flex justify-content-end gap-2">
+          <div class="col-12 text-end d-flex justify-content-end gap-2 flex-wrap">
+            <button id="mdlBtnBaixarOS" class="btn btn-success fw-bold px-3" style="display:none;" onclick="baixarOrdemServicoChamadoModal(this)" title="Gera a Ordem de Serviço preenchida com os dados do chamado"><i class="bi bi-file-earmark-word me-1"></i>Baixar OS</button>
             <button id="mdlBtnSalvarObs" class="btn btn-outline-primary fw-bold px-3" onclick="salvarApenasObservacao(this)" title="Salva a observação sem alterar o status do chamado"><i class="bi bi-chat-left-text me-1"></i>Salvar observação</button>
             <button id="mdlBtnAtualizar" class="btn btn-primary fw-bold px-4" onclick="salvarStatusDoModal(this)">ATUALIZAR STATUS</button>
           </div>
@@ -774,9 +797,8 @@
   <div class="tab-pane fade" id="cad-interno">
     <form class="form-card" id="formCadastro" onsubmit="enviarFormularioInterno(event)">
       <div class="row g-3">
-        <div class="col-md-4"><label class="form-label">Data</label><input type="date" class="form-control" name="data" required></div>
-        <div class="col-md-4"><label class="form-label">Origem</label><select class="form-select" name="sistema" id="selectSistema" onchange="toggleCamposSistema()"><option value="Email" selected>Email</option><option value="Solar">Solar</option><option value="Solicitação por">Solicitação por...</option></select></div>
-        <div class="col-md-4"><label class="form-label">Situação Inicial</label><select class="form-select" name="situacao" id="selectSituacaoCadastro"></select></div>
+        <div class="col-md-6"><label class="form-label">Data</label><input type="date" class="form-control" name="data" required></div>
+        <div class="col-md-6"><label class="form-label">Origem</label><select class="form-select" name="sistema" id="selectSistema" onchange="toggleCamposSistema()"><option value="Email" selected>Email</option><option value="Solar">Solar</option><option value="Solicitação por">Solicitação por...</option></select></div>
         <div class="col-12" id="divSolar" style="display:none;"><input type="text" class="form-control" name="num_processo" placeholder="Nº Processo Solar"></div>
         <div class="col-12" id="divSolicitacaoPor" style="display:none;"><input type="text" class="form-control" name="nome_especifico" placeholder="Nome do Solicitante"></div>
         <div class="col-md-9"><label class="form-label">Unidade Escolar</label><select class="form-select" name="unidade" id="selectUnidade" onchange="setTipoEscola()"><option value="">Selecione...</option></select></div>
@@ -955,6 +977,7 @@
   <script src="js/date-br.js"></script>
   <script src="js/render-chamados.js"></script>
   <script src="js/modal-chamados.js"></script>
+  <script src="js/os-documento.js"></script>
   <script src="js/empresa.js"></script>
   <script src="js/formularios.js"></script>
   <script src="js/obras.js"></script>

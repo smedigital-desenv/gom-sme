@@ -60,13 +60,17 @@
 
   function gomStatusPermitidos_(item, contexto) {
     var st = gomNormalizar_(item && (item.situacao || item.status));
+    if (typeof window.gomProximosStatusFluxo === 'function') {
+      var prox = window.gomProximosStatusFluxo(st, contexto || 'triagem') || [];
+      if (prox.length) return prox;
+    }
     if (contexto === 'triagem' || st === 'Em análise') {
-      return ['Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Garantia de Obra', 'Devolvido para a escola'];
+      return ['Visita agendada', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Garantia de Obra', 'Devolvido para a escola'];
     }
     if (contexto === 'fila' || st === 'Aguardando visita' || st === 'Visita agendada') {
       return ['Visita agendada', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Garantia de Obra', 'Devolvido para a escola'];
     }
-    return window.STATUS_TODOS || [st];
+    return [];
   }
 
   function gomTfDataAgendaISO_(item) {
@@ -94,10 +98,9 @@
   }
 
   function gomTfStatusUsaEquipeDataVisita_(status, contexto) {
-    if (contexto !== 'fila') return false;
     var t = gomTexto_(gomNormalizar_(status));
-    // Fluxo correto: Aguardando visita é a fila de espera; ao escolher
-    // "Visita agendada" a Secretaria define equipe e data da visita.
+    // Fluxo atualizado: a Secretaria pode agendar visita tanto a partir da
+    // Triagem quanto da Fila de visita, informando equipe e data da visita.
     return t === 'visita agendada';
   }
 
@@ -235,13 +238,13 @@
                 : '<span><i class="bi bi-send"></i><strong>Origem:</strong> ' + origem + '</span><span><i class="bi bi-calendar3"></i><strong>Abertura:</strong> ' + dataAbertura + '</span>',
             '</div>',
           '</div>',
-          '<div class="gom-tf-fields-compact ' + (ehFila ? 'gom-tf-fields-fila' : 'gom-tf-fields-triagem') + ' ' + (ehFila && !usaCamposVisita ? 'gom-tf-fields-sem-visita' : '') + '">',
+          '<div class="gom-tf-fields-compact ' + (ehFila ? 'gom-tf-fields-fila' : 'gom-tf-fields-triagem') + ' ' + ((ehFila || contexto === 'triagem') && !usaCamposVisita ? 'gom-tf-fields-sem-visita' : '') + '">',
             '<div class="gom-tf-field-group gom-tf-field-status">',
               '<label class="empresa-field-label"><i class="bi bi-arrow-left-right me-1"></i>Alterar situação</label>',
               '<select class="form-select form-select-sm fw-bold" id="' + statusId + '" name="situacao" form="' + formId + '" data-id="' + gomHtml_(idOriginal) + '" data-contexto="' + contexto + '" onchange="gomTfAtualizarBlocoObsAnexosV6(\'' + idJs + '\');gomTfMarcarLinhaAlteradaV6(\'' + idJs + '\')">'
                 + gomOptionsStatus_(item, contexto) + '</select>',
             '</div>',
-            ehFila ? (
+            (ehFila || contexto === 'triagem') ? (
               '<div id="gomTfVisitaFields_' + idSeguro + '" class="gom-tf-visita-fields ' + (usaCamposVisita ? '' : 'gom-tf-visita-hidden') + '">' +
                 '<div class="gom-tf-field-group gom-tf-field-equipe">' +
                   '<label class="empresa-field-label"><i class="bi bi-people me-1"></i>Equipe da visita</label>' +
@@ -359,9 +362,9 @@
     var equipe = equipEl ? String(equipEl.value || '').trim() : '';
     var dataOriginal = dataEl ? String(dataEl.getAttribute('data-original') || '') : '';
     var dataValor = dataEl ? (typeof gomDataParaISO === 'function' ? gomDataParaISO(dataEl.value || '') : String(dataEl.value || '').trim()) : '';
-    var dataMudou = !!(contexto === 'fila' && usarVisita && dataValor && dataValor !== dataOriginal);
+    var dataMudou = !!(usarVisita && dataValor && dataValor !== dataOriginal);
     var statusMudou = novoStatus && novoStatus !== statusAtual;
-    var equipeMudou = !!(contexto === 'fila' && usarVisita && equipe && equipe !== String(chamadoAtual.equipe || '').trim());
+    var equipeMudou = !!(usarVisita && equipe && equipe !== String(chamadoAtual.equipe || '').trim());
     var temMudanca = statusMudou || obs || temAnexo || equipeMudou || dataMudou;
 
     var linha = document.getElementById('gomTfLinha_' + idSeguro);
@@ -452,7 +455,7 @@
       var equipeSelecionadaLinha = equipeAtualLinha ? String(equipeAtualLinha.value || '').trim() : '';
       var dataSelecionadaLinha = dataAtualLinha ? (typeof gomDataParaISO === 'function' ? gomDataParaISO(dataAtualLinha.value || '') : String(dataAtualLinha.value || '').trim()) : '';
 
-      if (contexto === 'fila' && gomNormalizar_(alteracao.situacao) === 'Visita agendada') {
+      if (gomNormalizar_(alteracao.situacao) === 'Visita agendada') {
         if (!equipeSelecionadaLinha || !dataSelecionadaLinha) {
           alert('Para mover o chamado #' + id + ' para Visita agendada, selecione a equipe da Secretaria e a data da visita.');
           return;
@@ -467,7 +470,7 @@
       if (alteracao.equipe && !payload.equipe) payload.equipe = alteracao.equipe;
       if (alteracao.observacoes) payload.observacoes = alteracao.observacoes;
       if (contexto === 'triagem' && dataGlobal) { payload.dataAgendamentoVisita = dataGlobal; payload.dataAgendamento = dataGlobal; payload.dataVisita = dataGlobal; }
-      if (contexto === 'fila' && alteracao.dataAgendamentoVisita) { payload.dataAgendamentoVisita = alteracao.dataAgendamentoVisita; payload.dataAgendamento = alteracao.dataAgendamentoVisita; payload.dataVisita = alteracao.dataAgendamentoVisita; }
+      if (alteracao.dataAgendamentoVisita) { payload.dataAgendamentoVisita = alteracao.dataAgendamentoVisita; payload.dataAgendamento = alteracao.dataAgendamentoVisita; payload.dataVisita = alteracao.dataAgendamentoVisita; }
       if (alteracao.temAnexo && anexosEl && anexosEl.files && anexosEl.files.length) {
         try {
           payload.anexos = await arquivosInputParaBase64(anexosEl);

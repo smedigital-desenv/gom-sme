@@ -92,7 +92,7 @@ window.GomMap = (function () {
     'devolvido escola': 'Devolvido para a escola', 'devolvido para escola': 'Devolvido para a escola'
   };
   const REGRAS = {
-    'Em análise': { tela: 'triagem', proximos: ['Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Garantia de Obra', 'Devolvido para a escola'] },
+    'Em análise': { tela: 'triagem', proximos: ['Visita agendada', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Garantia de Obra', 'Devolvido para a escola'] },
     'Aguardando visita': { tela: 'fila', filaVisita: true, proximos: ['Visita agendada', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Garantia de Obra', 'Devolvido para a escola'] },
     'Solicitado Orçamento': { tela: 'empresa', exigeValorOrcamento: true, exigeObservacao: true, anexoPermitido: 'orcamento', bloqueiaEquipe: true, proximos: ['Orçamento Realizado'] },
     'Orçamento Realizado': { tela: 'aprovacao', exigeAprovacao: true, proximos: ['OS emitida', 'Solicitado Orçamento', 'A cargo da unidade escolar', 'Devolvido para a escola'] },
@@ -147,6 +147,8 @@ window.GomMap = (function () {
       dataHora: fmtDataHora(row.data_abertura),
       sistema: row.origem || '',
       unidade: (escola && escola.nome) || row.unidade_escolar || '',
+      enderecoEscola: (escola && escola.endereco) || row.endereco || '',
+      endereco: (escola && escola.endereco) || row.endereco || '',
       detalhamento: row.detalhamento || '',
       classificacao: row.classificacao || '',
       resolvido: row.resolvido === true ? 'Sim' : (row.resolvido === false ? '' : (row.resolvido || '')),

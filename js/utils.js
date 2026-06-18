@@ -589,6 +589,43 @@ window.gomMostrarSucessoBotao = gomMostrarSucessoBotao;
 window.gomDesabilitarBotoes = gomDesabilitarBotoes;
 
 
+
+// Fluxo canônico de status para todos os seletores de alteração de situação.
+// Evita que telas operacionais exibam a lista completa de status quando devem
+// mostrar somente os próximos passos permitidos do fluxo.
+function gomProximosStatusFluxo(status, contexto) {
+  const st = normalizarSituacaoSistema(status);
+  const mapa = {
+    'Em análise': ['Visita agendada', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Garantia de Obra', 'Devolvido para a escola'],
+    'Aguardando visita': ['Visita agendada', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Garantia de Obra', 'Devolvido para a escola'],
+    'Visita agendada': ['Atendimento Emergencial', 'Solicitado Orçamento', 'Garantia de Obra', 'Devolvido para a escola'],
+    'Solicitado Orçamento': ['Orçamento Realizado'],
+    'Orçamento Realizado': ['OS emitida', 'Solicitado Orçamento', 'A cargo da unidade escolar', 'Devolvido para a escola'],
+    'OS emitida': ['Serviço Realizado'],
+    'Atendimento Emergencial': ['Serviço Realizado'],
+    'Garantia de Obra': ['Serviço Realizado'],
+    'Garantia de Serviço': ['Serviço Realizado'],
+    'Serviço Realizado': ['Concluído', 'Garantia de Serviço'],
+    'Visita Técnica': ['Devolvido para a escola', 'Atendimento Emergencial', 'Solicitado Orçamento'],
+    'Devolvido para a escola': [],
+    'Concluído': [],
+    'Encaminhado para outra gerência ou Unidade escolar.': [],
+    'A cargo da unidade escolar': [],
+    'Duplicado': []
+  };
+  let lista = mapa[st] || [];
+
+  // Ajustes de contexto: a empresa nunca deve receber opções fora da execução dela.
+  if (contexto === 'empresa') {
+    if (st === 'Solicitado Orçamento') lista = ['Orçamento Realizado'];
+    else if (['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'].includes(st)) lista = ['Serviço Realizado'];
+    else if (st === 'Serviço Realizado') lista = ['Concluído', 'Garantia de Serviço'];
+  }
+
+  return lista.slice();
+}
+
+
 // Exposição explícita dos utilitários no escopo global do Web App.
 // Isso evita ReferenceError quando arquivos são carregados em ordem diferente pelo Apps Script.
 window.escapeHtml = window.escapeHtml || escapeHtml;
@@ -613,6 +650,7 @@ window.coletarAnexosChamado = window.coletarAnexosChamado || coletarAnexosChamad
 window.renderMiniaturasAnexosChamado = window.renderMiniaturasAnexosChamado || renderMiniaturasAnexosChamado;
 window.abrirPreviewAnexoCard = window.abrirPreviewAnexoCard || abrirPreviewAnexoCard;
 window.isImagemAnexo = window.isImagemAnexo || isImagemAnexo;
+window.gomProximosStatusFluxo = window.gomProximosStatusFluxo || gomProximosStatusFluxo;
 
 
 // Exposição explícita dos utilitários no escopo global do Web App.
@@ -639,6 +677,7 @@ window.coletarAnexosChamado = coletarAnexosChamado;
 window.renderMiniaturasAnexosChamado = renderMiniaturasAnexosChamado;
 window.abrirPreviewAnexoCard = abrirPreviewAnexoCard;
 window.isImagemAnexo = isImagemAnexo;
+window.gomProximosStatusFluxo = gomProximosStatusFluxo;
 
 // Diagnóstico rápido no console: gomDebugFrontend()
 window.gomDebugFrontend = window.gomDebugFrontend || function() {
