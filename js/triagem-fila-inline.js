@@ -60,13 +60,17 @@
 
   function gomStatusPermitidos_(item, contexto) {
     var st = gomNormalizar_(item && (item.situacao || item.status));
+    if (typeof window.gomProximosStatusFluxo === 'function') {
+      var prox = window.gomProximosStatusFluxo(st, contexto || 'triagem') || [];
+      if (prox.length) return prox;
+    }
     if (contexto === 'triagem' || st === 'Em análise') {
       return ['Visita agendada', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Garantia de Obra', 'Devolvido para a escola'];
     }
     if (contexto === 'fila' || st === 'Aguardando visita' || st === 'Visita agendada') {
       return ['Visita agendada', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Garantia de Obra', 'Devolvido para a escola'];
     }
-    return window.STATUS_TODOS || [st];
+    return [];
   }
 
   function gomTfDataAgendaISO_(item) {

@@ -455,10 +455,26 @@ function abrirModalAnalise(id) {
 
 function getStatusPermitidosModal(chamado) {
   const st = normalizarSituacaoSistema(chamado.situacao || chamado.status);
-  if (telaAtual === 'triagem' || st === 'Em análise') return ['Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Garantia de Obra', 'Devolvido para a escola'];
-  if (telaAtual === 'fila' || st === 'Aguardando visita') return ['Visita agendada', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Garantia de Obra', 'Devolvido para a escola'];
-  if (st === 'Serviço Realizado') return ['Concluído', 'Garantia de Serviço'];
-  return STATUS_TODOS;
+  const contexto = (telaAtual === 'empresa') ? 'empresa' : (telaAtual === 'fila' ? 'fila' : (telaAtual === 'triagem' ? 'triagem' : 'modal'));
+  if (isFluxoAprovacaoModal_(chamado)) return [];
+
+  if (typeof gomProximosStatusFluxo === 'function') {
+    return gomProximosStatusFluxo(st, contexto);
+  }
+
+  // Fallback local, para evitar lista completa caso algum script carregue fora de ordem.
+  const mapa = {
+    'Em análise': ['Visita agendada', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Garantia de Obra', 'Devolvido para a escola'],
+    'Aguardando visita': ['Visita agendada', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Garantia de Obra', 'Devolvido para a escola'],
+    'Visita agendada': ['Atendimento Emergencial', 'Solicitado Orçamento', 'Garantia de Obra', 'Devolvido para a escola'],
+    'Solicitado Orçamento': ['Orçamento Realizado'],
+    'OS emitida': ['Serviço Realizado'],
+    'Atendimento Emergencial': ['Serviço Realizado'],
+    'Garantia de Obra': ['Serviço Realizado'],
+    'Garantia de Serviço': ['Serviço Realizado'],
+    'Serviço Realizado': ['Concluído', 'Garantia de Serviço']
+  };
+  return mapa[st] || [];
 }
 
 function preencherSelectStatusModal(chamado) {
