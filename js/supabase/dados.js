@@ -16,10 +16,9 @@ window.GomDados = (function () {
     ['CODIGO_ACESSO_EMPRESA','12344321','Login','Código de acesso da empresa para operação sem e-mail institucional.',true],
     ['PERMISSOES_MODO','ABERTO','Permissões','ABERTO mantém acesso total para configuração/homologação. RESTRITO aplica perfis por e-mail.',true],
     ['EMAILS_ADMIN_GOM','','Permissões','E-mails administradores com acesso total.',true],
-    ['EMAILS_GOM_OPERACIONAL','','Permissões','E-mails da equipe GOM operacional. Acesso às telas de operação, sem Configurações.',true],
+    ['EMAILS_SECRETARIA','','Permissões','E-mails da Secretaria. Acesso operacional, sem Configurações e sem Gerenciar Equipes.',true],
     ['EMAILS_EMPRESA_ADICIONAIS','','Permissões','E-mails adicionais da empresa, além de EMAIL_EMPRESA.',true],
-    ['EMAILS_CAMPO','','Permissões','E-mails de usuários de campo. Acesso à tela Campo e Acompanhar.',true],
-    ['EMAILS_CONFERENTE','','Permissões','E-mails de conferentes. Leitura de dashboard, obras, memorial e relatórios.',true],
+    ['EMAILS_ESCOLA','','Permissões','E-mails das escolas. Acesso somente a Cadastro e Acompanhar chamados.',true],
     ['PERFIL_SEM_LOGIN','PUBLICO','Permissões','Perfil usado quando não há e-mail identificado. Sugestão: PUBLICO.',true],
     ['EMAIL_EMPRESA','','Empresa','E-mail da empresa que receberá cobranças e avisos operacionais.',true],
     ['NOME_EMPRESA','','Empresa','Nome da empresa responsável pelos atendimentos.',true],
@@ -124,10 +123,9 @@ window.GomDados = (function () {
    * ===================================================================== */
   const PERFIL_CONFIG_MAP = {
     EMAILS_ADMIN_GOM: 'ADMIN_GOM',
-    EMAILS_GOM_OPERACIONAL: 'GOM',
+    EMAILS_SECRETARIA: 'SECRETARIA',
     EMAILS_EMPRESA_ADICIONAIS: 'EMPRESA',
-    EMAILS_CAMPO: 'CAMPO',
-    EMAILS_CONFERENTE: 'CONFERENTE'
+    EMAILS_ESCOLA: 'ESCOLA'
   };
 
   function _normalizarEmailLista(valor) {
@@ -175,7 +173,8 @@ window.GomDados = (function () {
 
     const porPerfil = {};
     (r.data || []).forEach(row => {
-      const perfil = String(row.perfil || '').trim().toUpperCase();
+      let perfil = String(row.perfil || '').trim().toUpperCase().replace(/-/g, '_');
+      if (perfil === 'GOM') perfil = 'SECRETARIA';
       const email = String(row.email || '').trim().toLowerCase();
       if (!perfil || !email) return;
       if (!porPerfil[perfil]) porPerfil[perfil] = [];
@@ -203,7 +202,8 @@ window.GomDados = (function () {
 
   async function _upsertPerfilEmail(email, perfil) {
     email = String(email || '').trim().toLowerCase();
-    perfil = String(perfil || '').trim().toUpperCase();
+    perfil = String(perfil || '').trim().toUpperCase().replace(/-/g, '_');
+    if (perfil === 'GOM') perfil = 'SECRETARIA';
     if (!email || !perfil) return;
 
     const existente = await window.SB
@@ -362,6 +362,8 @@ window.GomDados = (function () {
     }
 
     dados = await _carregarPerfisComoConfiguracoes(dados || []);
+    const chavesLegadasPerfis = ['EMAILS_GOM_OPERACIONAL', 'EMAILS_CAMPO', 'EMAILS_CONFERENTE'];
+    dados = (dados || []).filter(d => chavesLegadasPerfis.indexOf(String(d.chave || '').trim()) < 0);
     const lista = dados.map((d, i) => ({
       ordem: i + 1, chave: d.chave, valor: d.valor == null ? '' : String(d.valor),
       grupo: d.grupo || 'Sistema', descricao: d.descricao || '', ativo: d.ativo === false ? 'NÃO' : 'SIM', padrao: '',

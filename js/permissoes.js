@@ -20,18 +20,17 @@ var GOM_PERFIS_ACESSO = window.GOM_PERFIS_ACESSO || {
     'alertas', 'obras', 'historico', 'relatorios', 'cadastro', 'equipes',
     'acompanhar', 'configuracoes'
   ],
+  SECRETARIA: [
+    'dashboard', 'triagem', 'fila', 'aprovacao', 'empresa', 'campo',
+    'alertas', 'obras', 'historico', 'relatorios', 'cadastro', 'acompanhar'
+  ],
+  // Compatibilidade: perfis antigos GOM são tratados como SECRETARIA.
   GOM: [
-    'dashboard', 'triagem', 'fila', 'aprovacao', 'campo',
+    'dashboard', 'triagem', 'fila', 'aprovacao', 'empresa', 'campo',
     'alertas', 'obras', 'historico', 'relatorios', 'cadastro', 'acompanhar'
   ],
   EMPRESA: [
     'empresa'
-  ],
-  CAMPO: [
-    'campo', 'acompanhar'
-  ],
-  CONFERENTE: [
-    'dashboard', 'historico', 'relatorios', 'obras', 'acompanhar'
   ],
   ESCOLA: [
     'acompanhar', 'cadastro'
@@ -40,19 +39,17 @@ var GOM_PERFIS_ACESSO = window.GOM_PERFIS_ACESSO || {
 
 var GOM_PERFIS_LABEL = window.GOM_PERFIS_LABEL || {
   ADMIN_GOM: 'Administrador GOM',
-  GOM: 'Equipe GOM',
+  SECRETARIA: 'Secretaria',
+  GOM: 'Secretaria',
   EMPRESA: 'Empresa',
-  CAMPO: 'Campo',
-  CONFERENTE: 'Conferente',
   ESCOLA: 'Escola'
 };
 
 var GOM_PERFIS_INICIAL = window.GOM_PERFIS_INICIAL || {
   ADMIN_GOM: 'dashboard',
+  SECRETARIA: 'dashboard',
   GOM: 'dashboard',
   EMPRESA: 'empresa',
-  CAMPO: 'campo',
-  CONFERENTE: 'dashboard',
   ESCOLA: 'acompanhar'
 };
 
@@ -65,9 +62,18 @@ var GOM_ROTAS_ALIAS = window.GOM_ROTAS_ALIAS || {
 };
 
 var GOM_TELAS_SECRETARIA = [
-  'dashboard', 'triagem', 'fila', 'aprovacao', 'campo', 'alertas', 'obras',
-  'historico', 'relatorios', 'equipes', 'acompanhar', 'configuracoes'
+  'dashboard', 'triagem', 'fila', 'aprovacao', 'empresa', 'campo', 'alertas', 'obras',
+  'historico', 'relatorios', 'acompanhar', 'cadastro'
 ];
+
+function normalizarPerfilPermissao_(perfil) {
+  var p = String(perfil || '').trim().toUpperCase().replace(/-/g, '_');
+  if (p === 'GOM') return 'SECRETARIA';
+  if (p === 'ADMIN-GOM') return 'ADMIN_GOM';
+  if (!p || !GOM_PERFIS_ACESSO[p]) return 'SECRETARIA';
+  return p;
+}
+
 
 function normalizarPaginaPermissao_(pageName) {
   var p = String(pageName || '').trim();
@@ -128,7 +134,7 @@ function parseJsonPermissoes_(res) {
 
 function normalizarUsuarioPermissoes_(usuario) {
   usuario = usuario || {};
-  var perfil = usuario.perfil || 'GOM';
+  var perfil = normalizarPerfilPermissao_(usuario.perfil || 'SECRETARIA');
   var telas = Array.isArray(usuario.telas) ? usuario.telas.map(normalizarPaginaPermissao_) : (GOM_PERFIS_ACESSO[perfil] || GOM_PERFIS_ACESSO.GOM || []).slice();
   usuario.perfil = perfil;
   usuario.perfilLabel = usuario.perfilLabel || GOM_PERFIS_LABEL[perfil] || perfil;
@@ -140,8 +146,7 @@ function normalizarUsuarioPermissoes_(usuario) {
 }
 
 function perfilPeloGomAuth_() {
-  var perfil = (window.GomAuth && window.GomAuth.perfil) || 'GOM';
-  if (!GOM_PERFIS_ACESSO[perfil]) perfil = 'GOM';
+  var perfil = normalizarPerfilPermissao_((window.GomAuth && window.GomAuth.perfil) || 'SECRETARIA');
   var telas = (GOM_PERFIS_ACESSO[perfil] || GOM_PERFIS_ACESSO.GOM || []).slice();
   return {
     ok: true,

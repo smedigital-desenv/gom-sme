@@ -39,10 +39,9 @@
      ========================================================== */
   const CONFIG_EMAIL_LIST_KEYS = [
     'EMAILS_ADMIN_GOM',
-    'EMAILS_GOM_OPERACIONAL',
+    'EMAILS_SECRETARIA',
     'EMAILS_EMPRESA_ADICIONAIS',
-    'EMAILS_CAMPO',
-    'EMAILS_CONFERENTE'
+    'EMAILS_ESCOLA'
   ];
 
   function isConfigEmailList_(chave) {

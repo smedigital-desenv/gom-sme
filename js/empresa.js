@@ -383,8 +383,62 @@ function carregarGerencialOsEmpresaAtualizado_(opcoes) {
 }
 window.carregarGerencialOsEmpresaAtualizado_ = carregarGerencialOsEmpresaAtualizado_;
 
+
+function gomEmpresaPerfilAtual_() {
+  try {
+    if (typeof getUsuarioGom === 'function') {
+      var u = getUsuarioGom() || {};
+      var p = String(u.perfil || '').trim().toUpperCase().replace(/-/g, '_');
+      if (p === 'GOM') return 'SECRETARIA';
+      return p || '';
+    }
+  } catch(e) {}
+  try {
+    var p2 = String((window.GomAuth && window.GomAuth.perfil) || '').trim().toUpperCase().replace(/-/g, '_');
+    if (p2 === 'GOM') return 'SECRETARIA';
+    return p2 || '';
+  } catch(e2) {}
+  return '';
+}
+
+function gomEmpresaSecretariaSomenteAgenda_() {
+  return gomEmpresaPerfilAtual_() === 'SECRETARIA';
+}
+
+function gomEmpresaModoPermitido_(modo) {
+  modo = String(modo || 'diario').trim() || 'diario';
+  if (gomEmpresaSecretariaSomenteAgenda_()) return modo === 'agenda';
+  return true;
+}
+
+function gomEmpresaNormalizarModoPermitido_(modo) {
+  modo = String(modo || 'diario').trim() || 'diario';
+  return gomEmpresaModoPermitido_(modo) ? modo : 'agenda';
+}
+
+function gomEmpresaAplicarRestricaoModo_() {
+  var tabs = document.querySelectorAll('#empresaModoTabs .nav-link');
+  var somenteAgenda = gomEmpresaSecretariaSomenteAgenda_();
+  Array.prototype.forEach.call(tabs, function(btn) {
+    var onclick = String(btn.getAttribute('onclick') || '').toLowerCase();
+    var ehAgenda = onclick.indexOf("'agenda'") >= 0 || onclick.indexOf('"agenda"') >= 0 || String(btn.textContent || '').toLowerCase().indexOf('agenda') >= 0;
+    var ocultar = somenteAgenda && !ehAgenda;
+    var item = btn.closest ? btn.closest('.nav-item') : btn.parentNode;
+    if (item) item.style.display = ocultar ? 'none' : '';
+    btn.disabled = ocultar;
+    btn.classList.toggle('gom-permissao-oculto', ocultar);
+    if (somenteAgenda && ehAgenda) btn.classList.add('active');
+    if (somenteAgenda && !ehAgenda) btn.classList.remove('active');
+  });
+}
+window.gomEmpresaAplicarRestricaoModo_ = gomEmpresaAplicarRestricaoModo_;
+
 function setEmpresaModo(modo, botao) {
-  modo = modo || 'diario';
+  var modoSolicitado = modo || 'diario';
+  modo = gomEmpresaNormalizarModoPermitido_(modoSolicitado);
+  if (modo !== modoSolicitado && gomEmpresaSecretariaSomenteAgenda_()) {
+    try { console.warn('[GOM] Secretaria tem acesso somente à Agenda/Acompanhamento da Empresa.'); } catch(e) {}
+  }
   if ((window.empresaModoAtual || 'diario') === 'diario' && modo !== 'diario' && totalEncaminhamentosDiaAlterados_ && totalEncaminhamentosDiaAlterados_() > 0) {
     if (!confirm('Existem encaminhamentos do dia não salvos. Deseja sair da execução diária e descartar essas alterações?')) return;
     window.empresaDiaAlterados = {};
@@ -407,8 +461,13 @@ function setEmpresaModo(modo, botao) {
   }
 
   var tabs = document.querySelectorAll('#empresaModoTabs .nav-link');
-  Array.prototype.forEach.call(tabs, function(b) { b.classList.remove('active'); });
-  if (botao) botao.classList.add('active');
+  Array.prototype.forEach.call(tabs, function(b) {
+    b.classList.remove('active');
+    var onclick = String(b.getAttribute('onclick') || '').toLowerCase();
+    if (!botao && onclick.indexOf("'" + window.empresaModoAtual + "'") >= 0) b.classList.add('active');
+  });
+  if (botao && gomEmpresaModoPermitido_(modoSolicitado)) botao.classList.add('active');
+  gomEmpresaAplicarRestricaoModo_();
 
   if (window.empresaModoAtual === 'gerencial') {
     carregarHistoricoCampoEmpresaSePreciso({ forcar: true });
@@ -532,8 +591,13 @@ function gomEmpresaPrePreencherDataHoje_() {
 window.gomEmpresaPrePreencherDataHoje_ = gomEmpresaPrePreencherDataHoje_;
 
 function renderEmpresaView(listaRender) {
-  var modo = window.empresaModoAtual || 'diario';
-  setTimeout(function() { gomEmpresaAtualizarVisibilidadeData_(); gomEmpresaPrePreencherDataHoje_(); }, 0);
+  var modo = gomEmpresaNormalizarModoPermitido_(window.empresaModoAtual || 'diario');
+  if (modo !== (window.empresaModoAtual || 'diario')) {
+    window.empresaModoAtual = modo;
+    if (typeof empresaModoAtual !== 'undefined') empresaModoAtual = modo;
+    try { sessionStorage.setItem('gom:empresaModoAtual', modo); localStorage.setItem('gom:empresaModoAtual', modo); } catch(e) {}
+  }
+  setTimeout(function() { gomEmpresaAtualizarVisibilidadeData_(); gomEmpresaPrePreencherDataHoje_(); gomEmpresaAplicarRestricaoModo_(); }, 0);
   var listaBase = listaRender || [];
 
   if (modo === 'equipes') return renderGestaoEquipes({ origem: 'empresa' });

@@ -16,28 +16,26 @@
 
   const TELAS = {
     ADMIN_GOM:  ['dashboard','triagem','fila','aprovacao','empresa','campo','alertas','obras','historico','relatorios','cadastro','equipes','acompanhar','configuracoes'],
-    GOM:        ['dashboard','triagem','fila','aprovacao','campo','alertas','obras','historico','relatorios','cadastro','acompanhar'],
+    SECRETARIA: ['dashboard','triagem','fila','aprovacao','empresa','campo','alertas','obras','historico','relatorios','cadastro','acompanhar'],
+    // Compatibilidade: perfis antigos GOM passam a se comportar como SECRETARIA.
+    GOM:        ['dashboard','triagem','fila','aprovacao','empresa','campo','alertas','obras','historico','relatorios','cadastro','acompanhar'],
     EMPRESA:    ['empresa'],
-    CAMPO:      ['campo','acompanhar','dashboard'],
-    CONFERENTE: ['dashboard','historico','relatorios','obras'],
     ESCOLA:     ['acompanhar','cadastro']
   };
 
   const PAGINA = {
     ADMIN_GOM: 'dashboard',
+    SECRETARIA: 'dashboard',
     GOM: 'dashboard',
     EMPRESA: 'empresa',
-    CAMPO: 'campo',
-    CONFERENTE: 'dashboard',
     ESCOLA: 'acompanhar'
   };
 
   const LABELS = {
     ADMIN_GOM: 'Administrador GOM',
-    GOM: 'Equipe GOM',
+    SECRETARIA: 'Secretaria',
+    GOM: 'Secretaria',
     EMPRESA: 'Empresa',
-    CAMPO: 'Campo',
-    CONFERENTE: 'Conferente',
     ESCOLA: 'Escola'
   };
 
@@ -51,6 +49,15 @@
   const PERFIL_CACHE_TTL_MS = 10 * 60 * 1000;
   const LOGIN_ATIVO_CACHE_KEY = 'gomLoginAtivoCacheV1';
   const LOGIN_ATIVO_CACHE_TTL_MS = 5 * 60 * 1000;
+
+  function _normalizarPerfilLogin(perfil) {
+    var p = String(perfil || '').trim().toUpperCase().replace(/-/g, '_');
+    if (p === 'GOM') return 'SECRETARIA';
+    if (p === 'ADMIN-GOM') return 'ADMIN_GOM';
+    if (!p || !TELAS[p]) return 'SECRETARIA';
+    return p;
+  }
+
 
   let authListenerRegistrado = false;
   let loginFinalizando = false;
@@ -272,7 +279,7 @@
   }
 
   async function _carregarPerfil(email) {
-    var fallback = _obterPerfilCache(email) || (GomAuth.perfil && TELAS[GomAuth.perfil] ? GomAuth.perfil : 'GOM');
+    var fallback = _normalizarPerfilLogin(_obterPerfilCache(email) || (GomAuth.perfil && TELAS[GomAuth.perfil] ? GomAuth.perfil : 'SECRETARIA'));
     try {
       var consulta = window.SB
         .from('perfis')
@@ -286,9 +293,9 @@
         return fallback;
       }
 
-      GomAuth.perfil = (r.data && r.data.ativo) ? r.data.perfil : 'GOM';
+      GomAuth.perfil = (r.data && r.data.ativo) ? _normalizarPerfilLogin(r.data.perfil) : 'SECRETARIA';
       if (email && r.data && r.data.ativo && r.data.perfil) {
-        _salvarPerfilCache(email, r.data.perfil);
+        _salvarPerfilCache(email, GomAuth.perfil);
       } else if (email) {
         _limparPerfilCache(email);
       }
@@ -306,13 +313,15 @@
       if (!raw) return null;
       var obj = JSON.parse(raw);
       if (!obj || String(obj.email || '').toLowerCase() !== String(email || '').toLowerCase()) return null;
-      if (!obj.perfil || !TELAS[obj.perfil]) return null;
+      var perfilNormalizado = _normalizarPerfilLogin(obj.perfil);
+      if (!perfilNormalizado || !TELAS[perfilNormalizado]) return null;
       if (!obj.ts || Date.now() - Number(obj.ts) > PERFIL_CACHE_TTL_MS) return null;
-      return obj.perfil;
+      return perfilNormalizado;
     } catch (e) { return null; }
   }
 
   function _salvarPerfilCache(email, perfil) {
+    perfil = _normalizarPerfilLogin(perfil);
     if (!email || !perfil || !TELAS[perfil]) return;
     try {
       localStorage.setItem(PERFIL_CACHE_KEY, JSON.stringify({
