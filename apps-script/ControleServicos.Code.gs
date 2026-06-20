@@ -44,6 +44,10 @@ function getDados() {
   // Desconta do saldo a emitir, pois também consome o teto do contrato.
   const valorEsporte = parseValor(data[1][57]);
 
+  // Valor de garantia de obra (célula BF3 = índice [2][57]).
+  // Também desconta do saldo a emitir.
+  const valorGarantia = parseValor(data[2][57]);
+
   // Mapa de medições: label, índice 0-based da coluna de VALOR, e se aplica reajuste.
   // Obs.: uma nova coluna foi inserida entre G e H (valor reajustado da O.S),
   // o que empurrou todas as colunas a partir daí em +1. As colunas de valor
@@ -134,8 +138,8 @@ function getDados() {
     .length;
 
   const restantes     = Math.max(0, MEDICOES_CONTRATO - medicoesFeitas);
-  // Saldo a emitir = teto − emitido (col H) − executado pela Sec. Esporte (BF2)
-  const saldo         = valorContrato - totalEmitido - valorEsporte;
+  // Saldo a emitir = teto − emitido (col H) − Sec. Esporte (BF2) − garantia de obra (BF3)
+  const saldo         = valorContrato - totalEmitido - valorEsporte - valorGarantia;
   const mediaRestante = restantes > 0 ? saldo / restantes : 0; // média por medição restante
 
   const round2 = v => Math.round(v * 100) / 100;
@@ -143,6 +147,7 @@ function getDados() {
     valorContrato   : round2(valorContrato),
     totalEmitido    : round2(totalEmitido),
     valorEsporte    : round2(valorEsporte),
+    valorGarantia   : round2(valorGarantia),
     saldo           : round2(saldo),
     medicoesFeitas  : medicoesFeitas,
     medicoesContrato: MEDICOES_CONTRATO,

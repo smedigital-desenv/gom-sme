@@ -260,11 +260,11 @@
 
   /* ── Painel de contrato / saldo ──────────────────── */
   .contrato-resumo {
-    display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px;
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px;
     margin-bottom: 16px;
   }
-  @media (max-width: 900px) { .contrato-resumo { grid-template-columns: repeat(3, 1fr); } }
-  @media (max-width: 600px) { .contrato-resumo { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 1100px) { .contrato-resumo { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 600px)  { .contrato-resumo { grid-template-columns: repeat(2, 1fr); } }
   .cstat {
     display: flex; flex-direction: column; gap: 4px;
     padding: 12px 14px; border-left: 2px solid var(--cstat-accent, var(--border));
@@ -277,7 +277,8 @@
   .cstat.emit   { --cstat-accent: var(--amber);  }
   .cstat.saldo  { --cstat-accent: var(--green);  }
   .cstat.media  { --cstat-accent: var(--accent); }
-  .cstat.esporte{ --cstat-accent: var(--red); }
+  .cstat.esporte { --cstat-accent: var(--red); }
+  .cstat.garantia{ --cstat-accent: var(--amber); }
   .cstat.negativo { --cstat-accent: var(--red); }
 
   /* barra de uso do teto */
@@ -696,6 +697,11 @@ function atualizarProjecao() {
     <div class="cstat esporte">
       <span class="cl">Sec. Esporte</span>
       <span class="cv">${R$(c.valorEsporte || 0)}</span>
+      <span class="cs">descontado do saldo</span>
+    </div>
+    <div class="cstat garantia">
+      <span class="cl">Garantia de obra</span>
+      <span class="cv">${R$(c.valorGarantia || 0)}</span>
       <span class="cs">descontado do saldo</span>
     </div>
     <div class="cstat saldo ${saldoNeg ? 'negativo' : ''}">
