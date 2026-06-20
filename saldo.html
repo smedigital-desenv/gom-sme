@@ -139,6 +139,24 @@
   .modal-body thead th { position: sticky; top: 0; z-index: 1; }
   .modal-body tfoot td { padding: 12px 14px; font-weight: 700; border-top: 1px solid var(--border); background: var(--surface2); }
   .modal-info { padding: 20px 22px; font-size: .9rem; line-height: 1.65; color: var(--text); }
+  .os-link { cursor: pointer; }
+  .os-link:hover { text-decoration: underline; }
+  .btn-voltar {
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    border-radius: var(--radius-sm); padding: 6px 12px; font-size: .8rem;
+    cursor: pointer; margin-bottom: 16px; transition: color .15s, border-color .15s;
+  }
+  .btn-voltar:hover { color: var(--accent); border-color: var(--accent); }
+  .os-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; margin-bottom: 22px; }
+  .os-info { display: flex; flex-direction: column; gap: 2px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+  .os-info .oi-l { font-size: .68rem; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+  .os-info .oi-v { font-size: .95rem; font-weight: 600; }
+  .os-sec { font-size: .78rem; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin-bottom: 10px; }
+  .os-med { width: 100%; border-collapse: collapse; }
+  .os-med th, .os-med td { padding: 9px 12px; border-bottom: 1px solid var(--border); font-size: .85rem; }
+  .os-med thead th { background: var(--surface2); color: var(--muted); text-align: left; font-size: .68rem; text-transform: uppercase; letter-spacing: .5px; }
+  .os-med tfoot td { font-weight: 700; border-top: 1px solid var(--border); border-bottom: none; }
+  .os-med .right { text-align: right; }
 
   /* ── Gráficos ────────────────────────────────────── */
   .graficos { display: grid; grid-template-columns: 1fr 1.7fr; gap: 14px; margin-bottom: 22px; }
@@ -530,6 +548,8 @@ let medicoesSerie = [];
 let contratoInfo  = null;
 let chartProjecaoBars = null; // metadados das colunas da projeção (para o clique)
 let chartProjecao = null;
+let _modalItens   = [];   // O.S exibidas no modal atual (para abrir o detalhe individual)
+let _voltarModal  = null; // reabre a lista ao voltar do detalhe de uma O.S
 
 // ─────────────────────────────────────────────
 // Navegação entre abas
@@ -883,8 +903,11 @@ function abrirDetalhe(titulo, lista, opts) {
   const itens = lista.slice().sort((a, b) => ordem(b) - ordem(a));
   const soma  = f => itens.reduce((s, r) => s + f(r), 0);
 
+  _modalItens  = itens;                                  // p/ abrir o detalhe de cada O.S
+  _voltarModal = () => abrirDetalhe(titulo, lista, opts); // botão "voltar" do detalhe
+
   document.getElementById('modal-titulo').textContent = titulo;
-  document.getElementById('modal-sub').textContent = `${itens.length} O.S`;
+  document.getElementById('modal-sub').textContent = `${itens.length} O.S · clique no nº da O.S para ver os detalhes`;
 
   const colMed = med
     ? `<th class="right">Pago na ${med}ª</th>` : '';
@@ -904,10 +927,10 @@ function abrirDetalhe(titulo, lista, opts) {
           ${colMed}
           <th class="right">Em aberto</th>
         </tr></thead>
-        <tbody>${itens.map(r => `
+        <tbody>${itens.map((r, idx) => `
           <tr>
             <td>${r.unidade}</td>
-            <td><span class="os-num">OS ${r.os || '–'}</span></td>
+            <td><span class="os-num os-link" onclick="detalheOS(${idx})">OS ${r.os || '–'} ›</span></td>
             <td class="right val-total">${R$(vTot(r))}</td>
             <td class="right val-pago">${R$(vPago(r))}</td>
             ${tdMed(r)}
@@ -930,6 +953,47 @@ function abrirInfo(titulo, html) {
   document.getElementById('modal-titulo').textContent = titulo;
   document.getElementById('modal-sub').textContent = '';
   document.getElementById('modal-body').innerHTML = `<div class="modal-info">${html}</div>`;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+// Detalhe de uma O.S: emissão, total, valores pagos por medição.
+function detalheOS(i) {
+  const r = _modalItens[i];
+  if (!r) return;
+  const vTot   = (r.valor_emitido ?? r.valor_os) || 0;
+  const pago   = r.valor_pago   || 0;
+  const aberto = r.valor_aberto || 0;
+
+  // Medições pagas desta O.S (nº → valor)
+  const meds = r.med ? Object.keys(r.med).map(Number).sort((a, b) => a - b) : [];
+  const linhasMed = meds.length
+    ? meds.map(n => `<tr><td>${n}ª medição</td><td class="right val-pago">${R$(r.med[n])}</td></tr>`).join('')
+    : '<tr><td colspan="2" style="color:var(--muted)">Nenhuma medição paga ainda.</td></tr>';
+
+  const info = (rotulo, valor, cor) =>
+    `<div class="os-info"><span class="oi-l">${rotulo}</span><span class="oi-v"${cor ? ` style="color:${cor}"` : ''}>${valor}</span></div>`;
+
+  document.getElementById('modal-titulo').textContent = `O.S ${r.os || '–'}`;
+  document.getElementById('modal-sub').textContent = r.unidade || '';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="modal-info">
+      <button class="btn-voltar" onclick="_voltarModal && _voltarModal()">‹ Voltar à lista</button>
+      <div class="os-grid">
+        ${info('Escola', r.unidade || '–')}
+        ${info('Serviço', r.servico || '–')}
+        ${info('Status', r.status || '–')}
+        ${r.data_emissao ? info('Data de emissão', r.data_emissao) : ''}
+        ${info('Total da O.S', R$(vTot))}
+        ${info('Já pago', R$(pago), 'var(--green)')}
+        ${info('Em aberto', R$(aberto), 'var(--red)')}
+      </div>
+      <h4 class="os-sec">Valores pagos por medição</h4>
+      <table class="os-med">
+        <thead><tr><th>Medição</th><th class="right">Valor pago</th></tr></thead>
+        <tbody>${linhasMed}</tbody>
+        <tfoot><tr><td>Total pago</td><td class="right">${R$(pago)}</td></tr></tfoot>
+      </table>
+    </div>`;
   document.getElementById('modal-overlay').classList.add('open');
 }
 
