@@ -343,7 +343,7 @@
         <div class="sub" id="c-unidades">– unidades</div>
       </div>
       <div class="card">
-        <div class="label">Valor Contratado</div>
+        <div class="label">Total de OS emitidas</div>
         <div class="value" id="c-valor">–</div>
       </div>
       <div class="card verde">
@@ -424,7 +424,7 @@
         <div class="sub" id="d-unidades">– unidades</div>
       </div>
       <div class="card">
-        <div class="label">Valor Contratado</div>
+        <div class="label">Total de OS emitidas</div>
         <div class="value" id="d-valor">–</div>
       </div>
       <div class="card verde">
@@ -571,16 +571,17 @@ function agrupar(dados) {
 // Cards de Resumo (aceita prefixo de IDs)
 // ─────────────────────────────────────────────
 function atualizarCards(dados, pfx) {
-  const grupos = agrupar(dados);
-  const tot    = dados.reduce((s,r) => s + r.valor_os,    0);
-  const pago   = dados.reduce((s,r) => s + r.valor_pago,  0);
-  const aberto = dados.reduce((s,r) => s + r.valor_aberto,0);
-  const conc   = dados.filter(r => statusClass(resolverStatus(r)) === 'c').length;
-  const and    = dados.filter(r => statusClass(resolverStatus(r)) === 'a').length;
-  const pend   = dados.filter(r => statusClass(resolverStatus(r)) === 'p').length;
+  const grupos  = agrupar(dados);
+  const tot     = dados.reduce((s,r) => s + r.valor_os,    0);
+  const emitido = dados.reduce((s,r) => s + (r.valor_emitido ?? r.valor_os), 0); // col H reajustado
+  const pago    = dados.reduce((s,r) => s + r.valor_pago,  0);
+  const aberto  = dados.reduce((s,r) => s + r.valor_aberto,0);
+  const conc    = dados.filter(r => statusClass(resolverStatus(r)) === 'c').length;
+  const and     = dados.filter(r => statusClass(resolverStatus(r)) === 'a').length;
+  const pend    = dados.filter(r => statusClass(resolverStatus(r)) === 'p').length;
   document.getElementById(pfx+'total').textContent    = dados.length;
   document.getElementById(pfx+'unidades').textContent = `${grupos.length} unidades`;
-  document.getElementById(pfx+'valor').textContent    = R$(tot);
+  document.getElementById(pfx+'valor').textContent    = R$(emitido);
   document.getElementById(pfx+'pago').textContent     = R$(pago);
   document.getElementById(pfx+'pct').textContent      = `${pct(pago,tot)}% executado`;
   document.getElementById(pfx+'aberto').textContent   = R$(aberto);

@@ -103,10 +103,11 @@ function getDados() {
       tipo         : row[1] ? row[1].toString().trim() : '',
       servico      : row[2] ? row[2].toString().trim() : '',
       status       : status,
-      os           : row[5] ? row[5].toString().trim() : '',
-      valor_os     : valorOs,
-      valor_pago   : valorExecutado,
-      valor_aberto : valorPendente
+      os            : row[5] ? row[5].toString().trim() : '',
+      valor_os      : valorOs,
+      valor_emitido : valorOsReaj, // col H – valor reajustado (consome o teto)
+      valor_pago    : valorExecutado,
+      valor_aberto  : valorPendente
     });
   }
 
