@@ -817,7 +817,7 @@ function renderLista(dados, termo) {
 
     const linhas = g.os.map(r => `
       <tr>
-        <td><span class="os-num">OS ${highlight(r.os, termo)}</span></td>
+        <td><span class="os-num os-link" onclick="detalheOSGlobal(${todosOsDados.indexOf(r)})">OS ${highlight(r.os, termo)} ›</span></td>
         <td class="hide-sm">${highlight(r.servico, termo)}</td>
         <td>${statusLabel(resolverStatus(r))}</td>
         <td class="right val-total">${R$(r.valor_os)}</td>
@@ -956,9 +956,13 @@ function abrirInfo(titulo, html) {
   document.getElementById('modal-overlay').classList.add('open');
 }
 
+// Detalhe de uma O.S a partir da lista do modal (com botão "voltar").
+function detalheOS(i) { mostrarOS(_modalItens[i], true); }
+// Detalhe de uma O.S a partir da aba Detalhamento (sem "voltar").
+function detalheOSGlobal(i) { mostrarOS(todosOsDados[i], false); }
+
 // Detalhe de uma O.S: emissão, total, valores pagos por medição.
-function detalheOS(i) {
-  const r = _modalItens[i];
+function mostrarOS(r, comVoltar) {
   if (!r) return;
   const vTot   = (r.valor_emitido ?? r.valor_os) || 0;
   const pago   = r.valor_pago   || 0;
@@ -975,9 +979,13 @@ function detalheOS(i) {
 
   document.getElementById('modal-titulo').textContent = `O.S ${r.os || '–'}`;
   document.getElementById('modal-sub').textContent = r.unidade || '';
+  const voltar = comVoltar
+    ? `<button class="btn-voltar" onclick="_voltarModal && _voltarModal()">‹ Voltar à lista</button>`
+    : '';
+
   document.getElementById('modal-body').innerHTML = `
     <div class="modal-info">
-      <button class="btn-voltar" onclick="_voltarModal && _voltarModal()">‹ Voltar à lista</button>
+      ${voltar}
       <div class="os-grid">
         ${info('Escola', r.unidade || '–')}
         ${info('Serviço', r.servico || '–')}
