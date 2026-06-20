@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle de Serviços</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  /* ── Tokens ─────────────────────────────────────── */
+  :root {
+    --bg        : #0f1117;
+    --surface   : #1a1d27;
+    --surface2  : #22263a;
+    --border    : #2e3350;
+    --accent    : #4f6ef7;
+    --accent-lo : #4f6ef722;
+    --green     : #22c55e;
+    --green-lo  : #22c55e1a;
+    --amber     : #f59e0b;
+    --amber-lo  : #f59e0b1a;
+    --red       : #ef4444;
+    --red-lo    : #ef44441a;
+    --text      : #e2e8f0;
+    --muted     : #64748b;
+    --radius    : 10px;
+    --radius-sm : 6px;
+    font-size   : 14px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── Header ──────────────────────────────────────── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-brand {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px 24px 16px 0;
+    border-right: 1px solid var(--border);
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
+  .logo {
+    width: 34px; height: 34px;
+    background: var(--accent);
+    border-radius: var(--radius-sm);
+    display: grid; place-items: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  header h1 { font-size: 1rem; font-weight: 700; letter-spacing: -.3px; }
+  header p  { font-size: .72rem; color: var(--muted); margin-top: 1px; }
+
+  /* ── Nav Tabs ────────────────────────────────────── */
+  nav {
+    display: flex; align-items: stretch; gap: 0; flex: 1;
+  }
+  .tab {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 20px;
+    font-size: .85rem; font-weight: 500; color: var(--muted);
+    cursor: pointer; border: none; background: none;
+    border-bottom: 2px solid transparent;
+    transition: color .15s, border-color .15s;
+    white-space: nowrap;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab .tab-icon { font-size: 1rem; }
+
+  /* ── Layout Principal ────────────────────────────── */
+  main { padding: 24px 32px; max-width: 1600px; margin: 0 auto; }
+
+  /* ── Pages ───────────────────────────────────────── */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── Cards de Resumo ─────────────────────────────── */
+  .cards { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; margin-bottom: 22px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px 14px;
+    position: relative; overflow: hidden;
+  }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0;
+    width: 3px; height: 100%; background: var(--card-accent, var(--accent));
+  }
+  .card .label { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 8px; }
+  .card .value { font-size: 1.15rem; font-weight: 700; color: var(--card-accent, var(--text)); line-height: 1.1; }
+  .card .sub   { font-size: .72rem; color: var(--muted); margin-top: 4px; }
+  .card.verde  { --card-accent: var(--green); }
+  .card.amber  { --card-accent: var(--amber); }
+  .card.red    { --card-accent: var(--red);   }
+  .card.blue   { --card-accent: var(--accent); }
+
+  /* ── Gráficos ────────────────────────────────────── */
+  .graficos { display: grid; grid-template-columns: 1fr 1.7fr; gap: 14px; margin-bottom: 22px; }
+  @media (max-width: 720px) { .graficos { grid-template-columns: 1fr; } }
+  .grafico-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+  }
+  .grafico-card h3 { font-size: .8rem; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin-bottom: 16px; }
+  .grafico-card canvas { display: block; }
+
+  /* ── Barra de busca/filtro ───────────────────────── */
+  .busca-bar {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 18px;
+  }
+  .busca-bar .input-wrap {
+    flex: 1; position: relative;
+  }
+  .busca-bar .input-wrap .ico {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    color: var(--muted); font-size: .9rem; pointer-events: none;
+  }
+  .busca-bar input, .busca-bar select {
+    width: 100%;
+    background: var(--surface); color: var(--text);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 10px 12px 10px 34px; font-size: .88rem;
+    outline: none; transition: border-color .2s;
+  }
+  .busca-bar input { padding-left: 34px; }
+  .busca-bar select { padding-left: 34px; }
+  .busca-bar input:focus,
+  .busca-bar select:focus { border-color: var(--accent); }
+  .busca-bar input::placeholder { color: var(--muted); }
+  .badge-count {
+    background: var(--accent-lo); color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 20px; padding: 5px 14px; font-size: .78rem;
+    white-space: nowrap; font-weight: 600; flex-shrink: 0;
+  }
+
+  /* ── Lista de Unidades ───────────────────────────── */
+  .section-title {
+    font-size: .78rem; text-transform: uppercase;
+    letter-spacing: .6px; color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .unidade-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 10px;
+    overflow: hidden; transition: border-color .2s;
+  }
+  .unidade-card.open { border-color: var(--accent); }
+
+  .unidade-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px 18px; cursor: pointer;
+    transition: background .15s; user-select: none;
+  }
+  .unidade-header:hover { background: var(--surface2); }
+
+  .tipo-badge {
+    font-size: .68rem; font-weight: 700; padding: 3px 8px;
+    border-radius: 4px; background: var(--accent-lo);
+    color: var(--accent); border: 1px solid var(--accent);
+    white-space: nowrap; flex-shrink: 0;
+  }
+
+  .unidade-nome { flex: 1; font-weight: 600; font-size: .92rem; }
+  .unidade-nome .subtitulo { font-size: .72rem; color: var(--muted); font-weight: 400; margin-top: 2px; }
+
+  .unidade-stats { display: flex; gap: 18px; align-items: center; }
+  .stat-bloco { text-align: right; }
+  .stat-bloco .s-label { font-size: .65rem; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+  .stat-bloco .s-value { font-size: .88rem; font-weight: 700; }
+  .s-value.pago   { color: var(--green); }
+  .s-value.aberto { color: var(--red);   }
+  .s-value.total  { color: var(--text);  }
+
+  .chevron { color: var(--muted); font-size: 1rem; transition: transform .2s; flex-shrink: 0; }
+  .unidade-card.open .chevron { transform: rotate(90deg); }
+
+  /* ── Tabela de O.S ───────────────────────────────── */
+  .os-container {
+    display: none; border-top: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .unidade-card.open .os-container { display: block; }
+
+  .prog-bar-wrap {
+    padding: 14px 18px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .prog-bar { flex: 1; background: var(--surface2); border-radius: 20px; height: 6px; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 20px; background: var(--accent); transition: width .5s; }
+  .prog-pct { font-size: .78rem; font-weight: 700; color: var(--accent); width: 40px; text-align: right; }
+  .prog-label { font-size: .72rem; color: var(--muted); }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    padding: 10px 14px; text-align: left;
+    font-size: .68rem; text-transform: uppercase; letter-spacing: .5px;
+    color: var(--muted); background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+  thead th.right { text-align: right; }
+
+  tbody tr { border-bottom: 1px solid var(--border); transition: background .12s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--surface2); }
+  tbody td { padding: 11px 14px; font-size: .85rem; vertical-align: middle; }
+  tbody td.right { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .os-num { font-weight: 700; color: var(--accent); font-size: .8rem; }
+
+  .status-pill {
+    font-size: .68rem; font-weight: 700; padding: 3px 9px;
+    border-radius: 20px; display: inline-block; white-space: nowrap;
+  }
+  .status-pill.c { background: var(--green-lo); color: var(--green); border: 1px solid var(--green); }
+  .status-pill.a { background: var(--amber-lo); color: var(--amber); border: 1px solid var(--amber); }
+  .status-pill.p { background: var(--red-lo);   color: var(--red);   border: 1px solid var(--red);   }
+
+  .mini-prog { width: 70px; }
+  .mini-bar  { background: var(--surface2); border-radius: 20px; height: 4px; margin-top: 4px; overflow: hidden; }
+  .mini-fill { height: 100%; border-radius: 20px; }
+  .mini-pct  { font-size: .68rem; color: var(--muted); }
+
+  .val-pago   { color: var(--green); font-weight: 600; }
+  .val-aberto { color: var(--red);   font-weight: 600; }
+  .val-total  { color: var(--text);  font-weight: 600; }
+
+  /* highlight de busca */
+  mark { background: #f59e0b44; color: var(--amber); border-radius: 2px; padding: 0 2px; }
+
+  /* ── Loading ─────────────────────────────────────── */
+  #loading {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 16px; padding: 80px 0; color: var(--muted);
+  }
+  .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid var(--border); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty { text-align: center; padding: 60px 0; color: var(--muted); font-size: .9rem; }
+
+  /* botão atualizar */
+  .btn-reload {
+    display: flex; align-items: center; gap: 6px;
+    background: none; border: none; color: var(--muted);
+    font-size: .8rem; cursor: pointer; padding: 0 12px;
+    transition: color .15s;
+  }
+  .btn-reload:hover { color: var(--accent); }
+
+  /* ── Responsive ──────────────────────────────────── */
+  @media (max-width: 900px) {
+    main { padding: 16px; }
+    .cards { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
+    .unidade-stats { display: none; }
+    thead th.hide-sm, tbody td.hide-sm { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-brand">
+    <div class="logo">📊</div>
+    <div>
+      <h1>Controle de Serviços</h1>
+      <p id="subtitulo">Atlântica Construções · Carregando…</p>
+    </div>
+  </div>
+  <nav>
+    <button class="tab active" onclick="mudarAba('visao-geral')" id="tab-visao-geral">
+      <span class="tab-icon">📈</span> Visão Geral
+    </button>
+    <button class="tab" onclick="mudarAba('detalhamento')" id="tab-detalhamento">
+      <span class="tab-icon">🏫</span> Detalhamento de O.S
+    </button>
+  </nav>
+  <button class="btn-reload" onclick="carregar()" title="Atualizar dados">↻ Atualizar</button>
+</header>
+
+<main>
+  <!-- Loading -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <span>Carregando dados da planilha…</span>
+  </div>
+
+  <!-- ════════════════════════════════════════════ -->
+  <!-- ABA 1 · Visão Geral                         -->
+  <!-- ════════════════════════════════════════════ -->
+  <div class="page active" id="page-visao-geral">
+
+    <!-- Cards -->
+    <div class="cards">
+      <div class="card blue">
+        <div class="label">Total de O.S</div>
+        <div class="value" id="c-total">–</div>
+        <div class="sub" id="c-unidades">– unidades</div>
+      </div>
+      <div class="card">
+        <div class="label">Valor Contratado</div>
+        <div class="value" id="c-valor">–</div>
+      </div>
+      <div class="card verde">
+        <div class="label">Valor Executado</div>
+        <div class="value" id="c-pago">–</div>
+        <div class="sub" id="c-pct">–% executado</div>
+      </div>
+      <div class="card red">
+        <div class="label">A Executar</div>
+        <div class="value" id="c-aberto">–</div>
+      </div>
+      <div class="card verde">
+        <div class="label">Concluídas</div>
+        <div class="value" id="c-conc">–</div>
+      </div>
+      <div class="card amber">
+        <div class="label">Em Andamento</div>
+        <div class="value" id="c-and">–</div>
+      </div>
+      <div class="card red">
+        <div class="label">Pendentes</div>
+        <div class="value" id="c-pend">–</div>
+      </div>
+    </div>
+
+    <!-- Gráficos status + valor -->
+    <div class="graficos">
+      <div class="grafico-card">
+        <h3>Status das O.S</h3>
+        <canvas id="chart-status" height="220"></canvas>
+      </div>
+      <div class="grafico-card">
+        <h3>Valor por Status (R$)</h3>
+        <canvas id="chart-valor" height="220"></canvas>
+      </div>
+    </div>
+
+    <!-- Gráfico medições -->
+    <div class="grafico-card">
+      <h3>
+        Valor executado por medição (R$)
+        &nbsp;<span style="color:var(--accent);font-size:.7rem;font-weight:500">■ Sem reajuste</span>
+        &nbsp;<span style="color:var(--green);font-size:.7rem;font-weight:500">■ Com reajuste (+5,00547%)</span>
+      </h3>
+      <canvas id="chart-medicoes" height="110"></canvas>
+    </div>
+
+  </div><!-- /page visão geral -->
+
+  <!-- ════════════════════════════════════════════ -->
+  <!-- ABA 2 · Detalhamento de O.S                 -->
+  <!-- ════════════════════════════════════════════ -->
+  <div class="page" id="page-detalhamento">
+
+    <!-- Cards (mesmos, mas refletem o filtro atual) -->
+    <div class="cards" style="margin-bottom:18px">
+      <div class="card blue">
+        <div class="label">Total de O.S</div>
+        <div class="value" id="d-total">–</div>
+        <div class="sub" id="d-unidades">– unidades</div>
+      </div>
+      <div class="card">
+        <div class="label">Valor Contratado</div>
+        <div class="value" id="d-valor">–</div>
+      </div>
+      <div class="card verde">
+        <div class="label">Valor Executado</div>
+        <div class="value" id="d-pago">–</div>
+        <div class="sub" id="d-pct">–% executado</div>
+      </div>
+      <div class="card red">
+        <div class="label">A Executar</div>
+        <div class="value" id="d-aberto">–</div>
+      </div>
+      <div class="card verde">
+        <div class="label">Concluídas</div>
+        <div class="value" id="d-conc">–</div>
+      </div>
+      <div class="card amber">
+        <div class="label">Em Andamento</div>
+        <div class="value" id="d-and">–</div>
+      </div>
+      <div class="card red">
+        <div class="label">Pendentes</div>
+        <div class="value" id="d-pend">–</div>
+      </div>
+    </div>
+
+    <!-- Barra de busca + filtro por unidade -->
+    <div class="busca-bar">
+      <div class="input-wrap" style="flex:2">
+        <span class="ico">🔍</span>
+        <input
+          id="busca-texto"
+          type="text"
+          placeholder="Buscar em qualquer campo: unidade, serviço, O.S, status…"
+          oninput="aplicarFiltros()"
+        >
+      </div>
+      <div class="input-wrap" style="flex:1.2">
+        <span class="ico">🏫</span>
+        <select id="filtro-unidade" onchange="aplicarFiltros()">
+          <option value="">Todas as unidades</option>
+        </select>
+      </div>
+      <span class="badge-count" id="badge-det">0 O.S</span>
+    </div>
+
+    <!-- Lista agrupada -->
+    <div id="lista-det"></div>
+
+  </div><!-- /page detalhamento -->
+
+</main>
+
+<script>
+// ─────────────────────────────────────────────
+// Configuração — cole aqui a URL do Web App (/exec)
+// publicada a partir do Apps Script (ver LEIA-ME).
+// ─────────────────────────────────────────────
+const API_URL = 'https://script.google.com/macros/s/AKfycbyhupkxHQNtNIVE2uVcVtLJX1xP1vU69_2qJoYGBCsnQqjq3SN7p1M1xZnObmM-ReoNLw/exec';
+
+// ─────────────────────────────────────────────
+// Estado global
+// ─────────────────────────────────────────────
+let todosOsDados  = [];
+let medicoesSerie = [];
+let chartStatus   = null;
+let chartValor    = null;
+let chartMedicoes = null;
+
+// ─────────────────────────────────────────────
+// Navegação entre abas
+// ─────────────────────────────────────────────
+function mudarAba(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  document.getElementById('page-' + id).classList.add('active');
+}
+
+// ─────────────────────────────────────────────
+// Utilitários
+// ─────────────────────────────────────────────
+const R$ = v => v.toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+const pct = (p, t) => t > 0 ? Math.round((p / t) * 100) : 0;
+
+function resolverStatus(r) {
+  if (r.status) return r.status;
+  if (r.valor_pago > 0 && r.valor_aberto > 0)  return 'EM ANDAMENTO';
+  if (r.valor_pago === 0 && r.valor_aberto > 0) return 'PENDENTE';
+  if (r.valor_pago > 0 && r.valor_aberto <= 0)  return 'CONCLUÍDA';
+  return 'PENDENTE';
+}
+
+function statusClass(s) {
+  const n = (s || '').toUpperCase();
+  if (n.includes('CONCLU'))                               return 'c';
+  if (n.includes('ANDAMENTO') || n.includes('PROGRESSO')) return 'a';
+  return 'p';
+}
+
+function statusLabel(s) {
+  return `<span class="status-pill ${statusClass(s)}">${s || 'PENDENTE'}</span>`;
+}
+
+function miniBar(pago, total) {
+  const p = pct(pago, total);
+  const cor = p === 100 ? 'var(--green)' : p > 0 ? 'var(--accent)' : 'var(--red)';
+  return `<div class="mini-prog">
+    <div class="mini-pct">${p}%</div>
+    <div class="mini-bar"><div class="mini-fill" style="width:${p}%;background:${cor}"></div></div>
+  </div>`;
+}
+
+// Destacar trecho encontrado pela busca
+function highlight(txt, termo) {
+  if (!termo) return txt || '–';
+  const re = new RegExp('(' + termo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+  return (txt || '–').replace(re, '<mark>$1</mark>');
+}
+
+// ─────────────────────────────────────────────
+// Agrupar por unidade
+// ─────────────────────────────────────────────
+function agrupar(dados) {
+  const map = {};
+  dados.forEach(r => {
+    if (!map[r.unidade]) map[r.unidade] = { unidade: r.unidade, tipo: r.tipo, os: [] };
+    map[r.unidade].os.push(r);
+  });
+  return Object.values(map).map(g => {
+    const os    = g.os;
+    const tot   = os.reduce((s,r) => s + r.valor_os,    0);
+    const pago  = os.reduce((s,r) => s + r.valor_pago,  0);
+    const aberto= os.reduce((s,r) => s + r.valor_aberto,0);
+    const conc  = os.filter(r => statusClass(resolverStatus(r)) === 'c').length;
+    const and   = os.filter(r => statusClass(resolverStatus(r)) === 'a').length;
+    const pend  = os.filter(r => statusClass(resolverStatus(r)) === 'p').length;
+    return { ...g, tot, pago, aberto, conc, and, pend };
+  }).sort((a,b) => a.unidade.localeCompare(b.unidade));
+}
+
+// ─────────────────────────────────────────────
+// Cards de Resumo (aceita prefixo de IDs)
+// ─────────────────────────────────────────────
+function atualizarCards(dados, pfx) {
+  const grupos = agrupar(dados);
+  const tot    = dados.reduce((s,r) => s + r.valor_os,    0);
+  const pago   = dados.reduce((s,r) => s + r.valor_pago,  0);
+  const aberto = dados.reduce((s,r) => s + r.valor_aberto,0);
+  const conc   = dados.filter(r => statusClass(resolverStatus(r)) === 'c').length;
+  const and    = dados.filter(r => statusClass(resolverStatus(r)) === 'a').length;
+  const pend   = dados.filter(r => statusClass(resolverStatus(r)) === 'p').length;
+  document.getElementById(pfx+'total').textContent    = dados.length;
+  document.getElementById(pfx+'unidades').textContent = `${grupos.length} unidades`;
+  document.getElementById(pfx+'valor').textContent    = R$(tot);
+  document.getElementById(pfx+'pago').textContent     = R$(pago);
+  document.getElementById(pfx+'pct').textContent      = `${pct(pago,tot)}% executado`;
+  document.getElementById(pfx+'aberto').textContent   = R$(aberto);
+  document.getElementById(pfx+'conc').textContent     = conc;
+  document.getElementById(pfx+'and').textContent      = and;
+  document.getElementById(pfx+'pend').textContent     = pend;
+}
+
+// ─────────────────────────────────────────────
+// Gráficos (Aba Visão Geral)
+// ─────────────────────────────────────────────
+function atualizarGraficos(dados) {
+  const conc = dados.filter(r => statusClass(resolverStatus(r)) === 'c');
+  const and  = dados.filter(r => statusClass(resolverStatus(r)) === 'a');
+  const pend = dados.filter(r => statusClass(resolverStatus(r)) === 'p');
+  const soma = arr => arr.reduce((s,r) => s + r.valor_os, 0);
+
+  const base = { plugins: { legend: { labels: { color: '#94a3b8', font: { size: 12 } } } } };
+
+  if (chartStatus) chartStatus.destroy();
+  chartStatus = new Chart(document.getElementById('chart-status'), {
+    type: 'doughnut',
+    data: {
+      labels  : ['Concluídas','Em Andamento','Pendentes'],
+      datasets: [{ data: [conc.length,and.length,pend.length], backgroundColor: ['#22c55e','#f59e0b','#ef4444'], borderWidth: 0, hoverOffset: 6 }]
+    },
+    options: { ...base, cutout:'65%', plugins: { ...base.plugins, legend: { position:'bottom', labels: { color:'#94a3b8', padding:16, font:{size:12} } } } }
+  });
+
+  if (chartValor) chartValor.destroy();
+  chartValor = new Chart(document.getElementById('chart-valor'), {
+    type: 'bar',
+    data: {
+      labels  : ['Concluídas','Em Andamento','Pendentes'],
+      datasets: [{ label:'Valor (R$)', data:[soma(conc),soma(and),soma(pend)], backgroundColor:['#22c55e55','#f59e0b55','#ef444455'], borderColor:['#22c55e','#f59e0b','#ef4444'], borderWidth:2, borderRadius:6 }]
+    },
+    options: { ...base, scales: { x:{ticks:{color:'#64748b'},grid:{color:'#2e3350'}}, y:{ticks:{color:'#64748b',callback:v=>'R$'+(v/1000).toFixed(0)+'k'},grid:{color:'#2e3350'}} }, plugins:{...base.plugins,legend:{display:false}} }
+  });
+}
+
+function atualizarGraficoMedicoes() {
+  if (!medicoesSerie.length) return;
+  const labels  = medicoesSerie.map(m => m.label);
+  const valores  = medicoesSerie.map(m => m.valor);
+  const temReaj  = medicoesSerie.map(m => m.reajuste);
+  const cores    = temReaj.map(r => r ? '#22c55e' : '#4f6ef7');
+
+  if (chartMedicoes) chartMedicoes.destroy();
+  chartMedicoes = new Chart(document.getElementById('chart-medicoes'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data           : valores,
+        backgroundColor: temReaj.map(r => r ? '#22c55e33' : '#4f6ef733'),
+        borderColor    : cores,
+        borderWidth    : 2,
+        borderRadius   : 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: {
+          title: ctx => ctx[0].label,
+          label: ctx => {
+            const i = ctx.dataIndex;
+            const v = ctx.parsed.y.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+            return ' ' + v + (temReaj[i] ? ' (+reajuste 5,00547%)' : '');
+          }
+        }}
+      },
+      scales: {
+        x: { ticks:{color:'#94a3b8',font:{size:12}}, grid:{color:'#2e3350'} },
+        y: { ticks:{color:'#64748b',callback:v=>'R$'+(v>=1000000?(v/1000000).toFixed(1)+'M':(v/1000).toFixed(0)+'k')}, grid:{color:'#2e3350'} }
+      }
+    }
+  });
+}
+
+// ─────────────────────────────────────────────
+// Renderizar lista (Aba Detalhamento)
+// ─────────────────────────────────────────────
+function renderLista(dados, termo) {
+  const grupos = agrupar(dados);
+  const lista  = document.getElementById('lista-det');
+
+  if (!grupos.length) {
+    lista.innerHTML = '<div class="empty">Nenhum registro encontrado.</div>';
+    return;
+  }
+
+  lista.innerHTML = grupos.map((g, i) => {
+    const statusItems = [
+      g.conc ? `${g.conc} ✅` : '',
+      g.and  ? `${g.and} 🟡`  : '',
+      g.pend ? `${g.pend} 🔴` : ''
+    ].filter(Boolean).join('  ');
+
+    const linhas = g.os.map(r => `
+      <tr>
+        <td><span class="os-num">OS ${highlight(r.os, termo)}</span></td>
+        <td class="hide-sm">${highlight(r.servico, termo)}</td>
+        <td>${statusLabel(resolverStatus(r))}</td>
+        <td class="right val-total">${R$(r.valor_os)}</td>
+        <td class="right val-pago hide-sm">${R$(r.valor_pago)}</td>
+        <td class="right val-aberto hide-sm">${R$(r.valor_aberto)}</td>
+        <td class="right">${miniBar(r.valor_pago, r.valor_os)}</td>
+      </tr>`).join('');
+
+    const p = pct(g.pago, g.tot);
+
+    return `
+    <div class="unidade-card" id="u-${i}">
+      <div class="unidade-header" onclick="toggle(${i})">
+        <span class="tipo-badge">${g.tipo}</span>
+        <div class="unidade-nome">
+          ${highlight(g.unidade, termo)}
+          <div class="subtitulo">${g.os.length} O.S&nbsp;&nbsp;·&nbsp;&nbsp;${statusItems}</div>
+        </div>
+        <div class="unidade-stats">
+          <div class="stat-bloco">
+            <div class="s-label">Total</div>
+            <div class="s-value total">${R$(g.tot)}</div>
+          </div>
+          <div class="stat-bloco">
+            <div class="s-label">Executado</div>
+            <div class="s-value pago">${R$(g.pago)}</div>
+          </div>
+          <div class="stat-bloco">
+            <div class="s-label">A Executar</div>
+            <div class="s-value aberto">${R$(g.aberto)}</div>
+          </div>
+        </div>
+        <span class="chevron">›</span>
+      </div>
+      <div class="os-container">
+        <div class="prog-bar-wrap">
+          <span class="prog-label">Execução financeira</span>
+          <div class="prog-bar"><div class="prog-fill" style="width:${p}%"></div></div>
+          <span class="prog-pct">${p}%</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>O.S</th><th class="hide-sm">Serviço</th><th>Status</th>
+              <th class="right">Valor</th><th class="right hide-sm">Executado</th>
+              <th class="right hide-sm">A Executar</th><th class="right">%</th>
+            </tr>
+          </thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────
+// Accordion
+// ─────────────────────────────────────────────
+function toggle(i) {
+  document.getElementById(`u-${i}`).classList.toggle('open');
+}
+
+// ─────────────────────────────────────────────
+// Filtros da Aba Detalhamento
+// ─────────────────────────────────────────────
+function aplicarFiltros() {
+  const termo   = document.getElementById('busca-texto').value.trim().toLowerCase();
+  const unidade = document.getElementById('filtro-unidade').value;
+
+  let dados = todosOsDados;
+
+  // Filtro por unidade (dropdown)
+  if (unidade) dados = dados.filter(r => r.unidade === unidade);
+
+  // Filtro por texto livre (qualquer campo)
+  if (termo) {
+    dados = dados.filter(r =>
+      [r.unidade, r.tipo, r.servico, r.status, r.os].some(campo =>
+        (campo || '').toString().toLowerCase().includes(termo)
+      )
+    );
+  }
+
+  document.getElementById('badge-det').textContent = `${dados.length} O.S`;
+  atualizarCards(dados, 'd-');
+  renderLista(dados, termo);
+}
+
+// ─────────────────────────────────────────────
+// Inicialização (recebe o payload já como objeto)
+// ─────────────────────────────────────────────
+function inicializar(payload) {
+  todosOsDados  = payload.rows || [];
+  medicoesSerie = payload.medicoesSerie || [];
+
+  const unidades = [...new Set(todosOsDados.map(r => r.unidade))].sort();
+
+  // Preencher select do detalhamento
+  const sel = document.getElementById('filtro-unidade');
+  sel.innerHTML = `<option value="">Todas as unidades (${unidades.length})</option>`;
+  unidades.forEach(u => {
+    const op = document.createElement('option');
+    op.value = op.textContent = u;
+    sel.appendChild(op);
+  });
+
+  // Subtítulo
+  document.getElementById('subtitulo').textContent =
+    `Atlântica Construções · ${todosOsDados.length} O.S em ${unidades.length} unidades`;
+
+  // Aba Visão Geral
+  atualizarCards(todosOsDados, 'c-');
+  atualizarGraficos(todosOsDados);
+  atualizarGraficoMedicoes();
+
+  // Aba Detalhamento
+  document.getElementById('badge-det').textContent = `${todosOsDados.length} O.S`;
+  atualizarCards(todosOsDados, 'd-');
+  renderLista(todosOsDados, '');
+
+  // Exibir
+  document.getElementById('loading').style.display = 'none';
+}
+
+// ─────────────────────────────────────────────
+// Carregar dados do Web App (Apps Script → JSON)
+// Substitui o antigo google.script.run.getDados()
+// ─────────────────────────────────────────────
+async function carregar() {
+  const loading = document.getElementById('loading');
+  loading.style.display = 'flex';
+  loading.innerHTML = '<div class="spinner"></div><span>Carregando dados da planilha…</span>';
+
+  if (!API_URL || API_URL.startsWith('COLE_AQUI')) {
+    loading.innerHTML =
+      '<span style="color:var(--amber)">⚠️ Configure a constante API_URL no topo do &lt;script&gt; com a URL /exec do Web App.</span>';
+    return;
+  }
+
+  try {
+    const resp = await fetch(API_URL, { method: 'GET' });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const payload = await resp.json();
+    inicializar(payload);
+  } catch (err) {
+    loading.innerHTML =
+      `<span style="color:var(--red)">⚠️ Erro ao carregar: ${err.message || err}</span>`;
+  }
+}
+
+carregar();
+</script>
+</body>
+</html>
