@@ -260,10 +260,11 @@
 
   /* ── Painel de contrato / saldo ──────────────────── */
   .contrato-resumo {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px;
     margin-bottom: 16px;
   }
-  @media (max-width: 720px) { .contrato-resumo { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 900px) { .contrato-resumo { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 600px) { .contrato-resumo { grid-template-columns: repeat(2, 1fr); } }
   .cstat {
     display: flex; flex-direction: column; gap: 4px;
     padding: 12px 14px; border-left: 2px solid var(--cstat-accent, var(--border));
@@ -276,6 +277,7 @@
   .cstat.emit   { --cstat-accent: var(--amber);  }
   .cstat.saldo  { --cstat-accent: var(--green);  }
   .cstat.media  { --cstat-accent: var(--accent); }
+  .cstat.esporte{ --cstat-accent: var(--red); }
   .cstat.negativo { --cstat-accent: var(--red); }
 
   /* barra de uso do teto */
@@ -691,10 +693,15 @@ function atualizarProjecao() {
       <span class="cv">${R$(c.totalEmitido)}</span>
       <span class="cs">${usadoPct}% do teto</span>
     </div>
+    <div class="cstat esporte">
+      <span class="cl">Sec. Esporte</span>
+      <span class="cv">${R$(c.valorEsporte || 0)}</span>
+      <span class="cs">descontado do saldo</span>
+    </div>
     <div class="cstat saldo ${saldoNeg ? 'negativo' : ''}">
       <span class="cl">${saldoNeg ? 'Estourou o teto' : 'Saldo a emitir'}</span>
       <span class="cv">${R$(c.saldo)}</span>
-      <span class="cs">${c.valorEsporte ? '− ' + R$(c.valorEsporte) + ' Sec. Esporte' : c.medicoesFeitas + ' medições realizadas'}</span>
+      <span class="cs">${c.medicoesFeitas} medições realizadas</span>
     </div>
     <div class="cstat media ${saldoNeg ? 'negativo' : ''}">
       <span class="cl">Média por medição restante</span>
