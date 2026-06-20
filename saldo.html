@@ -694,7 +694,7 @@ function atualizarProjecao() {
     <div class="cstat saldo ${saldoNeg ? 'negativo' : ''}">
       <span class="cl">${saldoNeg ? 'Estourou o teto' : 'Saldo a emitir'}</span>
       <span class="cv">${R$(c.saldo)}</span>
-      <span class="cs">${c.medicoesFeitas} medições realizadas</span>
+      <span class="cs">${c.valorEsporte ? '− ' + R$(c.valorEsporte) + ' Sec. Esporte' : c.medicoesFeitas + ' medições realizadas'}</span>
     </div>
     <div class="cstat media ${saldoNeg ? 'negativo' : ''}">
       <span class="cl">Média por medição restante</span>

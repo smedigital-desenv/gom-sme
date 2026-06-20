@@ -32,11 +32,17 @@ function getDados() {
   const REAJUSTE         = 1 + (5.00547 / 100); // fator aplicado a partir da 6ª medição
   const MEDICOES_CONTRATO = 12;                 // o contrato vai até a 12ª medição
 
+  // Converte um valor de célula (número ou texto "1.234,56") em número.
+  const parseValor = v => (typeof v === 'string')
+    ? parseFloat(v.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')) || 0
+    : parseFloat(v) || 0;
+
   // Teto do contrato de manutenção (célula A3) = valor máximo da soma das O.S.
-  let valorContrato = data[2][0]; // linha 3, coluna A (índice [2][0])
-  valorContrato = (typeof valorContrato === 'string')
-    ? parseFloat(valorContrato.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')) || 0
-    : parseFloat(valorContrato) || 0;
+  const valorContrato = parseValor(data[2][0]); // linha 3, coluna A (índice [2][0])
+
+  // Valor executado pela Secretaria de Esporte (célula BF2 = índice [1][57]).
+  // Desconta do saldo a emitir, pois também consome o teto do contrato.
+  const valorEsporte = parseValor(data[1][57]);
 
   // Mapa de medições: label, índice 0-based da coluna de VALOR, e se aplica reajuste.
   // Obs.: uma nova coluna foi inserida entre G e H (valor reajustado da O.S),
@@ -128,13 +134,15 @@ function getDados() {
     .length;
 
   const restantes     = Math.max(0, MEDICOES_CONTRATO - medicoesFeitas);
-  const saldo         = valorContrato - totalEmitido;          // quanto ainda pode ser emitido
+  // Saldo a emitir = teto − emitido (col H) − executado pela Sec. Esporte (BF2)
+  const saldo         = valorContrato - totalEmitido - valorEsporte;
   const mediaRestante = restantes > 0 ? saldo / restantes : 0; // média por medição restante
 
   const round2 = v => Math.round(v * 100) / 100;
   const contrato = {
     valorContrato   : round2(valorContrato),
     totalEmitido    : round2(totalEmitido),
+    valorEsporte    : round2(valorEsporte),
     saldo           : round2(saldo),
     medicoesFeitas  : medicoesFeitas,
     medicoesContrato: MEDICOES_CONTRATO,
