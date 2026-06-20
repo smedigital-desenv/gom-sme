@@ -102,11 +102,15 @@ function getDados() {
       else if (valorExecutado > 0 && valorPendente <= 0)  status = 'CONCLUÍDA';
     }
 
-    // Acumular valores por medição, aplicando reajuste onde devido
-    MEDICOES.forEach(m => {
+    // Acumular valores por medição (aplicando reajuste onde devido) e
+    // guardar o valor por medição desta O.S (nº da medição → valor) para o detalhamento.
+    const med = {};
+    MEDICOES.forEach((m, idx) => {
       const v = parseFloat(row[m.col]) || 0;
       if (v > 0) {
-        totalMedicoes[m.label] += m.reajuste ? v * REAJUSTE : v;
+        const val = m.reajuste ? v * REAJUSTE : v;
+        totalMedicoes[m.label] += val;
+        med[idx + 1] = Math.round(val * 100) / 100;
       }
     });
 
@@ -119,7 +123,8 @@ function getDados() {
       valor_os      : valorOs,
       valor_emitido : valorOsReaj, // col H – valor reajustado (consome o teto)
       valor_pago    : valorExecutado,
-      valor_aberto  : valorPendente
+      valor_aberto  : valorPendente,
+      med           : med          // { nºMedição: valor } – só medições com valor
     });
   }
 
