@@ -758,11 +758,11 @@ function atualizarProjecao() {
         if (ds === 0) {
           // Realizado: O.S medidas nessa medição (requer backend com o campo "med")
           const lista = todosOsDados.filter(r => r.med && r.med[medNum] > 0);
-          abrirDetalhe(`Medição ${medNum}ª — realizado`, lista, r => r.med[medNum]);
+          abrirDetalhe(`Medição ${medNum}ª — realizado`, lista, { medNum: medNum });
         } else if (ds === 1) {
           // Próxima medição = a executar (col K)
           abrirDetalhe(`Próxima medição (${proximaMedicao}ª) — a executar`,
-            todosOsDados, r => r.valor_aberto);
+            todosOsDados.filter(r => r.valor_aberto > 0));
         } else {
           // Projeção: saldo distribuído, sem O.S vinculada ainda
           abrirInfo(`Média projetada · ${medNum}ª medição`,
@@ -868,29 +868,58 @@ function fecharModal() {
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharModal(); });
 
-// Abre o modal com uma lista de O.S. valorFn(r) extrai o valor a exibir.
-function abrirDetalhe(titulo, lista, valorFn, sub) {
-  const itens = lista
-    .map(r => ({ unidade: r.unidade, os: r.os, valor: valorFn(r) || 0 }))
-    .filter(x => x.valor)
-    .sort((a, b) => b.valor - a.valor);
-  const total = itens.reduce((s, x) => s + x.valor, 0);
+// Abre o modal com uma lista de O.S, exibindo o detalhamento financeiro de cada uma:
+// Total da O.S (reajustado), Já pago, Pago na medição (se houver) e Em aberto.
+// opts.medNum → adiciona a coluna "Pago na medição N" e ordena por ela.
+function abrirDetalhe(titulo, lista, opts) {
+  opts = opts || {};
+  const med   = opts.medNum;                         // nº da medição (opcional)
+  const vTot  = r => (r.valor_emitido ?? r.valor_os) || 0; // total da O.S (reajustado)
+  const vPago = r => r.valor_pago   || 0;
+  const vAb   = r => r.valor_aberto || 0;
+  const vMed  = r => (r.med && r.med[med]) || 0;
+  const ordem = med ? vMed : vTot;                   // ordena pela coluna mais relevante
+
+  const itens = lista.slice().sort((a, b) => ordem(b) - ordem(a));
+  const soma  = f => itens.reduce((s, r) => s + f(r), 0);
 
   document.getElementById('modal-titulo').textContent = titulo;
-  document.getElementById('modal-sub').textContent = sub || `${itens.length} O.S · total ${R$(total)}`;
+  document.getElementById('modal-sub').textContent = `${itens.length} O.S`;
+
+  const colMed = med
+    ? `<th class="right">Pago na ${med}ª</th>` : '';
+  const tdMed = r => med
+    ? `<td class="right" style="color:var(--amber);font-weight:600">${R$(vMed(r))}</td>` : '';
+  const tfMed = med
+    ? `<td class="right">${R$(soma(vMed))}</td>` : '';
 
   const body = document.getElementById('modal-body');
   body.innerHTML = !itens.length
     ? '<div class="modal-info">Sem O.S vinculadas a este valor.</div>'
     : `<table>
-        <thead><tr><th>Escola</th><th>O.S</th><th class="right">Valor</th></tr></thead>
-        <tbody>${itens.map(x => `
+        <thead><tr>
+          <th>Escola</th><th>O.S</th>
+          <th class="right">Total da O.S</th>
+          <th class="right">Já pago</th>
+          ${colMed}
+          <th class="right">Em aberto</th>
+        </tr></thead>
+        <tbody>${itens.map(r => `
           <tr>
-            <td>${x.unidade}</td>
-            <td><span class="os-num">OS ${x.os || '–'}</span></td>
-            <td class="right val-total">${R$(x.valor)}</td>
+            <td>${r.unidade}</td>
+            <td><span class="os-num">OS ${r.os || '–'}</span></td>
+            <td class="right val-total">${R$(vTot(r))}</td>
+            <td class="right val-pago">${R$(vPago(r))}</td>
+            ${tdMed(r)}
+            <td class="right val-aberto">${R$(vAb(r))}</td>
           </tr>`).join('')}</tbody>
-        <tfoot><tr><td></td><td class="right">Total</td><td class="right">${R$(total)}</td></tr></tfoot>
+        <tfoot><tr>
+          <td></td><td class="right">Total</td>
+          <td class="right">${R$(soma(vTot))}</td>
+          <td class="right">${R$(soma(vPago))}</td>
+          ${tfMed}
+          <td class="right">${R$(soma(vAb))}</td>
+        </tr></tfoot>
       </table>`;
 
   document.getElementById('modal-overlay').classList.add('open');
@@ -908,13 +937,13 @@ function abrirInfo(titulo, html) {
 function detalheCard(tipo) {
   const ehStatus = c => todosOsDados.filter(r => statusClass(resolverStatus(r)) === c);
   switch (tipo) {
-    case 'total':    return abrirDetalhe('Todas as O.S', todosOsDados, r => r.valor_os);
-    case 'emitido':  return abrirDetalhe('Total de O.S emitidas (reajustado)', todosOsDados, r => (r.valor_emitido ?? r.valor_os));
-    case 'pago':     return abrirDetalhe('Valor executado', todosOsDados, r => r.valor_pago);
-    case 'aberto':   return abrirDetalhe('A executar', todosOsDados, r => r.valor_aberto);
-    case 'conc':     return abrirDetalhe('O.S concluídas', ehStatus('c'), r => r.valor_os);
-    case 'and':      return abrirDetalhe('O.S em andamento', ehStatus('a'), r => r.valor_os);
-    case 'pend':     return abrirDetalhe('O.S pendentes', ehStatus('p'), r => r.valor_os);
+    case 'total':    return abrirDetalhe('Todas as O.S', todosOsDados);
+    case 'emitido':  return abrirDetalhe('Total de O.S emitidas (reajustado)', todosOsDados);
+    case 'pago':     return abrirDetalhe('Valor executado', todosOsDados.filter(r => r.valor_pago > 0));
+    case 'aberto':   return abrirDetalhe('A executar', todosOsDados.filter(r => r.valor_aberto > 0));
+    case 'conc':     return abrirDetalhe('O.S concluídas', ehStatus('c'));
+    case 'and':      return abrirDetalhe('O.S em andamento', ehStatus('a'));
+    case 'pend':     return abrirDetalhe('O.S pendentes', ehStatus('p'));
   }
 }
 
