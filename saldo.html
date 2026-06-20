@@ -391,18 +391,6 @@
       <div class="teto-legend" id="teto-legend"></div>
     </div>
 
-    <!-- Gráficos status + valor -->
-    <div class="graficos">
-      <div class="grafico-card">
-        <h3>Status das O.S</h3>
-        <canvas id="chart-status" height="220"></canvas>
-      </div>
-      <div class="grafico-card">
-        <h3>Valor por Status (R$)</h3>
-        <canvas id="chart-valor" height="220"></canvas>
-      </div>
-    </div>
-
     <!-- Gráfico medições -->
     <div class="grafico-card">
       <h3>
@@ -418,6 +406,7 @@
       <h3 id="projecao-titulo">
         Projeção de saldo por medição (R$)
         &nbsp;<span style="color:var(--accent);font-size:.7rem;font-weight:500">■ Realizado</span>
+        &nbsp;<span style="color:var(--amber);font-size:.7rem;font-weight:500">■ Próxima medição (a executar)</span>
         &nbsp;<span style="color:var(--green);font-size:.7rem;font-weight:500">■ Média projetada do saldo</span>
       </h3>
       <canvas id="chart-projecao" height="110"></canvas>
@@ -504,8 +493,6 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbyhupkxHQNtNIVE2uVcVtLJ
 let todosOsDados  = [];
 let medicoesSerie = [];
 let contratoInfo  = null;
-let chartStatus   = null;
-let chartValor    = null;
 let chartMedicoes = null;
 let chartProjecao = null;
 
@@ -604,38 +591,6 @@ function atualizarCards(dados, pfx) {
   document.getElementById(pfx+'pend').textContent     = pend;
 }
 
-// ─────────────────────────────────────────────
-// Gráficos (Aba Visão Geral)
-// ─────────────────────────────────────────────
-function atualizarGraficos(dados) {
-  const conc = dados.filter(r => statusClass(resolverStatus(r)) === 'c');
-  const and  = dados.filter(r => statusClass(resolverStatus(r)) === 'a');
-  const pend = dados.filter(r => statusClass(resolverStatus(r)) === 'p');
-  const soma = arr => arr.reduce((s,r) => s + r.valor_os, 0);
-
-  const base = { plugins: { legend: { labels: { color: '#94a3b8', font: { size: 12 } } } } };
-
-  if (chartStatus) chartStatus.destroy();
-  chartStatus = new Chart(document.getElementById('chart-status'), {
-    type: 'doughnut',
-    data: {
-      labels  : ['Concluídas','Em Andamento','Pendentes'],
-      datasets: [{ data: [conc.length,and.length,pend.length], backgroundColor: ['#22c55e','#f59e0b','#ef4444'], borderWidth: 0, hoverOffset: 6 }]
-    },
-    options: { ...base, cutout:'65%', plugins: { ...base.plugins, legend: { position:'bottom', labels: { color:'#94a3b8', padding:16, font:{size:12} } } } }
-  });
-
-  if (chartValor) chartValor.destroy();
-  chartValor = new Chart(document.getElementById('chart-valor'), {
-    type: 'bar',
-    data: {
-      labels  : ['Concluídas','Em Andamento','Pendentes'],
-      datasets: [{ label:'Valor (R$)', data:[soma(conc),soma(and),soma(pend)], backgroundColor:['#22c55e55','#f59e0b55','#ef444455'], borderColor:['#22c55e','#f59e0b','#ef4444'], borderWidth:2, borderRadius:6 }]
-    },
-    options: { ...base, scales: { x:{ticks:{color:'#64748b'},grid:{color:'#2e3350'}}, y:{ticks:{color:'#64748b',callback:v=>'R$'+(v/1000).toFixed(0)+'k'},grid:{color:'#2e3350'}} }, plugins:{...base.plugins,legend:{display:false}} }
-  });
-}
-
 function atualizarGraficoMedicoes() {
   if (!medicoesSerie.length) return;
   const labels  = medicoesSerie.map(m => m.label);
@@ -700,6 +655,13 @@ function atualizarProjecao() {
   const saldoNeg = c.saldo < 0;
   const saldoPos = Math.max(0, c.saldo);
 
+  // Próxima medição = "a executar" (col K). O saldo se distribui nas medições seguintes.
+  // (campos do backend novo; com fallback caso o endpoint ainda esteja na versão antiga)
+  const proximaMedicao = c.proximaMedicao ?? (c.medicoesFeitas + 1);
+  const valorProxima   = c.valorProxima  ?? todosOsDados.reduce((s,r) => s + r.valor_aberto, 0);
+  const medicoesNovas  = c.medicoesNovas ?? Math.max(0, c.restantes - 1);
+  const mediaRestante  = medicoesNovas > 0 ? c.saldo / medicoesNovas : 0;
+
   // Painel de números
   document.getElementById('contrato-resumo').innerHTML = `
     <div class="cstat teto">
@@ -733,9 +695,9 @@ function atualizarProjecao() {
       <span class="cs">teto − comprometido</span>
     </div>
     <div class="cstat media ${saldoNeg ? 'negativo' : ''}">
-      <span class="cl">Média por medição restante</span>
-      <span class="cv">${R$(c.mediaRestante)}</span>
-      <span class="cs">${c.restantes} de ${c.medicoesContrato} medições</span>
+      <span class="cl">Média de O.S por medição</span>
+      <span class="cv">${R$(mediaRestante)}</span>
+      <span class="cs">${medicoesNovas} medições (após a ${proximaMedicao}ª)</span>
     </div>`;
 
   // Barra segmentada do teto: O.S + Esporte + Garantia + Saldo
@@ -763,8 +725,9 @@ function atualizarProjecao() {
   const realMap = {};
   medicoesSerie.forEach(m => { realMap[parseInt(m.label, 10)] = m.valor; });
 
-  const realizado = labels.map((_, i) => (i <  c.medicoesFeitas ? (realMap[i + 1] ?? 0) : null));
-  const projecao  = labels.map((_, i) => (i >= c.medicoesFeitas ? c.mediaRestante     : null));
+  const realizado = labels.map((_, i) => (i <   c.medicoesFeitas ? (realMap[i + 1] ?? 0) : null));
+  const proxima   = labels.map((_, i) => (i === c.medicoesFeitas ? valorProxima          : null));
+  const projecao  = labels.map((_, i) => (i >   c.medicoesFeitas ? mediaRestante         : null));
 
   if (chartProjecao) chartProjecao.destroy();
   chartProjecao = new Chart(document.getElementById('chart-projecao'), {
@@ -772,8 +735,9 @@ function atualizarProjecao() {
     data: {
       labels,
       datasets: [
-        { label: 'Realizado',         data: realizado, backgroundColor: '#4f6ef755', borderColor: '#4f6ef7', borderWidth: 2, borderRadius: 6 },
-        { label: 'Média projetada',   data: projecao,  backgroundColor: '#22c55e33', borderColor: '#22c55e', borderWidth: 2, borderRadius: 6 }
+        { label: 'Realizado',                data: realizado, backgroundColor: '#4f6ef755', borderColor: '#4f6ef7', borderWidth: 2, borderRadius: 6 },
+        { label: 'Próxima medição (a executar)', data: proxima, backgroundColor: '#f59e0b33', borderColor: '#f59e0b', borderWidth: 2, borderRadius: 6 },
+        { label: 'Média projetada',          data: projecao,  backgroundColor: '#22c55e33', borderColor: '#22c55e', borderWidth: 2, borderRadius: 6 }
       ]
     },
     options: {
@@ -784,7 +748,7 @@ function atualizarProjecao() {
           label: ctx => {
             const v = ctx.parsed.y.toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
             return ' ' + ctx.dataset.label + ': ' + v +
-              (ctx.datasetIndex === 1 ? ` (saldo ÷ ${c.restantes})` : '');
+              (ctx.dataset.label === 'Média projetada' ? ` (saldo ÷ ${medicoesNovas})` : '');
           }
         }}
       },
@@ -931,7 +895,6 @@ function inicializar(payload) {
 
   // Aba Visão Geral
   atualizarCards(todosOsDados, 'c-');
-  atualizarGraficos(todosOsDados);
   atualizarGraficoMedicoes();
   atualizarProjecao();
 

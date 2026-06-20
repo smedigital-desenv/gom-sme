@@ -72,6 +72,7 @@ function getDados() {
 
   const rows          = [];
   let   totalEmitido  = 0; // soma dos valores das O.S. (consome o teto do contrato)
+  let   totalAberto   = 0; // soma do "a executar" (col K) = valor da próxima medição
   const totalMedicoes = {};
   MEDICOES.forEach(m => totalMedicoes[m.label] = 0);
 
@@ -91,6 +92,7 @@ function getDados() {
     // Se a célula H estiver vazia, usa o valor original (col G) como fallback.
     const valorOsReaj = parseFloat(row[7]) || valorOs; // col H – valor da O.S reajustado
     totalEmitido += valorOsReaj;
+    totalAberto  += valorPendente;
 
     // Derivar status quando campo E está em branco
     let status = row[4] ? row[4].toString().trim() : '';
@@ -137,10 +139,17 @@ function getDados() {
     .filter(m => totalMedicoes[m.label] > 0)
     .length;
 
-  const restantes     = Math.max(0, MEDICOES_CONTRATO - medicoesFeitas);
+  const restantes = Math.max(0, MEDICOES_CONTRATO - medicoesFeitas);
   // Saldo a emitir = teto − emitido (col H) − Sec. Esporte (BF2) − garantia de obra (BF3)
-  const saldo         = valorContrato - totalEmitido - valorEsporte - valorGarantia;
-  const mediaRestante = restantes > 0 ? saldo / restantes : 0; // média por medição restante
+  const saldo     = valorContrato - totalEmitido - valorEsporte - valorGarantia;
+
+  // A próxima medição (ex.: 8ª) já tem valor definido = "a executar" (col K), pois
+  // corresponde às O.S já emitidas e ainda não medidas. Logo, o saldo a emitir se
+  // distribui apenas nas medições POSTERIORES à próxima.
+  const proximaMedicao = medicoesFeitas + 1;                  // nº da próxima medição
+  const valorProxima   = totalAberto;                         // valor da próxima medição = a executar
+  const medicoesNovas  = Math.max(0, restantes - 1);          // medições após a próxima
+  const mediaRestante  = medicoesNovas > 0 ? saldo / medicoesNovas : 0; // média por medição nova
 
   // Total comprometido do teto = O.S emitidas + Sec. Esporte + garantia de obra
   const totalComprometido = totalEmitido + valorEsporte + valorGarantia;
@@ -153,10 +162,13 @@ function getDados() {
     valorGarantia     : round2(valorGarantia),
     totalComprometido : round2(totalComprometido),
     saldo             : round2(saldo),
-    medicoesFeitas  : medicoesFeitas,
-    medicoesContrato: MEDICOES_CONTRATO,
-    restantes       : restantes,
-    mediaRestante   : round2(mediaRestante)
+    medicoesFeitas    : medicoesFeitas,
+    medicoesContrato  : MEDICOES_CONTRATO,
+    restantes         : restantes,
+    proximaMedicao    : proximaMedicao,
+    valorProxima      : round2(valorProxima),
+    medicoesNovas     : medicoesNovas,
+    mediaRestante     : round2(mediaRestante)
   };
 
   return JSON.stringify({ rows, medicoesSerie, contrato });
