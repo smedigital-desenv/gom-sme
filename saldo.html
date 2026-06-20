@@ -258,6 +258,32 @@
 
   .empty { text-align: center; padding: 60px 0; color: var(--muted); font-size: .9rem; }
 
+  /* ── Painel de contrato / saldo ──────────────────── */
+  .contrato-resumo {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 720px) { .contrato-resumo { grid-template-columns: repeat(2, 1fr); } }
+  .cstat {
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 12px 14px; border-left: 2px solid var(--cstat-accent, var(--border));
+    background: var(--surface2); border-radius: var(--radius-sm);
+  }
+  .cstat .cl { font-size: .68rem; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+  .cstat .cv { font-size: 1.05rem; font-weight: 700; line-height: 1.15; color: var(--cstat-accent, var(--text)); }
+  .cstat .cs { font-size: .7rem; color: var(--muted); }
+  .cstat.teto   { --cstat-accent: var(--text);   }
+  .cstat.emit   { --cstat-accent: var(--amber);  }
+  .cstat.saldo  { --cstat-accent: var(--green);  }
+  .cstat.media  { --cstat-accent: var(--accent); }
+  .cstat.negativo { --cstat-accent: var(--red); }
+
+  /* barra de uso do teto */
+  .teto-bar-wrap { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+  .teto-bar { flex: 1; background: var(--surface2); border-radius: 20px; height: 8px; overflow: hidden; }
+  .teto-fill { height: 100%; border-radius: 20px; background: var(--amber); transition: width .5s; }
+  .teto-label { font-size: .72rem; color: var(--muted); white-space: nowrap; }
+
   /* botão atualizar */
   .btn-reload {
     display: flex; align-items: center; gap: 6px;
@@ -343,6 +369,14 @@
       </div>
     </div>
 
+    <!-- Controle do teto do contrato -->
+    <div class="contrato-resumo" id="contrato-resumo"></div>
+    <div class="teto-bar-wrap" id="teto-bar-wrap" style="display:none">
+      <span class="teto-label" id="teto-label">Teto utilizado</span>
+      <div class="teto-bar"><div class="teto-fill" id="teto-fill" style="width:0%"></div></div>
+      <span class="teto-label" id="teto-pct">0%</span>
+    </div>
+
     <!-- Gráficos status + valor -->
     <div class="graficos">
       <div class="grafico-card">
@@ -363,6 +397,16 @@
         &nbsp;<span style="color:var(--green);font-size:.7rem;font-weight:500">■ Com reajuste (+5,00547%)</span>
       </h3>
       <canvas id="chart-medicoes" height="110"></canvas>
+    </div>
+
+    <!-- Gráfico de projeção de saldo por medição -->
+    <div class="grafico-card" style="margin-top:14px">
+      <h3 id="projecao-titulo">
+        Projeção de saldo por medição (R$)
+        &nbsp;<span style="color:var(--accent);font-size:.7rem;font-weight:500">■ Realizado</span>
+        &nbsp;<span style="color:var(--green);font-size:.7rem;font-weight:500">■ Média projetada do saldo</span>
+      </h3>
+      <canvas id="chart-projecao" height="110"></canvas>
     </div>
 
   </div><!-- /page visão geral -->
@@ -445,9 +489,11 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbyhupkxHQNtNIVE2uVcVtLJ
 // ─────────────────────────────────────────────
 let todosOsDados  = [];
 let medicoesSerie = [];
+let contratoInfo  = null;
 let chartStatus   = null;
 let chartValor    = null;
 let chartMedicoes = null;
+let chartProjecao = null;
 
 // ─────────────────────────────────────────────
 // Navegação entre abas
@@ -617,6 +663,94 @@ function atualizarGraficoMedicoes() {
 }
 
 // ─────────────────────────────────────────────
+// Controle do teto do contrato + projeção do saldo
+// ─────────────────────────────────────────────
+function fmtKM(v) {
+  const n = Math.abs(v);
+  const s = n >= 1000000 ? (v/1000000).toFixed(1) + 'M' : (v/1000).toFixed(0) + 'k';
+  return 'R$' + s;
+}
+
+function atualizarProjecao() {
+  const c = contratoInfo;
+  if (!c) return;
+
+  const usadoPct  = c.valorContrato > 0 ? Math.round(c.totalEmitido / c.valorContrato * 100) : 0;
+  const saldoNeg  = c.saldo < 0;
+
+  // Painel de números
+  document.getElementById('contrato-resumo').innerHTML = `
+    <div class="cstat teto">
+      <span class="cl">Teto do contrato</span>
+      <span class="cv">${R$(c.valorContrato)}</span>
+      <span class="cs">${c.medicoesContrato} medições</span>
+    </div>
+    <div class="cstat emit">
+      <span class="cl">Já emitido</span>
+      <span class="cv">${R$(c.totalEmitido)}</span>
+      <span class="cs">${usadoPct}% do teto</span>
+    </div>
+    <div class="cstat saldo ${saldoNeg ? 'negativo' : ''}">
+      <span class="cl">${saldoNeg ? 'Estourou o teto' : 'Saldo a emitir'}</span>
+      <span class="cv">${R$(c.saldo)}</span>
+      <span class="cs">${c.medicoesFeitas} medições realizadas</span>
+    </div>
+    <div class="cstat media ${saldoNeg ? 'negativo' : ''}">
+      <span class="cl">Média por medição restante</span>
+      <span class="cv">${R$(c.mediaRestante)}</span>
+      <span class="cs">${c.restantes} medições restantes</span>
+    </div>`;
+
+  // Barra de uso do teto
+  document.getElementById('teto-bar-wrap').style.display = 'flex';
+  const fill = document.getElementById('teto-fill');
+  fill.style.width = Math.min(100, usadoPct) + '%';
+  fill.style.background = usadoPct >= 100 ? 'var(--red)' : 'var(--amber)';
+  document.getElementById('teto-label').textContent = `Teto utilizado · ${R$(c.totalEmitido)} de ${R$(c.valorContrato)}`;
+  document.getElementById('teto-pct').textContent = usadoPct + '%';
+
+  // Gráfico: realizado (1ª..feitas) + projeção média (restantes até a 12ª)
+  const N = c.medicoesContrato;
+  const labels = Array.from({ length: N }, (_, i) => (i + 1) + 'ª');
+
+  // Mapa de valores realizados por número da medição (a partir da série já calculada)
+  const realMap = {};
+  medicoesSerie.forEach(m => { realMap[parseInt(m.label, 10)] = m.valor; });
+
+  const realizado = labels.map((_, i) => (i <  c.medicoesFeitas ? (realMap[i + 1] ?? 0) : null));
+  const projecao  = labels.map((_, i) => (i >= c.medicoesFeitas ? c.mediaRestante     : null));
+
+  if (chartProjecao) chartProjecao.destroy();
+  chartProjecao = new Chart(document.getElementById('chart-projecao'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Realizado',         data: realizado, backgroundColor: '#4f6ef755', borderColor: '#4f6ef7', borderWidth: 2, borderRadius: 6 },
+        { label: 'Média projetada',   data: projecao,  backgroundColor: '#22c55e33', borderColor: '#22c55e', borderWidth: 2, borderRadius: 6 }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: {
+          label: ctx => {
+            const v = ctx.parsed.y.toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+            return ' ' + ctx.dataset.label + ': ' + v +
+              (ctx.datasetIndex === 1 ? ` (saldo ÷ ${c.restantes})` : '');
+          }
+        }}
+      },
+      scales: {
+        x: { stacked: true, ticks:{color:'#94a3b8',font:{size:12}}, grid:{color:'#2e3350'} },
+        y: { stacked: true, ticks:{color:'#64748b',callback:fmtKM}, grid:{color:'#2e3350'} }
+      }
+    }
+  });
+}
+
+// ─────────────────────────────────────────────
 // Renderizar lista (Aba Detalhamento)
 // ─────────────────────────────────────────────
 function renderLista(dados, termo) {
@@ -732,6 +866,7 @@ function aplicarFiltros() {
 function inicializar(payload) {
   todosOsDados  = payload.rows || [];
   medicoesSerie = payload.medicoesSerie || [];
+  contratoInfo  = payload.contrato || null;
 
   const unidades = [...new Set(todosOsDados.map(r => r.unidade))].sort();
 
@@ -752,6 +887,7 @@ function inicializar(payload) {
   atualizarCards(todosOsDados, 'c-');
   atualizarGraficos(todosOsDados);
   atualizarGraficoMedicoes();
+  atualizarProjecao();
 
   // Aba Detalhamento
   document.getElementById('badge-det').textContent = `${todosOsDados.length} O.S`;

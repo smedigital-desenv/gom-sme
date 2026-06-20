@@ -28,29 +28,39 @@ function getDados() {
   const data  = sheet.getDataRange().getValues();
 
   // Linha 5 (índice 4) = cabeçalhos | Linha 6 em diante = dados
-  const HEADER   = 4;
-  const REAJUSTE = 1 + (5.00547 / 100); // fator aplicado a partir da 6ª medição
+  const HEADER           = 4;
+  const REAJUSTE         = 1 + (5.00547 / 100); // fator aplicado a partir da 6ª medição
+  const MEDICOES_CONTRATO = 12;                 // o contrato vai até a 12ª medição
 
-  // Mapa de medições: label, índice 0-based, e se aplica reajuste
+  // Teto do contrato de manutenção (célula A3) = valor máximo da soma das O.S.
+  let valorContrato = data[2][0]; // linha 3, coluna A (índice [2][0])
+  valorContrato = (typeof valorContrato === 'string')
+    ? parseFloat(valorContrato.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')) || 0
+    : parseFloat(valorContrato) || 0;
+
+  // Mapa de medições: label, índice 0-based da coluna de VALOR, e se aplica reajuste.
+  // As colunas de valor são N, P, R, … (a partir de N, de duas em duas, com salto
+  // após a 3ª medição). As colunas M, O, Q, … são "Nota" e NÃO são valores.
   const MEDICOES = [
-    { label: '1ª',  col: 12, reajuste: false },
-    { label: '2ª',  col: 14, reajuste: false },
-    { label: '3ª',  col: 16, reajuste: false },
-    { label: '4ª',  col: 30, reajuste: false },
-    { label: '5ª',  col: 32, reajuste: false },
-    { label: '6ª',  col: 34, reajuste: true  },
-    { label: '7ª',  col: 36, reajuste: true  },
-    { label: '8ª',  col: 38, reajuste: true  },
-    { label: '9ª',  col: 40, reajuste: true  },
-    { label: '10ª', col: 42, reajuste: true  },
-    { label: '11ª', col: 44, reajuste: true  },
-    { label: '12ª', col: 46, reajuste: true  },
-    { label: '13ª', col: 48, reajuste: true  },
-    { label: '14ª', col: 50, reajuste: true  },
-    { label: '15ª', col: 53, reajuste: true  },
+    { label: '1ª',  col: 13, reajuste: false }, // N
+    { label: '2ª',  col: 15, reajuste: false }, // P
+    { label: '3ª',  col: 17, reajuste: false }, // R
+    { label: '4ª',  col: 31, reajuste: false }, // AF
+    { label: '5ª',  col: 33, reajuste: false }, // AH
+    { label: '6ª',  col: 35, reajuste: true  }, // AJ
+    { label: '7ª',  col: 37, reajuste: true  }, // AL
+    { label: '8ª',  col: 39, reajuste: true  }, // AN
+    { label: '9ª',  col: 41, reajuste: true  }, // AP
+    { label: '10ª', col: 43, reajuste: true  }, // AR
+    { label: '11ª', col: 45, reajuste: true  }, // AT
+    { label: '12ª', col: 47, reajuste: true  }, // AV
+    { label: '13ª', col: 49, reajuste: true  }, // AX
+    { label: '14ª', col: 51, reajuste: true  }, // AZ
+    { label: '15ª', col: 54, reajuste: true  }, // BC
   ];
 
   const rows          = [];
+  let   totalEmitido  = 0; // soma dos valores das O.S. (consome o teto do contrato)
   const totalMedicoes = {};
   MEDICOES.forEach(m => totalMedicoes[m.label] = 0);
 
@@ -65,6 +75,8 @@ function getDados() {
     const valorPendente  = parseFloat(row[9]) || 0; // col J – A Executar
 
     if (valorOs <= 0) continue;
+
+    totalEmitido += valorOs;
 
     // Derivar status quando campo E está em branco
     let status = row[4] ? row[4].toString().trim() : '';
@@ -103,5 +115,27 @@ function getDados() {
       reajuste : m.reajuste
     }));
 
-  return JSON.stringify({ rows, medicoesSerie });
+  // ── Controle do teto do contrato e projeção de saldo ────────
+  // Medições já realizadas = quantas das 12 do contrato têm valor lançado.
+  const medicoesFeitas = MEDICOES
+    .slice(0, MEDICOES_CONTRATO)
+    .filter(m => totalMedicoes[m.label] > 0)
+    .length;
+
+  const restantes     = Math.max(0, MEDICOES_CONTRATO - medicoesFeitas);
+  const saldo         = valorContrato - totalEmitido;          // quanto ainda pode ser emitido
+  const mediaRestante = restantes > 0 ? saldo / restantes : 0; // média por medição restante
+
+  const round2 = v => Math.round(v * 100) / 100;
+  const contrato = {
+    valorContrato   : round2(valorContrato),
+    totalEmitido    : round2(totalEmitido),
+    saldo           : round2(saldo),
+    medicoesFeitas  : medicoesFeitas,
+    medicoesContrato: MEDICOES_CONTRATO,
+    restantes       : restantes,
+    mediaRestante   : round2(mediaRestante)
+  };
+
+  return JSON.stringify({ rows, medicoesSerie, contrato });
 }
