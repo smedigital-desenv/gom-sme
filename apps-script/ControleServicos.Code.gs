@@ -76,7 +76,10 @@ function getDados() {
 
     if (valorOs <= 0) continue;
 
-    totalEmitido += valorOs;
+    // O teto do contrato é consumido pelo valor REAJUSTADO da O.S (col BF = índice 57).
+    // Se a célula BF estiver vazia, usa o valor original (col G) como fallback.
+    const valorOsReaj = parseFloat(row[57]) || valorOs; // col BF – valor da O.S reajustado
+    totalEmitido += valorOsReaj;
 
     // Derivar status quando campo E está em branco
     let status = row[4] ? row[4].toString().trim() : '';
