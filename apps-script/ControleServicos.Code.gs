@@ -114,11 +114,21 @@ function getDados() {
       }
     });
 
+    // Data de emissão da O.S (col D = índice 3). Formata se for objeto Date.
+    let dataEmissao = '';
+    const dRaw = row[3];
+    if (dRaw instanceof Date) {
+      dataEmissao = Utilities.formatDate(dRaw, ss.getSpreadsheetTimeZone(), 'dd/MM/yyyy');
+    } else if (dRaw) {
+      dataEmissao = dRaw.toString().trim();
+    }
+
     rows.push({
-      unidade      : unidade,
-      tipo         : row[1] ? row[1].toString().trim() : '',
-      servico      : row[2] ? row[2].toString().trim() : '',
-      status       : status,
+      unidade       : unidade,
+      tipo          : row[1] ? row[1].toString().trim() : '',
+      servico       : row[2] ? row[2].toString().trim() : '',
+      data_emissao  : dataEmissao, // col D – data de emissão
+      status        : status,
       os            : row[5] ? row[5].toString().trim() : '',
       valor_os      : valorOs,
       valor_emitido : valorOsReaj, // col H – valor reajustado (consome o teto)
