@@ -39,24 +39,25 @@ function getDados() {
     : parseFloat(valorContrato) || 0;
 
   // Mapa de medições: label, índice 0-based da coluna de VALOR, e se aplica reajuste.
-  // As colunas de valor são N, P, R, … (a partir de N, de duas em duas, com salto
-  // após a 3ª medição). As colunas M, O, Q, … são "Nota" e NÃO são valores.
+  // Obs.: uma nova coluna foi inserida entre G e H (valor reajustado da O.S),
+  // o que empurrou todas as colunas a partir daí em +1. As colunas de valor
+  // das medições agora são O, Q, S, … (antes N, P, R).
   const MEDICOES = [
-    { label: '1ª',  col: 13, reajuste: false }, // N
-    { label: '2ª',  col: 15, reajuste: false }, // P
-    { label: '3ª',  col: 17, reajuste: false }, // R
-    { label: '4ª',  col: 31, reajuste: false }, // AF
-    { label: '5ª',  col: 33, reajuste: false }, // AH
-    { label: '6ª',  col: 35, reajuste: true  }, // AJ
-    { label: '7ª',  col: 37, reajuste: true  }, // AL
-    { label: '8ª',  col: 39, reajuste: true  }, // AN
-    { label: '9ª',  col: 41, reajuste: true  }, // AP
-    { label: '10ª', col: 43, reajuste: true  }, // AR
-    { label: '11ª', col: 45, reajuste: true  }, // AT
-    { label: '12ª', col: 47, reajuste: true  }, // AV
-    { label: '13ª', col: 49, reajuste: true  }, // AX
-    { label: '14ª', col: 51, reajuste: true  }, // AZ
-    { label: '15ª', col: 54, reajuste: true  }, // BC
+    { label: '1ª',  col: 14, reajuste: false }, // O
+    { label: '2ª',  col: 16, reajuste: false }, // Q
+    { label: '3ª',  col: 18, reajuste: false }, // S
+    { label: '4ª',  col: 32, reajuste: false }, // AG
+    { label: '5ª',  col: 34, reajuste: false }, // AI
+    { label: '6ª',  col: 36, reajuste: true  }, // AK
+    { label: '7ª',  col: 38, reajuste: true  }, // AM
+    { label: '8ª',  col: 40, reajuste: true  }, // AO
+    { label: '9ª',  col: 42, reajuste: true  }, // AQ
+    { label: '10ª', col: 44, reajuste: true  }, // AS
+    { label: '11ª', col: 46, reajuste: true  }, // AU
+    { label: '12ª', col: 48, reajuste: true  }, // AW
+    { label: '13ª', col: 50, reajuste: true  }, // AY
+    { label: '14ª', col: 52, reajuste: true  }, // BA
+    { label: '15ª', col: 55, reajuste: true  }, // BD
   ];
 
   const rows          = [];
@@ -70,15 +71,15 @@ function getDados() {
     const unidade = row[0] ? row[0].toString().trim() : '';
     if (!unidade || unidade === 'UNIDADE ESCOLAR') continue;
 
-    const valorOs        = parseFloat(row[6]) || 0; // col G – Valor contratado (original)
-    const valorExecutado = parseFloat(row[8]) || 0; // col I – Valor pago/executado (pode ser > ou < que G)
-    const valorPendente  = parseFloat(row[9]) || 0; // col J – A Executar
+    const valorOs        = parseFloat(row[6]) || 0;  // col G – Valor contratado (original)
+    const valorExecutado = parseFloat(row[9]) || 0;  // col J – Valor pago/executado (pode ser > ou < que G)
+    const valorPendente  = parseFloat(row[10]) || 0; // col K – A Executar
 
     if (valorOs <= 0) continue;
 
-    // O teto do contrato é consumido pelo valor REAJUSTADO da O.S (col BF = índice 57).
-    // Se a célula BF estiver vazia, usa o valor original (col G) como fallback.
-    const valorOsReaj = parseFloat(row[57]) || valorOs; // col BF – valor da O.S reajustado
+    // O teto do contrato é consumido pelo valor REAJUSTADO da O.S (nova col H = índice 7).
+    // Se a célula H estiver vazia, usa o valor original (col G) como fallback.
+    const valorOsReaj = parseFloat(row[7]) || valorOs; // col H – valor da O.S reajustado
     totalEmitido += valorOsReaj;
 
     // Derivar status quando campo E está em branco
