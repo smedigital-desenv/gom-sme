@@ -20,6 +20,7 @@
     --amber-lo  : #f59e0b1a;
     --red       : #ef4444;
     --red-lo    : #ef44441a;
+    --violet    : #8b5cf6;
     --text      : #e2e8f0;
     --muted     : #64748b;
     --radius    : 10px;
@@ -260,11 +261,9 @@
 
   /* ── Painel de contrato / saldo ──────────────────── */
   .contrato-resumo {
-    display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px;
     margin-bottom: 16px;
   }
-  @media (max-width: 1100px) { .contrato-resumo { grid-template-columns: repeat(3, 1fr); } }
-  @media (max-width: 600px)  { .contrato-resumo { grid-template-columns: repeat(2, 1fr); } }
   .cstat {
     display: flex; flex-direction: column; gap: 4px;
     padding: 12px 14px; border-left: 2px solid var(--cstat-accent, var(--border));
@@ -278,14 +277,26 @@
   .cstat.saldo  { --cstat-accent: var(--green);  }
   .cstat.media  { --cstat-accent: var(--accent); }
   .cstat.esporte { --cstat-accent: var(--red); }
-  .cstat.garantia{ --cstat-accent: var(--amber); }
+  .cstat.garantia{ --cstat-accent: var(--violet); }
+  .cstat.comprometido { --cstat-accent: var(--text); background: #2a2f45; }
   .cstat.negativo { --cstat-accent: var(--red); }
 
-  /* barra de uso do teto */
-  .teto-bar-wrap { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
-  .teto-bar { flex: 1; background: var(--surface2); border-radius: 20px; height: 8px; overflow: hidden; }
-  .teto-fill { height: 100%; border-radius: 20px; background: var(--amber); transition: width .5s; }
-  .teto-label { font-size: .72rem; color: var(--muted); white-space: nowrap; }
+  /* barra segmentada do teto (OS + Esporte + Garantia + Saldo) */
+  .teto-bloco { margin-bottom: 22px; }
+  .teto-titulo { font-size: .8rem; color: var(--muted); margin-bottom: 9px; }
+  .teto-titulo b { color: var(--text); font-weight: 700; }
+  .teto-bar { display: flex; height: 16px; background: var(--surface2); border-radius: 20px; overflow: hidden; }
+  .teto-bar .seg { height: 100%; transition: width .5s; }
+  .teto-bar .seg.os    { background: var(--amber);  }
+  .teto-bar .seg.esp   { background: var(--red);    }
+  .teto-bar .seg.gar   { background: var(--violet); }
+  .teto-bar .seg.saldo { background: var(--green);  }
+  .teto-legend { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 11px; font-size: .74rem; color: var(--muted); }
+  .teto-legend span { display: flex; align-items: center; gap: 6px; }
+  .teto-legend b { color: var(--text); font-weight: 600; }
+  .teto-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .teto-legend i.os{ background: var(--amber); } .teto-legend i.esp{ background: var(--red); }
+  .teto-legend i.gar{ background: var(--violet); } .teto-legend i.saldo{ background: var(--green); }
 
   /* botão atualizar */
   .btn-reload {
@@ -374,10 +385,10 @@
 
     <!-- Controle do teto do contrato -->
     <div class="contrato-resumo" id="contrato-resumo"></div>
-    <div class="teto-bar-wrap" id="teto-bar-wrap" style="display:none">
-      <span class="teto-label" id="teto-label">Teto utilizado</span>
-      <div class="teto-bar"><div class="teto-fill" id="teto-fill" style="width:0%"></div></div>
-      <span class="teto-label" id="teto-pct">0%</span>
+    <div class="teto-bloco" id="teto-bar-wrap" style="display:none">
+      <div class="teto-titulo" id="teto-titulo"></div>
+      <div class="teto-bar" id="teto-bar"></div>
+      <div class="teto-legend" id="teto-legend"></div>
     </div>
 
     <!-- Gráficos status + valor -->
@@ -679,8 +690,15 @@ function atualizarProjecao() {
   const c = contratoInfo;
   if (!c) return;
 
-  const usadoPct  = c.valorContrato > 0 ? Math.round(c.totalEmitido / c.valorContrato * 100) : 0;
-  const saldoNeg  = c.saldo < 0;
+  const esporte   = c.valorEsporte  || 0;
+  const garantia  = c.valorGarantia || 0;
+  const comprometido = c.totalComprometido != null
+    ? c.totalComprometido
+    : (c.totalEmitido + esporte + garantia);
+  const compPct  = c.valorContrato > 0 ? Math.round(comprometido / c.valorContrato * 100) : 0;
+  const emitPct  = c.valorContrato > 0 ? Math.round(c.totalEmitido / c.valorContrato * 100) : 0;
+  const saldoNeg = c.saldo < 0;
+  const saldoPos = Math.max(0, c.saldo);
 
   // Painel de números
   document.getElementById('contrato-resumo').innerHTML = `
@@ -690,38 +708,52 @@ function atualizarProjecao() {
       <span class="cs">${c.medicoesContrato} medições</span>
     </div>
     <div class="cstat emit">
-      <span class="cl">Já emitido (reajustado)</span>
+      <span class="cl">Emitido em O.S</span>
       <span class="cv">${R$(c.totalEmitido)}</span>
-      <span class="cs">${usadoPct}% do teto</span>
+      <span class="cs">${emitPct}% do teto</span>
     </div>
     <div class="cstat esporte">
       <span class="cl">Sec. Esporte</span>
-      <span class="cv">${R$(c.valorEsporte || 0)}</span>
+      <span class="cv">${R$(esporte)}</span>
       <span class="cs">descontado do saldo</span>
     </div>
     <div class="cstat garantia">
       <span class="cl">Garantia de obra</span>
-      <span class="cv">${R$(c.valorGarantia || 0)}</span>
+      <span class="cv">${R$(garantia)}</span>
       <span class="cs">descontado do saldo</span>
+    </div>
+    <div class="cstat comprometido">
+      <span class="cl">Total comprometido</span>
+      <span class="cv">${R$(comprometido)}</span>
+      <span class="cs">O.S + Esporte + Garantia · ${compPct}%</span>
     </div>
     <div class="cstat saldo ${saldoNeg ? 'negativo' : ''}">
       <span class="cl">${saldoNeg ? 'Estourou o teto' : 'Saldo a emitir'}</span>
       <span class="cv">${R$(c.saldo)}</span>
-      <span class="cs">${c.medicoesFeitas} medições realizadas</span>
+      <span class="cs">teto − comprometido</span>
     </div>
     <div class="cstat media ${saldoNeg ? 'negativo' : ''}">
       <span class="cl">Média por medição restante</span>
       <span class="cv">${R$(c.mediaRestante)}</span>
-      <span class="cs">${c.restantes} medições restantes</span>
+      <span class="cs">${c.restantes} de ${c.medicoesContrato} medições</span>
     </div>`;
 
-  // Barra de uso do teto
-  document.getElementById('teto-bar-wrap').style.display = 'flex';
-  const fill = document.getElementById('teto-fill');
-  fill.style.width = Math.min(100, usadoPct) + '%';
-  fill.style.background = usadoPct >= 100 ? 'var(--red)' : 'var(--amber)';
-  document.getElementById('teto-label').textContent = `Teto utilizado · ${R$(c.totalEmitido)} de ${R$(c.valorContrato)}`;
-  document.getElementById('teto-pct').textContent = usadoPct + '%';
+  // Barra segmentada do teto: O.S + Esporte + Garantia + Saldo
+  document.getElementById('teto-bar-wrap').style.display = 'block';
+  const teto = c.valorContrato || 1;
+  const w = v => (Math.max(0, v) / teto * 100);
+  document.getElementById('teto-bar').innerHTML =
+    `<div class="seg os"    style="width:${w(c.totalEmitido)}%" title="Emitido em O.S"></div>` +
+    `<div class="seg esp"   style="width:${w(esporte)}%" title="Sec. Esporte"></div>` +
+    `<div class="seg gar"   style="width:${w(garantia)}%" title="Garantia de obra"></div>` +
+    `<div class="seg saldo" style="width:${w(saldoPos)}%" title="Saldo a emitir"></div>`;
+  document.getElementById('teto-titulo').innerHTML =
+    `Teto <b>${R$(c.valorContrato)}</b> &nbsp;·&nbsp; Comprometido <b>${R$(comprometido)}</b> (${compPct}%) &nbsp;·&nbsp; Saldo <b style="color:var(--green)">${R$(saldoPos)}</b>`;
+  document.getElementById('teto-legend').innerHTML =
+    `<span><i class="os"></i> Emitido em O.S <b>${R$(c.totalEmitido)}</b></span>` +
+    `<span><i class="esp"></i> Sec. Esporte <b>${R$(esporte)}</b></span>` +
+    `<span><i class="gar"></i> Garantia <b>${R$(garantia)}</b></span>` +
+    `<span><i class="saldo"></i> Saldo a emitir <b>${R$(saldoPos)}</b></span>`;
 
   // Gráfico: realizado (1ª..feitas) + projeção média (restantes até a 12ª)
   const N = c.medicoesContrato;

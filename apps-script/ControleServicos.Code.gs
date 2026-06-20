@@ -142,13 +142,17 @@ function getDados() {
   const saldo         = valorContrato - totalEmitido - valorEsporte - valorGarantia;
   const mediaRestante = restantes > 0 ? saldo / restantes : 0; // média por medição restante
 
+  // Total comprometido do teto = O.S emitidas + Sec. Esporte + garantia de obra
+  const totalComprometido = totalEmitido + valorEsporte + valorGarantia;
+
   const round2 = v => Math.round(v * 100) / 100;
   const contrato = {
-    valorContrato   : round2(valorContrato),
-    totalEmitido    : round2(totalEmitido),
-    valorEsporte    : round2(valorEsporte),
-    valorGarantia   : round2(valorGarantia),
-    saldo           : round2(saldo),
+    valorContrato     : round2(valorContrato),
+    totalEmitido      : round2(totalEmitido),
+    valorEsporte      : round2(valorEsporte),
+    valorGarantia     : round2(valorGarantia),
+    totalComprometido : round2(totalComprometido),
+    saldo             : round2(saldo),
     medicoesFeitas  : medicoesFeitas,
     medicoesContrato: MEDICOES_CONTRATO,
     restantes       : restantes,
