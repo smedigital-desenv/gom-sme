@@ -483,6 +483,29 @@
       payloads.push(payload);
     }
 
+    // Agrupamento de visitas (opção 2): solicitações da MESMA escola agendadas para a
+    // MESMA data de visita recebem um grupo_visita comum (1 visita -> N solicitações).
+    // O identificador é determinístico (vis_<escola>_<AAAAMMDD>), então agendamentos
+    // em lotes diferentes da mesma escola+data caem no mesmo grupo automaticamente.
+    (function aplicarGrupoVisita_() {
+      var porGrupo = {};
+      payloads.forEach(function(p) {
+        if (gomNormalizar_(p.situacao) !== 'Visita agendada' || !p.dataAgendamentoVisita) return;
+        var ch = (window.listaChamadosGlobal || []).find(function(x) { return String(x.id || '').trim() === String(p.id).trim(); }) || {};
+        var chaveEscola = String(ch.escolaId || ch.unidade || '').trim();
+        if (!chaveEscola) return;
+        var dataChave = String(p.dataAgendamentoVisita).replace(/[^0-9]/g, '');
+        if (!dataChave) return;
+        var chave = chaveEscola + '|' + dataChave;
+        (porGrupo[chave] = porGrupo[chave] || []).push(p);
+      });
+      Object.keys(porGrupo).forEach(function(chave) {
+        var partes = chave.split('|');
+        var idGrupo = 'vis_' + partes[0].replace(/[^A-Za-z0-9]/g, '') + '_' + partes[1];
+        porGrupo[chave].forEach(function(p) { p.grupoVisita = idGrupo; });
+      });
+    })();
+
     // Aplica OTIMISTA antes da resposta — tela responde na hora
     function aplicarOtimista() {
       payloads.forEach(function(p) {
@@ -494,6 +517,7 @@
         }
         if (p.dataAgendamentoVisita) { campos.dataAgendamentoVisita = p.dataAgendamentoVisita; campos.dataAgendamentoVisitaRaw = p.dataAgendamentoVisita; campos.dataAgendamento = p.dataAgendamentoVisita; campos.dataVisita = p.dataAgendamentoVisita; }
         if (p.equipe) campos.equipe = p.equipe;
+        if (p.grupoVisita) campos.grupoVisita = p.grupoVisita;
         if (typeof window.gomAtualizarChamadoLocal === 'function' && Object.keys(campos).length) {
           window.gomAtualizarChamadoLocal(p.id, campos);
         }

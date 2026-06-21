@@ -455,6 +455,13 @@ function abrirModalAnalise(id) {
 
 function getStatusPermitidosModal(chamado) {
   const st = normalizarSituacaoSistema(chamado.situacao || chamado.status);
+  // Gate por perfil (fallback caso o módulo de fluxo não carregue): a Secretaria não
+  // altera status de execução da Empresa, e a Empresa não altera estados da Secretaria.
+  const perfilGom = String((window.GomAuth && window.GomAuth.perfil) || (window.usuarioAtualGom && window.usuarioAtualGom.perfil) || '').trim().toUpperCase().replace(/[\s-]+/g, '_');
+  if (perfilGom && perfilGom !== 'ADMIN_GOM') {
+    const ehExecucaoEmpresa = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'].indexOf(st) >= 0;
+    if (ehExecucaoEmpresa ? perfilGom !== 'EMPRESA' : perfilGom === 'EMPRESA') return [];
+  }
   const contexto = (telaAtual === 'empresa') ? 'empresa' : (telaAtual === 'fila' ? 'fila' : (telaAtual === 'triagem' ? 'triagem' : 'modal'));
   if (isFluxoAprovacaoModal_(chamado)) return [];
 
@@ -521,6 +528,14 @@ async function salvarStatusDoModal(botao) {
   const chamado = (window.listaChamadosGlobal || []).find(x => String(x.id) === String(idChamadoAberto)) || {};
   const emAprovacao = isFluxoAprovacaoModal_(chamado);
   const btn = botao || document.getElementById('mdlBtnAtualizar');
+
+  // Defense in depth: bloqueia alteração de status por perfil sem permissão no estágio atual
+  // (ex.: Secretaria não altera status de chamado em atendimento pela Empresa).
+  if (typeof window.gomPerfilPodeAlterarStatus === 'function' && !window.gomPerfilPodeAlterarStatus(chamado)) {
+    if (typeof gomMostrarErroAcao === 'function') gomMostrarErroAcao(new Error('Sem permissão'), 'Seu perfil não pode alterar o status deste chamado neste estágio.');
+    else alert('Seu perfil não pode alterar o status deste chamado neste estágio.');
+    return;
+  }
   const obs = document.getElementById('mdlNovaObservacao').value;
   const numeroOs = document.getElementById('mdlNumeroOs');
   const dataPrev = document.getElementById('mdlDataPrevistaConclusao');
