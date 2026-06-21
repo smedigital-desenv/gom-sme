@@ -363,6 +363,59 @@
     .unidade-stats { display: none; }
     thead th.hide-sm, tbody td.hide-sm { display: none; }
   }
+
+  /* ── Mobile (telefones) ──────────────────────────── */
+  @media (max-width: 640px) {
+    main { padding: 12px; }
+
+    /* Header empilhado: marca + atualizar em cima, abas embaixo */
+    header { flex-wrap: wrap; padding: 0 14px; }
+    .header-brand { border-right: none; margin-right: 0; padding: 11px 0; flex: 1; gap: 10px; min-width: 0; }
+    .header-brand > div { min-width: 0; }
+    header h1 { font-size: .92rem; }
+    header p { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .logo { width: 30px; height: 30px; font-size: 14px; }
+    .btn-reload { padding: 0; align-self: center; }
+    .btn-reload span { display: none; }
+    nav { order: 3; flex-basis: 100%; border-top: 1px solid var(--border); }
+    .tab { flex: 1; justify-content: center; padding: 0 8px; height: 46px; font-size: .82rem; }
+
+    /* Cards 2 por linha, mais compactos */
+    .cards { grid-template-columns: repeat(2, 1fr); gap: 9px; margin-bottom: 16px; }
+    .card { padding: 12px; }
+    .card .value { font-size: .98rem; }
+    .card .label { font-size: .63rem; }
+
+    /* Painel de contrato 2 por linha */
+    .contrato-resumo { grid-template-columns: 1fr 1fr; gap: 9px; }
+    .cstat { padding: 10px 11px; }
+    .cstat .cv { font-size: .9rem; }
+
+    /* Barra do teto */
+    .teto-titulo { font-size: .72rem; line-height: 1.5; }
+    .teto-legend { gap: 10px 14px; font-size: .68rem; }
+    .grafico-card { padding: 14px; }
+    .grafico-card h3 { font-size: .72rem; }
+
+    /* Busca + filtro empilhados */
+    .busca-bar { flex-wrap: wrap; gap: 8px; }
+    .busca-bar .input-wrap { flex: 1 1 100% !important; }
+    .badge-count { flex: 1 1 100%; text-align: center; }
+
+    /* Detalhamento: cabeçalho da unidade enxuto */
+    .unidade-header { padding: 14px; gap: 10px; }
+    .unidade-nome { font-size: .85rem; }
+
+    /* Modal vira folha inferior, tabela rola na horizontal */
+    .modal-overlay { padding: 0; align-items: flex-end; }
+    .modal { max-width: 100%; max-height: 92vh; border-radius: var(--radius) var(--radius) 0 0; }
+    .modal-head { padding: 14px 16px; }
+    .modal-body { overflow: auto; }
+    .modal-body table { font-size: .8rem; }
+    .modal-body th, .modal-body td { padding: 8px 10px; }
+    .modal-info { padding: 16px; }
+    .os-grid { grid-template-columns: 1fr; gap: 10px; }
+  }
 </style>
 </head>
 <body>
@@ -383,7 +436,7 @@
       <span class="tab-icon">🏫</span> Detalhamento de O.S
     </button>
   </nav>
-  <button class="btn-reload" onclick="carregar()" title="Atualizar dados">↻ Atualizar</button>
+  <button class="btn-reload" onclick="carregar()" title="Atualizar dados">↻ <span>Atualizar</span></button>
 </header>
 
 <main>
