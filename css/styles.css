@@ -8256,3 +8256,93 @@ body.gom-modal-open { overflow: hidden; }
     margin-left: 0 !important;
   }
 }
+
+/* === Agrupamento de visitas na Fila (escola = uma visita) === */
+.fila-agenda-toolbar-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.fila-visitas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+}
+.fila-visita-card {
+  border: 1px solid rgba(59, 130, 246, .28);
+  border-radius: 16px;
+  overflow: hidden;
+  background: #fff;
+}
+.fila-visita-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 14px;
+  background: linear-gradient(135deg, #e8f1ff, #ffffff);
+  border-bottom: 1px solid rgba(148, 163, 184, .18);
+}
+.fila-visita-head-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.fila-visita-head-main > i {
+  font-size: 1.25rem;
+  color: #1d5fa5;
+  flex: none;
+}
+.fila-visita-head-main strong {
+  display: block;
+  color: #003b73;
+  font-size: .98rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.fila-visita-head-main small {
+  display: block;
+  color: #5b6b7f;
+  font-size: .8rem;
+  font-weight: 600;
+}
+.fila-visita-count {
+  flex: none;
+  background: #1d5fa5;
+  color: #fff;
+  font-size: .78rem;
+  font-weight: 700;
+  padding: 4px 11px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.fila-visita-lote {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 9px 14px;
+  background: #f6f9fe;
+  border-bottom: 1px solid rgba(148, 163, 184, .16);
+}
+.fila-visita-lote-label {
+  font-size: .8rem;
+  font-weight: 700;
+  color: #36506b;
+  white-space: nowrap;
+}
+.fila-visita-lote select.form-select {
+  flex: 1;
+  min-width: 180px;
+  max-width: 320px;
+}
+.fila-visita-card .fila-agenda-rows {
+  padding: 10px 12px;
+}
+@media (max-width: 640px) {
+  .fila-visita-lote select.form-select { min-width: 140px; }
+  .fila-visita-head-main strong { font-size: .92rem; }
+}
