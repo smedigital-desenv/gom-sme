@@ -161,20 +161,132 @@ function gomEmailQuotaRestante() {
   return q;
 }
 
-/* ── ESBOÇO (próximas fases — NÃO usado ainda) ─────────────────────────────
- * Exemplo de como o e-mail de "visita agendada" para a escola será montado a
- * partir dos dados do chamado/visita. O conteúdo final virá da tela de template
- * (Fase B) e o disparo virá do gatilho que lê a fila no Supabase (Fase C).
+/* ── FASE B — Envio transacional (visita agendada para a escola) ─────────────
  *
- * function _montarEmailVisitaAgendada_(dados) {
- *   // dados: { escolaNome, data, equipe, chamados:[{id,tipo,descricao}], link }
- *   var linhas = (dados.chamados || []).map(function(c){
- *     return '<li>#' + c.id + ' — ' + c.tipo + ': ' + c.descricao + '</li>';
- *   }).join('');
- *   var html = '<h2>Visita técnica agendada</h2>' +
- *     '<p>Sua unidade (' + dados.escolaNome + ') tem visita agendada para <b>' +
- *     dados.data + '</b>, equipe <b>' + dados.equipe + '</b>.</p>' +
- *     '<p>Itens previstos:</p><ul>' + linhas + '</ul>';
- *   return { assunto: 'Visita agendada — ' + dados.escolaNome + ' em ' + dados.data, corpoHtml: html };
- * }
+ * Como chamar (do GAS de agendamento ou de uma função de gatilho):
+ *
+ *   gomEnviarEmailVisitaAgendada({
+ *     para:           'diretoria@escola.edu.br',
+ *     escolaNome:     'EMEF Profª Maria José',
+ *     dataVisita:     '25/06/2026',
+ *     equipe:         'Equipe Alfa',
+ *     chamados: [
+ *       { id: 1247, tipo: 'Cobertura', descricao: 'Telhado com infiltração' },
+ *       { id: 1251, tipo: 'Elétrica',  descricao: 'Tomadas sem energia na sala 4' }
+ *     ]
+ *   });
+ *
+ * Assunto e corpo são lidos de EMAIL_VISITA_ASSUNTO / EMAIL_VISITA_CORPO no
+ * Supabase (editáveis na tela Configurações). Fallback embutido se indisponível.
  */
+
+function _lerConfigEmail_(cfg, chave, padrao) {
+  try {
+    var url = cfg.SUPABASE_URL + '/rest/v1/' + cfg.TABELA_CONF
+      + '?select=valor&chave=eq.' + encodeURIComponent(chave) + '&ativo=eq.true&limit=1';
+    var r = UrlFetchApp.fetch(url, {
+      method: 'GET',
+      headers: { apikey: cfg.SUPABASE_SERVICE_ROLE_KEY, Authorization: 'Bearer ' + cfg.SUPABASE_SERVICE_ROLE_KEY },
+      muteHttpExceptions: true
+    });
+    var dados = JSON.parse(r.getContentText() || '[]');
+    if (Array.isArray(dados) && dados.length && dados[0].valor) return String(dados[0].valor);
+  } catch (e) { Logger.log('_lerConfigEmail_ erro: ' + e); }
+  return padrao || '';
+}
+
+function _aplicarVariaveis_(template, vars) {
+  var out = String(template || '');
+  Object.keys(vars || {}).forEach(function(k) { out = out.split(k).join(String(vars[k] || '')); });
+  return out;
+}
+
+function _montarListaChamados_(chamados) {
+  if (!Array.isArray(chamados) || !chamados.length) return '';
+  return '<ul style="margin:8px 0;padding-left:20px;">'
+    + chamados.map(function(c) {
+        return '<li style="margin-bottom:4px;"><strong>#' + (c.id || '') + '</strong>'
+          + (c.tipo ? ' — ' + c.tipo : '') + (c.descricao ? ': ' + c.descricao : '') + '</li>';
+      }).join('') + '</ul>';
+}
+
+function gomEnviarEmailVisitaAgendada(dados) {
+  dados = dados || {};
+  var para = dados.para;
+  if (!para) return { ok: false, erro: '"para" é obrigatório.' };
+
+  var cfg = null;
+  try {
+    var supaUrl = _prop_('SUPABASE_URL', '');
+    var supaKey = _prop_('SUPABASE_SERVICE_ROLE_KEY', '');
+    var prefix  = _prop_('DB_PREFIX', '');
+    if (supaUrl && supaKey) cfg = { SUPABASE_URL: supaUrl, SUPABASE_SERVICE_ROLE_KEY: supaKey, TABELA_CONF: prefix + 'configuracoes' };
+  } catch (e) {}
+
+  var assuntoTpl = (cfg ? _lerConfigEmail_(cfg, 'EMAIL_VISITA_ASSUNTO', '') : '')
+    || 'Visita técnica agendada — {{escola}} em {{data_visita}}';
+
+  var corpoTpl = (cfg ? _lerConfigEmail_(cfg, 'EMAIL_VISITA_CORPO', '') : '')
+    || '<p>Prezados responsáveis da <strong>{{escola}}</strong>,</p>'
+     + '<p>Informamos que uma visita técnica foi agendada para <strong>{{data_visita}}</strong>, com a equipe <strong>{{equipe}}</strong>.</p>'
+     + '<p>Itens previstos:</p>{{lista_chamados}}'
+     + '<p>Em caso de dúvidas, entre em contato com a Gerência de Obras e Manutenção.</p>'
+     + '<p>Atenciosamente,<br><strong>GOM · SME Ribeirão Preto</strong></p>';
+
+  var primeiroId = (Array.isArray(dados.chamados) && dados.chamados.length) ? String(dados.chamados[0].id || '') : '';
+  var vars = {
+    '{{escola}}':         dados.escolaNome || '',
+    '{{data_visita}}':    dados.dataVisita  || '',
+    '{{equipe}}':         dados.equipe      || '',
+    '{{lista_chamados}}': _montarListaChamados_(dados.chamados),
+    '{{numero}}':         primeiroId
+  };
+
+  return gomEnviarEmail_({
+    para:      para,
+    assunto:   _aplicarVariaveis_(assuntoTpl, vars),
+    corpoHtml: _layoutEmail_(_aplicarVariaveis_(corpoTpl, vars))
+  });
+}
+
+function _layoutEmail_(conteudo) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background:#f1f5f9;">'
+    + '<div style="max-width:600px;margin:24px auto;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1e293b;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,.08);">'
+      + '<div style="background:#003b73;padding:20px 24px;">'
+        + '<div style="color:#fff;font-size:20px;font-weight:900;">GOM · SME</div>'
+        + '<div style="color:#93c5fd;font-size:12px;margin-top:2px;">Gerência de Obras e Manutenção · Ribeirão Preto</div>'
+      + '</div>'
+      + '<div style="padding:24px;">' + conteudo + '</div>'
+      + '<div style="padding:14px 24px;background:#f8fafc;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;text-align:center;">'
+        + 'E-mail automático do sistema GOM · SME &mdash; não responda diretamente a esta mensagem.'
+      + '</div>'
+    + '</div></body></html>';
+}
+
+/** Teste do e-mail de visita agendada — rode no editor do Apps Script. */
+function gomTesteEmailVisitaAgendada() {
+  var para = _prop_('GOM_EMAIL_TESTE_PARA', '');
+  if (!para) throw new Error('Defina GOM_EMAIL_TESTE_PARA nas Propriedades do Script.');
+  var r = gomEnviarEmailVisitaAgendada({
+    para: para,
+    escolaNome: 'EMEF Profª Maria José (TESTE)',
+    dataVisita: '25/06/2026',
+    equipe:     'Equipe Alfa',
+    chamados: [
+      { id: 1247, tipo: 'Cobertura',  descricao: 'Telhado com infiltração no bloco B' },
+      { id: 1251, tipo: 'Elétrica',   descricao: 'Tomadas sem energia na sala 4' },
+      { id: 1260, tipo: 'Hidráulica', descricao: 'Vazamento no bebedouro do pátio' }
+    ]
+  });
+  Logger.log(JSON.stringify(r));
+  if (!r.ok) throw new Error('Falha: ' + r.erro);
+  return r;
+}
+
+/* ── FASE C (próxima) ────────────────────────────────────────────────────────
+ * Gatilho diário que varreia chamados em atraso de SLA e envia e-mails de alerta.
+ * Implementado após validação da Fase B.
+ *
+ * function gomDispararAlertasSLA() { ... }
+ */
+

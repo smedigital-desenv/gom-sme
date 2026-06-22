@@ -37,6 +37,187 @@
   /* ==========================================================
      v17.1 - Editor intuitivo de listas de e-mail
      ========================================================== */
+  // ── Chaves de template de e-mail (editor rico) ────────────────────────────
+  const CONFIG_EMAIL_TEMPLATE_CORPO_KEYS = [
+    'EMAIL_VISITA_CORPO',
+    'EMAIL_SLA_CORPO'
+  ];
+
+  const CONFIG_EMAIL_TEMPLATE_ASSUNTO_KEYS = [
+    'EMAIL_VISITA_ASSUNTO',
+    'EMAIL_SLA_ASSUNTO'
+  ];
+
+  // Mapa de variáveis disponíveis por template de corpo
+  const CONFIG_EMAIL_VARIAVEIS = {
+    'EMAIL_VISITA_CORPO':   ['{{escola}}','{{data_visita}}','{{equipe}}','{{lista_chamados}}','{{numero}}'],
+    'EMAIL_SLA_CORPO':      ['{{numero}}','{{escola}}','{{etapa}}','{{dias_atraso}}','{{status}}','{{link}}'],
+    'EMAIL_VISITA_ASSUNTO': ['{{escola}}','{{data_visita}}','{{equipe}}','{{numero}}'],
+    'EMAIL_SLA_ASSUNTO':    ['{{numero}}','{{escola}}','{{etapa}}','{{dias_atraso}}','{{status}}']
+  };
+
+  function isConfigEmailTempoCorpo_(chave) {
+    return CONFIG_EMAIL_TEMPLATE_CORPO_KEYS.indexOf(String(chave || '').trim()) >= 0;
+  }
+  function isConfigEmailTempoAssunto_(chave) {
+    return CONFIG_EMAIL_TEMPLATE_ASSUNTO_KEYS.indexOf(String(chave || '').trim()) >= 0;
+  }
+
+  // Renderiza campo de assunto com chips de variáveis
+  function renderEmailAssuntoEditor_(item, id, chave, valor) {
+    var variaveis = CONFIG_EMAIL_VARIAVEIS[chave] || [];
+    var chips = variaveis.map(function(v) {
+      return '<button type="button" class="cfg-email-var-chip" title="Inserir variável" '
+        + 'onclick="gomCfgEmailInserirVarAssunto(\'' + escapeJsAttr(id) + '\',\'' + escapeJsAttr(v) + '\')">'
+        + escapeHtml(v) + '</button>';
+    }).join('');
+    return '<div class="cfg-email-assunto-wrap">'
+      + '<input id="cfg_valor_' + escapeHtml(id) + '" class="form-control form-control-sm fw-bold cfg-email-assunto-input" '
+      + 'value="' + escapeHtml(valor) + '" placeholder="Assunto do e-mail" '
+      + 'oninput="marcarConfiguracaoAlterada(\'' + escapeJsAttr(chave) + '\')">'
+      + (chips ? '<div class="cfg-email-vars"><span class="cfg-email-vars-label">Inserir:</span>' + chips + '</div>' : '')
+      + '</div>';
+  }
+
+  // Renderiza editor rico de corpo HTML com toolbar e preview
+  function renderEmailCorpoEditor_(item, id, chave, valor) {
+    var variaveis = CONFIG_EMAIL_VARIAVEIS[chave] || [];
+    var chips = variaveis.map(function(v) {
+      return '<button type="button" class="cfg-email-var-chip" title="Inserir variável no cursor" '
+        + 'onclick="gomCfgEmailInserirVarCorpo(\'' + escapeJsAttr(id) + '\',\'' + escapeJsAttr(v) + '\')">'
+        + escapeHtml(v) + '</button>';
+    }).join('');
+
+    return '<div class="cfg-email-editor-wrap" id="cfg_editor_wrap_' + escapeHtml(id) + '">'
+
+      // Toolbar de formatação
+      + '<div class="cfg-email-toolbar">'
+        + '<button type="button" class="cfg-email-tb-btn" title="Negrito" onclick="gomCfgEmailCmd(\'' + escapeJsAttr(id) + '\',\'bold\')"><i class="bi bi-type-bold"></i></button>'
+        + '<button type="button" class="cfg-email-tb-btn" title="Itálico" onclick="gomCfgEmailCmd(\'' + escapeJsAttr(id) + '\',\'italic\')"><i class="bi bi-type-italic"></i></button>'
+        + '<button type="button" class="cfg-email-tb-btn" title="Sublinhado" onclick="gomCfgEmailCmd(\'' + escapeJsAttr(id) + '\',\'underline\')"><i class="bi bi-type-underline"></i></button>'
+        + '<span class="cfg-email-tb-sep"></span>'
+        + '<button type="button" class="cfg-email-tb-btn" title="Lista com marcadores" onclick="gomCfgEmailCmd(\'' + escapeJsAttr(id) + '\',\'insertUnorderedList\')"><i class="bi bi-list-ul"></i></button>'
+        + '<button type="button" class="cfg-email-tb-btn" title="Lista numerada" onclick="gomCfgEmailCmd(\'' + escapeJsAttr(id) + '\',\'insertOrderedList\')"><i class="bi bi-list-ol"></i></button>'
+        + '<span class="cfg-email-tb-sep"></span>'
+        + '<button type="button" class="cfg-email-tb-btn" title="Link" onclick="gomCfgEmailInserirLink(\'' + escapeJsAttr(id) + '\')"><i class="bi bi-link-45deg"></i></button>'
+        + '<span class="cfg-email-tb-sep"></span>'
+        + '<button type="button" class="cfg-email-tb-btn cfg-email-tb-preview-btn" title="Pré-visualizar e-mail" onclick="gomCfgEmailPreview(\'' + escapeJsAttr(id) + '\',\'' + escapeJsAttr(chave) + '\')"><i class="bi bi-eye"></i> Preview</button>'
+      + '</div>'
+
+      // Área editável (contenteditable = editor rico)
+      + '<div id="cfg_editor_' + escapeHtml(id) + '" class="cfg-email-body-editor" contenteditable="true" '
+        + 'data-chave="' + escapeHtml(chave) + '" '
+        + 'oninput="gomCfgEmailSincronizar(\'' + escapeJsAttr(id) + '\',\'' + escapeJsAttr(chave) + '\')">'
+        + valor  // HTML já vem do banco
+      + '</div>'
+
+      // Input oculto que o sistema de configurações lê/salva
+      + '<textarea id="cfg_valor_' + escapeHtml(id) + '" class="cfg-email-hidden-value" '
+        + 'oninput="marcarConfiguracaoAlterada(\'' + escapeJsAttr(chave) + '\')" aria-hidden="true">'
+        + escapeHtml(valor)
+      + '</textarea>'
+
+      // Chips de variáveis
+      + (chips
+          ? '<div class="cfg-email-vars"><span class="cfg-email-vars-label"><i class="bi bi-braces me-1"></i>Variáveis:</span>' + chips + '</div>'
+          : '')
+
+      // Área de preview (oculta até clicar)
+      + '<div id="cfg_preview_' + escapeHtml(id) + '" class="cfg-email-preview" style="display:none"></div>'
+
+    + '</div>';
+  }
+
+  // Sincroniza contenteditable → textarea oculto (que vai para o banco)
+  window.gomCfgEmailSincronizar = function(id, chave) {
+    var editor = document.getElementById('cfg_editor_' + id);
+    var hidden = document.getElementById('cfg_valor_' + id);
+    if (editor && hidden) {
+      hidden.value = editor.innerHTML;
+      if (typeof marcarConfiguracaoAlterada === 'function') marcarConfiguracaoAlterada(chave);
+    }
+  };
+
+  // Executa comando de formatação no editor rico
+  window.gomCfgEmailCmd = function(id, cmd) {
+    var editor = document.getElementById('cfg_editor_' + id);
+    if (!editor) return;
+    editor.focus();
+    document.execCommand(cmd, false, null);
+    window.gomCfgEmailSincronizar(id, editor.dataset.chave || '');
+  };
+
+  // Insere link no editor rico
+  window.gomCfgEmailInserirLink = function(id) {
+    var url = prompt('URL do link:');
+    if (!url) return;
+    var editor = document.getElementById('cfg_editor_' + id);
+    if (!editor) return;
+    editor.focus();
+    document.execCommand('createLink', false, url);
+    window.gomCfgEmailSincronizar(id, editor.dataset.chave || '');
+  };
+
+  // Insere variável no editor rico (no cursor)
+  window.gomCfgEmailInserirVarCorpo = function(id, variavel) {
+    var editor = document.getElementById('cfg_editor_' + id);
+    if (!editor) return;
+    editor.focus();
+    var sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      var range = sel.getRangeAt(0);
+      range.deleteContents();
+      range.insertNode(document.createTextNode(variavel));
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } else {
+      editor.innerHTML += variavel;
+    }
+    window.gomCfgEmailSincronizar(id, editor.dataset.chave || '');
+  };
+
+  // Insere variável no input de assunto (na posição do cursor)
+  window.gomCfgEmailInserirVarAssunto = function(id, variavel) {
+    var input = document.getElementById('cfg_valor_' + id);
+    if (!input) return;
+    var ini = input.selectionStart || 0;
+    var fim = input.selectionEnd || ini;
+    var antes = input.value.slice(0, ini);
+    var depois = input.value.slice(fim);
+    input.value = antes + variavel + depois;
+    input.selectionStart = input.selectionEnd = ini + variavel.length;
+    input.focus();
+    input.dispatchEvent(new Event('input'));
+  };
+
+  // Mostra/esconde preview do e-mail com substituição de variáveis de exemplo
+  window.gomCfgEmailPreview = function(id, chave) {
+    var editor = document.getElementById('cfg_editor_' + id);
+    var preview = document.getElementById('cfg_preview_' + id);
+    if (!editor || !preview) return;
+    if (preview.style.display !== 'none') { preview.style.display = 'none'; return; }
+    var exemplos = {
+      '{{escola}}': 'EMEF Profª Maria José',
+      '{{data_visita}}': '25/06/2026',
+      '{{equipe}}': 'Equipe Alfa',
+      '{{numero}}': '1247',
+      '{{etapa}}': 'Análise',
+      '{{dias_atraso}}': '5',
+      '{{status}}': 'Em análise',
+      '{{link}}': '#',
+      '{{lista_chamados}}': '<ul><li>#1247 — Cobertura: Telhado com infiltração no bloco B</li><li>#1251 — Elétrica: Tomadas sem energia na sala 4</li></ul>'
+    };
+    var html = editor.innerHTML;
+    Object.keys(exemplos).forEach(function(v) {
+      html = html.split(v).join(exemplos[v]);
+    });
+    preview.innerHTML = '<div class="cfg-email-preview-label"><i class="bi bi-eye me-1"></i>Pré-visualização (dados de exemplo)</div>'
+      + '<div class="cfg-email-preview-body">' + html + '</div>';
+    preview.style.display = '';
+    preview.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
+
   const CONFIG_EMAIL_LIST_KEYS = [
     'EMAILS_ADMIN_GOM',
     'EMAILS_SECRETARIA',
@@ -505,7 +686,8 @@
       'Anexos': 'bi-paperclip',
       'Status': 'bi-diagram-3-fill',
       'Personalizadas': 'bi-pencil-square',
-      'Permissões': 'bi-shield-lock-fill'
+      'Permissões': 'bi-shield-lock-fill',
+      'E-mail': 'bi-envelope-fill'
     };
     return mapa[grupo] || 'bi-sliders';
   };
@@ -521,8 +703,12 @@
     const alterada = window.configuracoesAlteradas && window.configuracoesAlteradas[chave];
     const editorValor = isConfigEmailList_(chave)
       ? renderEmailListEditorConfig_(item, id, chave, valorTela)
-      : '<input id="cfg_valor_' + escapeHtml(id) + '" class="form-control form-control-sm fw-bold" value="' + valor + '" placeholder="Valor da configuração" oninput="marcarConfiguracaoAlterada(\'' + escapeJsAttr(chave) + '\')">';
-    const classeEmail = isConfigEmailList_(chave) ? ' config-row-email-list' : '';
+      : isConfigEmailTempoCorpo_(chave)
+        ? renderEmailCorpoEditor_(item, id, chave, valorTela)
+        : isConfigEmailTempoAssunto_(chave)
+          ? renderEmailAssuntoEditor_(item, id, chave, valorTela)
+          : '<input id="cfg_valor_' + escapeHtml(id) + '" class="form-control form-control-sm fw-bold" value="' + valor + '" placeholder="Valor da configuração" oninput="marcarConfiguracaoAlterada(\'' + escapeJsAttr(chave) + '\')">';
+    const classeEmail = isConfigEmailList_(chave) ? ' config-row-email-list' : (isConfigEmailTempoCorpo_(chave) ? ' config-row-email-template' : '');
 
     return '<div class="config-row' + classeEmail + (alterada ? ' alterada' : '') + '" data-chave="' + escapeHtml(chave) + '">'
       + '<div class="config-row-main">'
