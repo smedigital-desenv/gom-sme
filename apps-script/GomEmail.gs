@@ -517,9 +517,23 @@ function gomDispararAlertasSLA() {
   var statusAbertos = Object.keys(sla).map(function(s) { return encodeURIComponent('"' + s + '"'); }).join(',');
   var chamados = _sbGet_(cfg,
     '/rest/v1/' + cfg.TABELA_SOL
-    + '?select=id,situacao,data_hora_ultima_acao,data_hora_entrada_fila,escola_id,unidade_escolar'
+    + '?select=id,situacao,data_hora_ultima_acao,data_hora_entrada_fila,escola_id'
     + '&situacao=in.(' + statusAbertos + ')'
     + '&limit=500');
+
+  // O nome da escola vem da tabela escolas (compartilhada), não da solicitacoes
+  // (a coluna unidade_escolar não existe lá). Monta um mapa id -> nome.
+  var nomesEscola = {};
+  if (Array.isArray(chamados) && chamados.length) {
+    var idsEscola = {};
+    chamados.forEach(function(c) { if (c.escola_id) idsEscola[c.escola_id] = true; });
+    var listaEscolaIds = Object.keys(idsEscola);
+    if (listaEscolaIds.length) {
+      var escolasRows = _sbGet_(cfg, '/rest/v1/' + cfg.TABELA_ESCOLAS
+        + '?select=id,nome&id=in.(' + listaEscolaIds.map(function(x) { return encodeURIComponent(x); }).join(',') + ')&limit=2000');
+      (Array.isArray(escolasRows) ? escolasRows : []).forEach(function(e) { nomesEscola[e.id] = e.nome; });
+    }
+  }
 
   // Busca alertas já enviados hoje para evitar duplicata
   var inicioHoje = new Date(); inicioHoje.setHours(0,0,0,0);
@@ -553,7 +567,7 @@ function gomDispararAlertasSLA() {
     }
     var vars = {
       '{{numero}}':     ch.id,
-      '{{escola}}':     ch.unidade_escolar || ('Escola #' + ch.escola_id),
+      '{{escola}}':     nomesEscola[ch.escola_id] || ('Escola #' + ch.escola_id),
       '{{etapa}}':      ch.situacao,
       '{{dias_atraso}}':diasAtraso,
       '{{status}}':     ch.situacao,
