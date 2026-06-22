@@ -219,7 +219,8 @@ function gomEnviarEmailVisitaAgendada(dados) {
   try {
     var supaUrl = _prop_('SUPABASE_URL', '');
     var supaKey = _prop_('SUPABASE_SERVICE_ROLE_KEY', '');
-    var prefix  = _prop_('DB_PREFIX', '').trim(); // espaço = vazio
+    var rawPrefix = _prop_('DB_PREFIX', 'prod').trim().toLowerCase();
+    var prefix = (rawPrefix === 'hml' || rawPrefix === 'hml_') ? 'hml_' : '';
     if (supaUrl && supaKey) cfg = { SUPABASE_URL: supaUrl, SUPABASE_SERVICE_ROLE_KEY: supaKey, TABELA_CONF: prefix + 'configuracoes' };
   } catch (e) {}
 
@@ -303,7 +304,10 @@ function gomTesteEmailVisitaAgendada() {
  * ========================================================================== */
 
 function _cfgC_() {
-  var prefix = _prop_('DB_PREFIX', '').trim(); // espaço = vazio (Apps Script não aceita valor em branco)
+  var rawPrefix = _prop_('DB_PREFIX', 'prod').trim().toLowerCase();
+  // Convenção: 'prod' ou qualquer valor não reconhecido = produção (sem prefixo)
+  // 'hml' ou 'hml_' = homologação
+  var prefix = (rawPrefix === 'hml' || rawPrefix === 'hml_') ? 'hml_' : '';
   return {
     SUPABASE_URL:              _prop_('SUPABASE_URL', ''),
     SUPABASE_SERVICE_ROLE_KEY: _prop_('SUPABASE_SERVICE_ROLE_KEY', ''),
