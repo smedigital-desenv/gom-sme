@@ -376,10 +376,14 @@ function gomProcessarFilaEmail() {
     return;
   }
 
-  var pendentes = _sbGet_(cfg,
-    '/rest/v1/' + cfg.TABELA_FILA
+  Logger.log('gomProcessarFilaEmail: lendo tabela ' + cfg.TABELA_FILA);
+  var url = '/rest/v1/' + cfg.TABELA_FILA
     + '?status=eq.pendente&tentativas=lt.' + cfg.MAX_TENTATIVAS
-    + '&order=criado_em.asc&limit=' + cfg.LIMITE_FILA);
+    + '&order=criado_em.asc&limit=' + cfg.LIMITE_FILA;
+  Logger.log('gomProcessarFilaEmail: query = ' + url);
+
+  var pendentes = _sbGet_(cfg, url);
+  Logger.log('gomProcessarFilaEmail: resposta = ' + JSON.stringify(pendentes).slice(0, 300));
 
   if (!Array.isArray(pendentes) || !pendentes.length) {
     Logger.log('gomProcessarFilaEmail: nenhum e-mail pendente.');
@@ -558,13 +562,16 @@ function gomTesteFilaEmail() {
   if (!cfg.SUPABASE_URL || !cfg.SUPABASE_SERVICE_ROLE_KEY)
     throw new Error('Configure SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY nas Propriedades do Script.');
 
-  _sbPost_(cfg, '/rest/v1/' + cfg.TABELA_FILA, {
+  Logger.log('Tabela alvo: ' + cfg.TABELA_FILA);
+  var respInsert = _sbPost_(cfg, '/rest/v1/' + cfg.TABELA_FILA, {
     tipo: 'visita_agendada', para: para, cc: '',
     assunto: 'GOM · Teste de fila de e-mail',
     corpo_html: _layoutEmail_('<p>Teste do processador de fila. Se chegou, a Fase C está funcionando.</p>'
       + '<p style="color:#6b7280;font-size:12px;">' + new Date().toLocaleString('pt-BR') + '</p>'),
     dados_ref: { teste: true }
   });
+  Logger.log('Resposta do insert: HTTP ' + respInsert.getResponseCode() + ' — ' + respInsert.getContentText().slice(0, 200));
+
   Logger.log('Item de teste gravado na fila. Processando...');
   gomProcessarFilaEmail();
   Logger.log('gomTesteFilaEmail concluído.');
