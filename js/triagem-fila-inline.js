@@ -543,6 +543,8 @@
             alert('Salvos: ' + (retorno.salvos || 0) + '. Falharam: ' + retorno.erros.length + '\n' +
               retorno.erros.map(function(e) { return '#' + e.id + ': ' + e.erro; }).join('\n'));
           }
+          // C1: dispara e-mail de visita agendada para cada escola do lote
+          _dispararEmailVisitasSalvas_(payloads);
         })
         .withFailureHandler(function(err) {
           if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(btnSalvar);
@@ -754,6 +756,112 @@
       input.value = typeof gomDataParaBR === 'function' ? gomDataParaBR(iso) : iso;
     }
   };
+
+  // ── C1: grava na fila de e-mail quando payloads contêm "Visita agendada" ──
+  // Agrupa por grupo_visita (ou escola+data), monta 1 e-mail por escola e
+  // chama window.gomGravarFilaEmail (dados.js) — sem bloquear a UI.
+  function _dispararEmailVisitasSalvas_(payloads) {
+    if (typeof window.gomGravarFilaEmail !== 'function') return;
+
+    // Filtra só os que viraram "Visita agendada"
+    var visitaPayloads = (payloads || []).filter(function(p) {
+      return gomNormalizar_(p.situacao) === 'Visita agendada';
+    });
+    if (!visitaPayloads.length) return;
+
+    // Busca configs de e-mail (assunto, corpo, responsável GOM, extras)
+    var cfgs = window.configuracoesGlobal || [];
+    function cfg(chave, fb) {
+      var it = cfgs.find(function(c) { return c.chave === chave; });
+      return (it && it.valor) ? String(it.valor) : (fb || '');
+    }
+    if (cfg('EMAIL_VISITA_ATIVO', 'SIM').toUpperCase() !== 'SIM') return;
+
+    var assuntoTpl = cfg('EMAIL_VISITA_ASSUNTO', 'Visita técnica agendada — {{escola}} em {{data_visita}}');
+    var corpoTpl   = cfg('EMAIL_VISITA_CORPO', '<p>{{escola}}</p><p>{{data_visita}} · {{equipe}}</p>{{lista_chamados}}');
+    var responsavelGOM = cfg('EMAIL_RESPONSAVEL_GOM', '');
+    var extras        = cfg('EMAIL_VISITA_DESTINATARIOS_EXTRA', '');
+
+    // Agrupa payloads por chave de visita (grupo_visita ou escola+data)
+    var porVisita = {};
+    var ordemVisita = [];
+    visitaPayloads.forEach(function(p) {
+      var ch = (window.listaChamadosGlobal || []).find(function(x) {
+        return String(x.id || '') === String(p.id || '');
+      }) || {};
+      var chaveGrupo = p.grupoVisita || (String(ch.escolaId || p.id) + '_' + String(p.dataAgendamentoVisita || ''));
+      if (!porVisita[chaveGrupo]) { porVisita[chaveGrupo] = []; ordemVisita.push(chaveGrupo); }
+      porVisita[chaveGrupo].push({ p: p, ch: ch });
+    });
+
+    ordemVisita.forEach(function(chaveGrupo) {
+      var grupo = porVisita[chaveGrupo];
+      var primeiro = grupo[0];
+      var ch0 = primeiro.ch;
+      var p0  = primeiro.p;
+
+      var emailEscola = ch0.emailEscola || '';
+      if (!emailEscola) {
+        window.gomWarn && window.gomWarn('[GOM email] escola sem e-mail cadastrado — chamado #' + p0.id);
+        return;
+      }
+
+      var escolaNome  = ch0.unidade || '';
+      var dataVisita  = p0.dataAgendamentoVisita || '';
+      var equipe      = p0.equipe || ch0.equipe || '';
+
+      // Monta lista de chamados
+      var listaChamados = '<ul style="margin:8px 0;padding-left:20px;">'
+        + grupo.map(function(g) {
+            var c = g.ch;
+            return '<li style="margin-bottom:4px;"><strong>#' + (c.id || g.p.id) + '</strong>'
+              + (c.classificacao ? ' — ' + c.classificacao : '')
+              + (c.detalhamento  ? ': '  + String(c.detalhamento).slice(0, 80) : '') + '</li>';
+          }).join('')
+        + '</ul>';
+
+      // Substitui variáveis
+      function apVar(tpl, vars) {
+        var s = String(tpl || '');
+        Object.keys(vars).forEach(function(k) { s = s.split(k).join(String(vars[k] || '')); });
+        return s;
+      }
+      var vars = {
+        '{{escola}}':         escolaNome,
+        '{{data_visita}}':    dataVisita,
+        '{{equipe}}':         equipe,
+        '{{lista_chamados}}': listaChamados,
+        '{{numero}}':         String(ch0.id || p0.id || '')
+      };
+
+      var assunto = apVar(assuntoTpl, vars);
+      var corpo   = apVar(corpoTpl,   vars);
+
+      // CC: responsável GOM + lista extra
+      var ccArr = [responsavelGOM, extras].join(',').split(/[;,]/)
+        .map(function(e) { return String(e).trim(); })
+        .filter(function(e) { return e && /@/.test(e); });
+      var cc = ccArr.join(',');
+
+      window.gomGravarFilaEmail({
+        tipo:       'visita_agendada',
+        para:       emailEscola,
+        cc:         cc,
+        assunto:    assunto,
+        corpoHtml:  corpo,
+        dadosRef:   {
+          escola_id:    ch0.escolaId || '',
+          grupo_visita: chaveGrupo,
+          chamados:     grupo.map(function(g) { return g.p.id; })
+        }
+      }).then(function(r) {
+        if (!r.ok) window.gomWarn && window.gomWarn('[GOM email] falha ao gravar fila:', r.erro);
+        else window.gomLog && window.gomLog('[GOM email] visita agendada gravada na fila para', emailEscola);
+      }).catch(function(e) {
+        window.gomWarn && window.gomWarn('[GOM email] erro:', e);
+      });
+    });
+  }
 
   try { if (typeof renderizarTela !== 'undefined') renderizarTela = window.renderizarTela; } catch(e) {}
   try { if (typeof renderListaTriagemOperacional !== 'undefined') renderListaTriagemOperacional = window.renderListaTriagemOperacional; } catch(e) {}

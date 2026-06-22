@@ -290,3 +290,278 @@ function gomTesteEmailVisitaAgendada() {
  * function gomDispararAlertasSLA() { ... }
  */
 
+
+/* ── FASE C — Processador da fila + alertas de SLA ─────────────────────────
+ *
+ * INSTALAÇÃO DOS GATILHOS (rode UMA VEZ no editor):
+ *   gomInstalarGatilhos()
+ *
+ * Propriedades adicionais necessárias (além das já configuradas):
+ *   SUPABASE_URL              = https://iqldovwttomkjkoakosc.supabase.co
+ *   SUPABASE_SERVICE_ROLE_KEY = <service_role key do Supabase>
+ *   DB_PREFIX                 = ''  (produção) ou 'hml_' (homologação)
+ * ========================================================================== */
+
+function _cfgC_() {
+  var prefix = _prop_('DB_PREFIX', '');
+  return {
+    SUPABASE_URL:              _prop_('SUPABASE_URL', ''),
+    SUPABASE_SERVICE_ROLE_KEY: _prop_('SUPABASE_SERVICE_ROLE_KEY', ''),
+    TABELA_FILA:               prefix + 'email_fila',
+    TABELA_CONF:               prefix + 'configuracoes',
+    TABELA_SOL:                prefix + 'solicitacoes',
+    TABELA_ESCOLAS:            'escolas',            // compartilhada entre prod e hml
+    LIMITE_FILA:               50,
+    MAX_TENTATIVAS:            3
+  };
+}
+
+function _sbGet_(cfg, path) {
+  var r = UrlFetchApp.fetch(cfg.SUPABASE_URL + path, {
+    method: 'GET',
+    headers: { apikey: cfg.SUPABASE_SERVICE_ROLE_KEY, Authorization: 'Bearer ' + cfg.SUPABASE_SERVICE_ROLE_KEY },
+    muteHttpExceptions: true
+  });
+  return JSON.parse(r.getContentText() || '[]');
+}
+
+function _sbPatch_(cfg, path, body) {
+  UrlFetchApp.fetch(cfg.SUPABASE_URL + path, {
+    method: 'PATCH',
+    headers: {
+      apikey: cfg.SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: 'Bearer ' + cfg.SUPABASE_SERVICE_ROLE_KEY,
+      'Content-Type': 'application/json',
+      Prefer: 'return=minimal'
+    },
+    payload: JSON.stringify(body),
+    muteHttpExceptions: true
+  });
+}
+
+function _sbPost_(cfg, path, body) {
+  var r = UrlFetchApp.fetch(cfg.SUPABASE_URL + path, {
+    method: 'POST',
+    headers: {
+      apikey: cfg.SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: 'Bearer ' + cfg.SUPABASE_SERVICE_ROLE_KEY,
+      'Content-Type': 'application/json',
+      Prefer: 'return=minimal'
+    },
+    payload: JSON.stringify(body),
+    muteHttpExceptions: true
+  });
+  return r;
+}
+
+/** Lê uma lista de configurações do Supabase de uma vez. */
+function _lerConfigs_(cfg, chaves) {
+  var in_ = chaves.map(function(c) { return '"' + c + '"'; }).join(',');
+  var r = _sbGet_(cfg, '/rest/v1/' + cfg.TABELA_CONF
+    + '?select=chave,valor&chave=in.(' + in_ + ')&ativo=eq.true');
+  var mapa = {};
+  (Array.isArray(r) ? r : []).forEach(function(it) { mapa[it.chave] = it.valor || ''; });
+  return mapa;
+}
+
+/* ── C1: processa a fila de e-mails a cada 15 minutos ─────────────────────── */
+function gomProcessarFilaEmail() {
+  var cfg = _cfgC_();
+  if (!cfg.SUPABASE_URL || !cfg.SUPABASE_SERVICE_ROLE_KEY) {
+    Logger.log('gomProcessarFilaEmail: SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY não configurados.');
+    return;
+  }
+
+  var pendentes = _sbGet_(cfg,
+    '/rest/v1/' + cfg.TABELA_FILA
+    + '?status=eq.pendente&tentativas=lt.' + cfg.MAX_TENTATIVAS
+    + '&order=criado_em.asc&limit=' + cfg.LIMITE_FILA);
+
+  if (!Array.isArray(pendentes) || !pendentes.length) {
+    Logger.log('gomProcessarFilaEmail: nenhum e-mail pendente.');
+    return;
+  }
+  Logger.log('gomProcessarFilaEmail: processando ' + pendentes.length + ' e-mails.');
+
+  pendentes.forEach(function(item) {
+    var resultado = gomEnviarEmail_({
+      para:      item.para,
+      cc:        item.cc || undefined,
+      assunto:   item.assunto,
+      corpoHtml: item.corpo_html
+    });
+
+    if (resultado.ok) {
+      _sbPatch_(cfg, '/rest/v1/' + cfg.TABELA_FILA + '?id=eq.' + item.id, {
+        status:     'enviado',
+        enviado_em: new Date().toISOString(),
+        erro_msg:   null
+      });
+      Logger.log('  #' + item.id + ' enviado para ' + item.para);
+    } else {
+      var novasTentativas = (item.tentativas || 0) + 1;
+      _sbPatch_(cfg, '/rest/v1/' + cfg.TABELA_FILA + '?id=eq.' + item.id, {
+        status:     novasTentativas >= cfg.MAX_TENTATIVAS ? 'erro' : 'pendente',
+        tentativas: novasTentativas,
+        erro_msg:   resultado.erro
+      });
+      Logger.log('  #' + item.id + ' FALHOU (tentativa ' + novasTentativas + '): ' + resultado.erro);
+    }
+  });
+}
+
+/* ── C2: gera alertas de SLA e grava na fila (1x/dia, 8h) ──────────────────
+ *
+ * Usa a mesma régua de SLA da tela Alertas. Evita duplicar alertas do mesmo
+ * dia verificando se já existe item na fila com dados_ref->>'chamado_id'
+ * igual e criado_em >= início do dia.
+ */
+function gomDispararAlertasSLA() {
+  var cfg = _cfgC_();
+  if (!cfg.SUPABASE_URL || !cfg.SUPABASE_SERVICE_ROLE_KEY) {
+    Logger.log('gomDispararAlertasSLA: propriedades não configuradas.');
+    return;
+  }
+
+  // Lê configs relevantes
+  var conf = _lerConfigs_(cfg, [
+    'SLA_ANALISE_DIAS','SLA_VISITA_DIAS','SLA_ORCAMENTO_DIAS',
+    'SLA_APROVACAO_DIAS','SLA_FINALIZACAO_DIAS',
+    'EMAIL_SLA_ATIVO','EMAIL_SLA_ASSUNTO','EMAIL_SLA_CORPO',
+    'EMAIL_SLA_DESTINATARIOS','EMAIL_RESPONSAVEL_GOM'
+  ]);
+
+  if (String(conf['EMAIL_SLA_ATIVO'] || 'SIM').toUpperCase() !== 'SIM') {
+    Logger.log('gomDispararAlertasSLA: EMAIL_SLA_ATIVO = NÃO — abortando.');
+    return;
+  }
+
+  var sla = {
+    'Em análise':          Number(conf['SLA_ANALISE_DIAS']    || 3),
+    'Aguardando visita':   Number(conf['SLA_VISITA_DIAS']     || 3),
+    'Visita agendada':     Number(conf['SLA_VISITA_DIAS']     || 3),
+    'Solicitado Orçamento':Number(conf['SLA_ORCAMENTO_DIAS']  || 5),
+    'Orçamento Realizado': Number(conf['SLA_APROVACAO_DIAS']  || 2),
+    'Serviço Realizado':   Number(conf['SLA_FINALIZACAO_DIAS']|| 2)
+  };
+
+  var assuntoTpl = conf['EMAIL_SLA_ASSUNTO']
+    || '[GOM] Chamado {{numero}} — {{etapa}} acima do prazo ({{dias_atraso}} dias)';
+  var corpoTpl = conf['EMAIL_SLA_CORPO']
+    || '<p>Chamado <strong>#{{numero}}</strong> — <strong>{{escola}}</strong><br>'
+     + 'Etapa: <strong>{{etapa}}</strong> · Atraso: <strong>{{dias_atraso}} dias</strong><br>'
+     + 'Status atual: <strong>{{status}}</strong></p>'
+     + '<p>Acesse o GOM para tomar providências.</p>'
+     + '<p>Atenciosamente,<br><strong>GOM · SME Ribeirão Preto</strong></p>';
+
+  var destinatarios = [conf['EMAIL_SLA_DESTINATARIOS'] || '', conf['EMAIL_RESPONSAVEL_GOM'] || '']
+    .join(',').split(/[;,]/).map(function(e) { return e.trim(); })
+    .filter(function(e) { return e && /@/.test(e); });
+  var paraJoin = destinatarios.join(',');
+  if (!paraJoin) { Logger.log('gomDispararAlertasSLA: nenhum destinatário configurado.'); return; }
+
+  // Busca chamados em aberto
+  var statusAbertos = Object.keys(sla).map(function(s) { return '"' + s + '"'; }).join(',');
+  var chamados = _sbGet_(cfg,
+    '/rest/v1/' + cfg.TABELA_SOL
+    + '?select=id,situacao,data_hora_ultima_acao,data_hora_entrada_fila,escola_id,unidade_escolar'
+    + '&situacao=in.(' + statusAbertos + ')'
+    + '&limit=500');
+
+  // Busca alertas já enviados hoje para evitar duplicata
+  var inicioHoje = new Date(); inicioHoje.setHours(0,0,0,0);
+  var jaEnviados = _sbGet_(cfg,
+    '/rest/v1/' + cfg.TABELA_FILA
+    + '?tipo=eq.sla_alerta&criado_em=gte.' + inicioHoje.toISOString()
+    + '&select=dados_ref&limit=500');
+  var idsJaEnviados = {};
+  (Array.isArray(jaEnviados) ? jaEnviados : []).forEach(function(r) {
+    if (r.dados_ref && r.dados_ref.chamado_id) idsJaEnviados[r.dados_ref.chamado_id] = true;
+  });
+
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+  var gerados = 0;
+
+  (Array.isArray(chamados) ? chamados : []).forEach(function(ch) {
+    if (idsJaEnviados[ch.id]) return; // já avisado hoje
+
+    var limDias = sla[ch.situacao];
+    if (!limDias) return;
+
+    var refDate = ch.data_hora_ultima_acao || ch.data_hora_entrada_fila;
+    if (!refDate) return;
+    var diasAtraso = Math.floor((hoje - new Date(refDate)) / 86400000);
+    if (diasAtraso < limDias) return; // ainda no prazo
+
+    function apVar(tpl, vars) {
+      var s = String(tpl || '');
+      Object.keys(vars).forEach(function(k) { s = s.split(k).join(String(vars[k] || '')); });
+      return s;
+    }
+    var vars = {
+      '{{numero}}':     ch.id,
+      '{{escola}}':     ch.unidade_escolar || ('Escola #' + ch.escola_id),
+      '{{etapa}}':      ch.situacao,
+      '{{dias_atraso}}':diasAtraso,
+      '{{status}}':     ch.situacao,
+      '{{link}}':       ''
+    };
+
+    _sbPost_(cfg, '/rest/v1/' + cfg.TABELA_FILA, {
+      tipo:       'sla_alerta',
+      para:       paraJoin,
+      cc:         '',
+      assunto:    apVar(assuntoTpl, vars),
+      corpo_html: _layoutEmail_(apVar(corpoTpl, vars)),
+      dados_ref:  { chamado_id: ch.id, escola_id: ch.escola_id, situacao: ch.situacao, dias_atraso: diasAtraso }
+    });
+    gerados++;
+  });
+
+  Logger.log('gomDispararAlertasSLA: ' + gerados + ' alertas gerados.');
+  // Processa a fila imediatamente (envia na mesma execução)
+  if (gerados > 0) gomProcessarFilaEmail();
+}
+
+/* ── Instalação dos gatilhos ─────────────────────────────────────────────────
+ * Rode gomInstalarGatilhos() UMA VEZ no editor.
+ * Para remover tudo: gomRemoverGatilhos().
+ */
+function gomInstalarGatilhos() {
+  gomRemoverGatilhos();
+  // Fila de e-mails: a cada 15 minutos
+  ScriptApp.newTrigger('gomProcessarFilaEmail')
+    .timeBased().everyMinutes(15).create();
+  // Alertas de SLA: diariamente às 8h
+  ScriptApp.newTrigger('gomDispararAlertasSLA')
+    .timeBased().everyDays(1).atHour(8).nearMinute(0).create();
+  Logger.log('Gatilhos instalados: fila (15min) + SLA (diário 8h).');
+}
+
+function gomRemoverGatilhos() {
+  var fns = ['gomProcessarFilaEmail', 'gomDispararAlertasSLA'];
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    if (fns.indexOf(t.getHandlerFunction()) >= 0) ScriptApp.deleteTrigger(t);
+  });
+  Logger.log('Gatilhos de e-mail removidos.');
+}
+
+/** Teste manual da fila — cria 1 item de teste e processa imediatamente. */
+function gomTesteFilaEmail() {
+  var para = _prop_('GOM_EMAIL_TESTE_PARA', '');
+  if (!para) throw new Error('Defina GOM_EMAIL_TESTE_PARA nas Propriedades do Script.');
+  var cfg = _cfgC_();
+  if (!cfg.SUPABASE_URL || !cfg.SUPABASE_SERVICE_ROLE_KEY)
+    throw new Error('Configure SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY nas Propriedades do Script.');
+
+  _sbPost_(cfg, '/rest/v1/' + cfg.TABELA_FILA, {
+    tipo: 'visita_agendada', para: para, cc: '',
+    assunto: 'GOM · Teste de fila de e-mail',
+    corpo_html: _layoutEmail_('<p>Teste do processador de fila. Se chegou, a Fase C está funcionando.</p>'
+      + '<p style="color:#6b7280;font-size:12px;">' + new Date().toLocaleString('pt-BR') + '</p>'),
+    dados_ref: { teste: true }
+  });
+  Logger.log('Item de teste gravado na fila. Processando...');
+  gomProcessarFilaEmail();
+  Logger.log('gomTesteFilaEmail concluído.');
+}

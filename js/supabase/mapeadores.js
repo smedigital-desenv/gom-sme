@@ -147,6 +147,7 @@ window.GomMap = (function () {
       dataHora: fmtDataHora(row.data_abertura),
       sistema: row.origem || '',
       escolaId: row.escola_id || '',
+      emailEscola: (escola && escola.email) || '',
       grupoVisita: row.grupo_visita || '',
       unidade: (escola && escola.nome) || row.unidade_escolar || '',
       enderecoEscola: (escola && escola.endereco) || row.endereco || '',
