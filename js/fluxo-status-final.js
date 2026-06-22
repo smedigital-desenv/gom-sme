@@ -17,6 +17,57 @@
     return txt(st);
   }
 
+  // Estados em que o serviço está em execução pela Empresa. A partir deles,
+  // somente a Empresa (ou ADMIN_GOM) pode avançar o status.
+  var STATUS_EXECUCAO_EMPRESA = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'];
+
+  function perfilAtual() {
+    var p = '';
+    try { p = (window.GomAuth && window.GomAuth.perfil) || ''; } catch (e) {}
+    if (!p) { try { p = (window.usuarioAtualGom && window.usuarioAtualGom.perfil) || ''; } catch (e2) {} }
+    return String(p || '').trim().toUpperCase().replace(/[\s-]+/g, '_');
+  }
+
+  // Define se o perfil atual pode AVANÇAR o status a partir do estado informado.
+  // Estados de execução pertencem à Empresa; os demais pertencem à Secretaria/GOM.
+  function perfilPodeAlterar(status) {
+    var perfil = perfilAtual();
+    if (perfil === 'ADMIN_GOM') return true; // administrador pode tudo
+    var ehExecucaoEmpresa = STATUS_EXECUCAO_EMPRESA.indexOf(norm(status)) >= 0;
+    if (ehExecucaoEmpresa) return perfil === 'EMPRESA';
+    // Demais estados (triagem, orçamento, visita, validação): fluxo da Secretaria/GOM.
+    return perfil !== 'EMPRESA';
+  }
+  window.gomPerfilPodeAlterarStatus = function (chamado) {
+    chamado = chamado || {};
+    return perfilPodeAlterar(chamado.situacao || chamado.status);
+  };
+
+  // Esconde o seletor "Alterar situação" e o botão de atualização quando o perfil
+  // atual não pode alterar o status, deixando o modal apenas em modo de acompanhamento.
+  function aplicarModoSomenteLeituraStatus(ativar, status) {
+    var select = document.getElementById('mdlSelectStatus');
+    var bloco = select ? (select.closest ? select.closest('.col-md-5') : select.parentNode) : null;
+    if (bloco) bloco.style.display = ativar ? 'none' : '';
+    var btn = document.getElementById('mdlBtnAtualizar');
+    if (btn) btn.style.display = ativar ? 'none' : '';
+    var aviso = document.getElementById('mdlAvisoSomenteLeituraStatus');
+    if (ativar) {
+      var msg = (STATUS_EXECUCAO_EMPRESA.indexOf(norm(status)) >= 0)
+        ? 'Chamado em atendimento pela Empresa — somente a Empresa pode alterar o status.'
+        : 'Somente leitura — seu perfil não pode alterar o status deste chamado neste estágio.';
+      if (!aviso && btn && btn.parentNode) {
+        aviso = document.createElement('div');
+        aviso.id = 'mdlAvisoSomenteLeituraStatus';
+        aviso.className = 'text-muted small fst-italic me-auto d-flex align-items-center';
+        btn.parentNode.insertBefore(aviso, btn.parentNode.firstChild);
+      }
+      if (aviso) { aviso.innerHTML = '<i class="bi bi-lock me-1"></i>' + html(msg); aviso.style.display = ''; }
+    } else if (aviso) {
+      aviso.style.display = 'none';
+    }
+  }
+
   function proximos(status, contexto) {
     var st = norm(status);
     var mapa = {
@@ -55,6 +106,7 @@
   function getStatusPermitidos(chamado) {
     chamado = chamado || {};
     var st = norm(chamado.situacao || chamado.status);
+    if (!perfilPodeAlterar(st)) return []; // gate por perfil: nenhuma transição disponível
     var ctx = contextoAtual();
     if (ctx === 'empresa') return proximos(st, 'empresa');
     if (ctx === 'fila') return proximos(st, 'fila');
@@ -67,6 +119,15 @@
     if (!select) return;
     chamado = chamado || {};
     var atual = norm(chamado.situacao || chamado.status);
+
+    // Gate por perfil: se o usuário não pode avançar este status, modal fica somente leitura.
+    if (!perfilPodeAlterar(atual)) {
+      select.innerHTML = '';
+      select.onchange = null;
+      aplicarModoSomenteLeituraStatus(true, atual);
+      return;
+    }
+    aplicarModoSomenteLeituraStatus(false, atual);
 
     // Orçamento Realizado usa decisões, não lista de status crua.
     if (atual === 'Orçamento Realizado') {

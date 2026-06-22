@@ -424,6 +424,89 @@
       + '</div>';
   }
 
+  function montarRowChamado_(item, chave) {
+    var out = [];
+    var id = html_(item.id || '-');
+    var idJs = js_(item.id || '');
+    var st = item._agendaStatus || 'Sem status';
+    var eq = item._agendaEquipe || 'Equipe não definida';
+    var os = item._agendaOs || 'Sem OS';
+    var tituloData = chave === 'sem-data' ? 'Sem data' : dataBr_(chave);
+    var diag = item._posVisita || {};
+    var classeDiag = diag.ativo ? ' is-pos-visita ' + diag.classe : '';
+    out.push('<article class="fila-agenda-row' + classeDiag + ' is-resp-' + html_(item._agendaResponsavel) + '" style="--card-accent:' + html_(cor_(st)) + '">');
+      out.push('<div class="fila-agenda-row-main">');
+        out.push('<div class="fila-agenda-row-unidade"><strong>' + html_(item.unidade || 'Unidade não informada') + '</strong><small>#' + id + ' · ' + html_(item._agendaTipo) + '</small></div>');
+        if (diag.ativo) {
+          out.push('<div class="pos-visita-alerta"><i class="bi bi-exclamation-triangle-fill"></i><div><strong>' + html_(diag.label) + '</strong><small>' + html_(diag.detalhe || '') + '</small></div></div>');
+        }
+        out.push('<p>' + html_(item._agendaDescricao) + '</p>');
+      out.push('</div>');
+      out.push('<div class="fila-agenda-row-info">');
+        out.push('<span class="fila-agenda-status" style="--status-accent:' + html_(cor_(st)) + '">' + html_(st) + '</span>');
+        out.push('<span class="' + (!item._agendaEquipe ? 'is-pendente' : '') + '"><i class="bi bi-people"></i>' + html_(eq) + '</span>');
+        out.push('<span><i class="bi bi-file-earmark-check"></i>' + html_(os) + '</span>');
+        out.push('<span><i class="bi bi-calendar3"></i>' + html_(tituloData) + '</span>');
+      out.push('</div>');
+      out.push('<div class="fila-pos-actions fila-acompanhamento-actions" aria-label="Ações de acompanhamento">');
+        out.push('<button type="button" class="btn btn-light btn-sm border fw-bold" onclick="gomFilaAcaoPosVisita(\'' + idJs + '\',\'reagendar\',this)"><i class="bi bi-calendar-plus me-1"></i>Reagendar visita</button>');
+        out.push('<button type="button" class="btn btn-light btn-sm border fw-bold" onclick="gomFilaAcaoPosVisita(\'' + idJs + '\',\'orcamento\',this)"><i class="bi bi-cash-coin me-1"></i>Encaminhar para orçamento</button>');
+        out.push('<button type="button" class="btn btn-light btn-sm border fw-bold" onclick="gomFilaAcaoPosVisita(\'' + idJs + '\',\'emergencial\',this)"><i class="bi bi-lightning-charge me-1"></i>Encaminhar como emergencial</button>');
+        out.push('<button type="button" class="btn btn-light btn-sm border fw-bold" onclick="gomFilaAcaoPosVisita(\'' + idJs + '\',\'devolver\',this)"><i class="bi bi-reply me-1"></i>Devolver para escola</button>');
+        out.push('<button type="button" class="btn btn-light btn-sm border fw-bold" onclick="gomFilaAcaoPosVisita(\'' + idJs + '\',\'justificar\',this)"><i class="bi bi-chat-left-text me-1"></i>Registrar justificativa</button>');
+        out.push('<button type="button" class="btn btn-primary btn-sm fw-bold" onclick="gomFilaAcaoPosVisita(\'' + idJs + '\',\'abrir\',this)"><i class="bi bi-box-arrow-up-right me-1"></i>Abrir chamado</button>');
+      out.push('</div>');
+    out.push('</article>');
+    return out.join('');
+  }
+
+  // Agrupa os chamados de um dia por escola (visita) e monta um card guarda-chuva
+  // por escola, com cabeçalho da visita, ação "aplicar a todos" e as linhas dentro.
+  function montarVisitasDoDia_(itens, chave) {
+    var porEscola = {};
+    var ordem = [];
+    itens.forEach(function(item) {
+      var chaveEscola = String(item.grupoVisita || item.escolaId || item.unidade || 'sem-escola').trim();
+      if (!porEscola[chaveEscola]) { porEscola[chaveEscola] = []; ordem.push(chaveEscola); }
+      porEscola[chaveEscola].push(item);
+    });
+    var out = ['<div class="fila-visitas-list">'];
+    ordem.forEach(function(chaveEscola) {
+      var grupo = porEscola[chaveEscola];
+      var escola = grupo[0].unidade || 'Unidade não informada';
+      var equipes = {};
+      grupo.forEach(function(i) { if (i._agendaEquipe) equipes[i._agendaEquipe] = true; });
+      var listaEquipes = Object.keys(equipes);
+      var equipeLabel = listaEquipes.length === 1 ? listaEquipes[0] : (listaEquipes.length === 0 ? 'Equipe não definida' : (listaEquipes.length + ' equipes'));
+      var dataLabel = chave === 'sem-data' ? 'sem data' : dataBr_(chave);
+      var grupoKey = 'g_' + String(chave) + '_' + chaveEscola.replace(/[^A-Za-z0-9]/g, '_');
+      window.__gomFilaGruposVisita[grupoKey] = { escola: escola, ids: grupo.map(function(i) { return i.id; }) };
+      out.push('<div class="fila-visita-card">');
+        out.push('<div class="fila-visita-head">');
+          out.push('<div class="fila-visita-head-main"><i class="bi bi-building-community"></i><div><strong>' + html_(escola) + '</strong><small><i class="bi bi-people me-1"></i>' + html_(equipeLabel) + ' · ' + html_(dataLabel) + '</small></div></div>');
+          out.push('<span class="fila-visita-count">' + grupo.length + ' chamado' + (grupo.length === 1 ? '' : 's') + '</span>');
+        out.push('</div>');
+        if (grupo.length > 1) {
+          out.push('<div class="fila-visita-lote">');
+            out.push('<span class="fila-visita-lote-label"><i class="bi bi-stack me-1"></i>Aplicar a todos:</span>');
+            out.push('<select class="form-select form-select-sm" id="sel_' + grupoKey + '">');
+              out.push('<option value="">Encaminhamento da visita…</option>');
+              out.push('<option value="orcamento">Solicitar orçamento</option>');
+              out.push('<option value="emergencial">Atendimento emergencial</option>');
+              out.push('<option value="devolver">Devolver para a escola</option>');
+            out.push('</select>');
+            out.push('<button type="button" class="btn btn-primary btn-sm fw-bold" onclick="gomFilaAplicarVisitaEmLote(\'' + js_(grupoKey) + '\',this)">Aplicar</button>');
+          out.push('</div>');
+        }
+        out.push('<div class="fila-agenda-rows">');
+        grupo.forEach(function(item) { out.push(montarRowChamado_(item, chave)); });
+        out.push('</div>');
+      out.push('</div>');
+    });
+    out.push('</div>');
+    return out.join('');
+  }
+
   function renderAgenda_() {
     atualizarSubmenuAtivo_();
     var painel = document.getElementById('painelDados');
@@ -440,6 +523,11 @@
       window.filaAgendaFiltroAtual = 'aguardando-visita';
     }
     var listaCompleta = listaAgenda_();
+    if (typeof window.gomFilaAgrupado === 'undefined') {
+      try { window.gomFilaAgrupado = sessionStorage.getItem('gomFilaAgrupado') === '1'; } catch (e) { window.gomFilaAgrupado = false; }
+    }
+    var agrupar = !!window.gomFilaAgrupado;
+    window.__gomFilaGruposVisita = {};
     var listaResp = listaResponsavel_(listaCompleta);
     var lista = filtrarAgenda_(listaCompleta);
     renderKpisAgenda_(listaCompleta);
@@ -470,7 +558,10 @@
       '<div class="fila-agenda-shell agenda-list-mode agenda-v14">',
         '<div class="fila-agenda-toolbar agenda-list-toolbar">',
           '<div><h5><i class="bi ' + (resp === 'empresa' ? 'bi-building' : 'bi-calendar2-week') + ' me-2"></i>' + html_(tituloTela) + '</h5><p>' + html_(descTela) + '</p></div>',
-          '<div class="text-muted small fw-bold"><i class="bi bi-clock-history me-1"></i>Atualizado às ' + html_(atualizado) + '</div>',
+          '<div class="fila-agenda-toolbar-actions">',
+            '<button type="button" class="btn btn-sm ' + (agrupar ? 'btn-primary' : 'btn-outline-primary') + ' fw-bold" onclick="gomFilaToggleAgrupar(this)" title="Agrupar os chamados por escola/visita"><i class="bi bi-collection me-1"></i>' + (agrupar ? 'Agrupado por visita' : 'Agrupar por visita') + '</button>',
+            '<span class="text-muted small fw-bold ms-2"><i class="bi bi-clock-history me-1"></i>Atualizado às ' + html_(atualizado) + '</span>',
+          '</div>',
         '</div>',
         montarResponsaveisAgenda_(),
         '<div class="fila-agenda-list-view">'
@@ -488,41 +579,14 @@
       var subtitulo = chave === 'sem-data' ? 'Registros que precisam de data/previsão' : diaSemana_(chave);
       html.push('<section class="fila-agenda-dia-list ' + (chave === 'sem-data' ? 'is-sem-data' : '') + '">');
       html.push('<div class="fila-agenda-dia-list-head"><div><strong>' + html_(titulo) + '</strong><small>' + html_(subtitulo) + '</small></div><span>' + itens.length + ' atendimento' + (itens.length === 1 ? '' : 's') + '</span></div>');
-      html.push('<div class="fila-agenda-rows">');
-      itens.forEach(function(item) {
-        var id = html_(item.id || '-');
-        var idJs = js_(item.id || '');
-        var st = item._agendaStatus || 'Sem status';
-        var eq = item._agendaEquipe || 'Equipe não definida';
-        var os = item._agendaOs || 'Sem OS';
-        var tituloData = chave === 'sem-data' ? 'Sem data' : dataBr_(chave);
-        var diag = item._posVisita || {};
-        var classeDiag = diag.ativo ? ' is-pos-visita ' + diag.classe : '';
-        html.push('<article class="fila-agenda-row' + classeDiag + ' is-resp-' + html_(item._agendaResponsavel) + '" style="--card-accent:' + html_(cor_(st)) + '">');
-          html.push('<div class="fila-agenda-row-main">');
-            html.push('<div class="fila-agenda-row-unidade"><strong>' + html_(item.unidade || 'Unidade não informada') + '</strong><small>#' + id + ' · ' + html_(item._agendaTipo) + '</small></div>');
-            if (diag.ativo) {
-              html.push('<div class="pos-visita-alerta"><i class="bi bi-exclamation-triangle-fill"></i><div><strong>' + html_(diag.label) + '</strong><small>' + html_(diag.detalhe || '') + '</small></div></div>');
-            }
-            html.push('<p>' + html_(item._agendaDescricao) + '</p>');
-          html.push('</div>');
-          html.push('<div class="fila-agenda-row-info">');
-            html.push('<span class="fila-agenda-status" style="--status-accent:' + html_(cor_(st)) + '">' + html_(st) + '</span>');
-            html.push('<span class="' + (!item._agendaEquipe ? 'is-pendente' : '') + '"><i class="bi bi-people"></i>' + html_(eq) + '</span>');
-            html.push('<span><i class="bi bi-file-earmark-check"></i>' + html_(os) + '</span>');
-            html.push('<span><i class="bi bi-calendar3"></i>' + html_(tituloData) + '</span>');
-          html.push('</div>');
-          html.push('<div class="fila-pos-actions fila-acompanhamento-actions" aria-label="Ações de acompanhamento">');
-            html.push('<button type="button" class="btn btn-light btn-sm border fw-bold" onclick="gomFilaAcaoPosVisita(\'' + idJs + '\',\'reagendar\',this)"><i class="bi bi-calendar-plus me-1"></i>Reagendar visita</button>');
-            html.push('<button type="button" class="btn btn-light btn-sm border fw-bold" onclick="gomFilaAcaoPosVisita(\'' + idJs + '\',\'orcamento\',this)"><i class="bi bi-cash-coin me-1"></i>Encaminhar para orçamento</button>');
-            html.push('<button type="button" class="btn btn-light btn-sm border fw-bold" onclick="gomFilaAcaoPosVisita(\'' + idJs + '\',\'emergencial\',this)"><i class="bi bi-lightning-charge me-1"></i>Encaminhar como emergencial</button>');
-            html.push('<button type="button" class="btn btn-light btn-sm border fw-bold" onclick="gomFilaAcaoPosVisita(\'' + idJs + '\',\'devolver\',this)"><i class="bi bi-reply me-1"></i>Devolver para escola</button>');
-            html.push('<button type="button" class="btn btn-light btn-sm border fw-bold" onclick="gomFilaAcaoPosVisita(\'' + idJs + '\',\'justificar\',this)"><i class="bi bi-chat-left-text me-1"></i>Registrar justificativa</button>');
-            html.push('<button type="button" class="btn btn-primary btn-sm fw-bold" onclick="gomFilaAcaoPosVisita(\'' + idJs + '\',\'abrir\',this)"><i class="bi bi-box-arrow-up-right me-1"></i>Abrir chamado</button>');
-          html.push('</div>');
-        html.push('</article>');
-      });
-      html.push('</div></section>');
+      if (agrupar) {
+        html.push(montarVisitasDoDia_(itens, chave));
+      } else {
+        html.push('<div class="fila-agenda-rows">');
+        itens.forEach(function(item) { html.push(montarRowChamado_(item, chave)); });
+        html.push('</div>');
+      }
+      html.push('</section>');
     });
 
     html.push('</div></div>');
@@ -774,6 +838,63 @@
       status: cfg.status,
       observacoes: anexarObsLocal_(item, cfg.obs)
     }, btn, 'Encaminhando...');
+  };
+
+  window.gomFilaToggleAgrupar = function(btn) {
+    window.gomFilaAgrupado = !window.gomFilaAgrupado;
+    try { sessionStorage.setItem('gomFilaAgrupado', window.gomFilaAgrupado ? '1' : '0'); } catch (e) {}
+    if (typeof renderAgenda_ === 'function') renderAgenda_();
+  };
+
+  // Aplica um mesmo encaminhamento a todos os chamados de uma visita (escola),
+  // em sequência, reutilizando o fluxo individual já existente (atualizarChamadoWorkflow).
+  window.gomFilaAplicarVisitaEmLote = function(grupoKey, btn) {
+    var sel = document.getElementById('sel_' + grupoKey);
+    var acao = sel ? sel.value : '';
+    var mapa = {
+      orcamento: { status: 'Solicitado Orçamento', label: 'Solicitar orçamento', obs: '[PÓS-VISITA] Encaminhado para orçamento após visita técnica (visita em lote).' },
+      emergencial: { status: 'Atendimento Emergencial', label: 'Atendimento emergencial', obs: '[PÓS-VISITA] Encaminhado como atendimento emergencial após visita técnica (visita em lote).' },
+      devolver: { status: 'Devolvido para a escola', label: 'Devolver para a escola', obs: '[PÓS-VISITA] Devolvido para a escola após análise da visita técnica (visita em lote).' }
+    };
+    var cfg = mapa[acao];
+    if (!cfg) { alert('Selecione o encaminhamento da visita.'); return; }
+    var grupo = (window.__gomFilaGruposVisita || {})[grupoKey];
+    if (!grupo || !grupo.ids || !grupo.ids.length) return;
+    if (!confirm('Aplicar "' + cfg.label + '" a todos os ' + grupo.ids.length + ' chamados da visita à ' + grupo.escola + '?')) return;
+
+    if (!window.google || !google.script || !google.script.run || typeof google.script.run.atualizarChamadoWorkflow !== 'function') {
+      alert('Função de atualização não carregada. Recarregue o sistema e tente novamente.');
+      return;
+    }
+
+    if (typeof gomSetButtonLoading === 'function') gomSetButtonLoading(btn, 'Aplicando ' + grupo.ids.length + '...');
+    else if (btn) btn.disabled = true;
+
+    var ids = grupo.ids.slice();
+    var falhas = [];
+    function aplicarUm(idx) {
+      if (idx >= ids.length) {
+        if (falhas.length) {
+          if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(btn); else if (btn) btn.disabled = false;
+          alert('Aplicado a ' + (ids.length - falhas.length) + ' de ' + ids.length + ' chamados. Falharam: #' + falhas.join(', #'));
+        } else if (typeof gomMostrarSucessoBotao === 'function') {
+          gomMostrarSucessoBotao(btn, 'Aplicado a ' + ids.length);
+        } else if (btn) { btn.disabled = false; }
+        if (typeof renderAgenda_ === 'function') renderAgenda_();
+        if (typeof refreshChamados === 'function') refreshChamados(null, null);
+        else window.gomFilaAtualizarEmBackground(250);
+        return;
+      }
+      var id = ids[idx];
+      var item = acharChamado_(id) || {};
+      var payload = { id: id, situacao: cfg.status, observacoes: cfg.obs };
+      var camposLocais = { situacao: cfg.status, status: cfg.status, observacoes: anexarObsLocal_(item, cfg.obs) };
+      google.script.run
+        .withSuccessHandler(function() { atualizarLocal_(id, camposLocais); aplicarUm(idx + 1); })
+        .withFailureHandler(function() { falhas.push(id); aplicarUm(idx + 1); })
+        .atualizarChamadoWorkflow(payload);
+    }
+    aplicarUm(0);
   };
 
   window.setFilaAgendaResponsavel = function(resp) {

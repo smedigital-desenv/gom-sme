@@ -63,7 +63,8 @@ window.gomWarn = function () {
       configuracoes: true,
       perfis: true,
       equipes: true,
-      equipe_membros: true
+      equipe_membros: true,
+      email_fila: true
     };
     if (!prefixo || !tabelasPrefixaveis[n] || n.indexOf(prefixo) === 0) return n;
     return prefixo + n;

@@ -63,6 +63,7 @@
   let loginFinalizando = false;
   let loginGoogleIniciando = false;
   let logoutEmAndamento = false;
+  let acessoFoiNegado = false; // marca quando um e-mail autenticado não está cadastrado em perfis
 
   window.GomAuth = {
     perfil: null,
@@ -89,15 +90,15 @@
     if (_temCallbackOAuth()) {
       var sessaoCallback = await _resolverCallbackOAuthManual();
       if (sessaoCallback && sessaoCallback.user) {
-        await _finalizarLoginComSessao(sessaoCallback);
-        return true;
+        var okCb = await _finalizarLoginComSessao(sessaoCallback);
+        return okCb !== false;
       }
     }
 
     var sessao = await _obterSessaoComTentativas(_temCallbackOAuth() ? 3800 : 650);
     if (sessao && sessao.user) {
-      await _finalizarLoginComSessao(sessao);
-      return true;
+      var okSessao = await _finalizarLoginComSessao(sessao);
+      return okSessao !== false;
     }
 
     var pinP = sessionStorage.getItem('gomPinPerfil');
@@ -173,24 +174,39 @@
 
       GomAuth.session = sessao;
       GomAuth.email = sessao.user.email || '';
+      var emailLogin = GomAuth.email;
 
       // Caminho rápido: após a primeira validação, usamos um cache curto do perfil
       // para que o retorno do Google não fique parado na tela “Verificando acesso...”.
       // Em paralelo, o Supabase confirma o perfil real e atualiza a interface se necessário.
-      var perfilCache = _obterPerfilCache(GomAuth.email);
+      var perfilCache = _obterPerfilCache(emailLogin);
       if (perfilCache) {
         GomAuth.perfil = perfilCache;
         _limparUrlOAuth();
-        _carregarPerfil(GomAuth.email).then(function () {
-          if (typeof window.gomAplicarPerfil === 'function' && GomAuth.perfil !== perfilCache) {
+        _carregarPerfil(emailLogin).then(function (res) {
+          if (res === null) {
+            // Revalidação em segundo plano: e-mail não está mais autorizado.
+            _negarAcessoNaoAutorizado(emailLogin);
+          } else if (typeof window.gomAplicarPerfil === 'function' && GomAuth.perfil !== perfilCache) {
             window.gomAplicarPerfil();
           }
         }).catch(function () {});
         return true;
       }
 
-      await _carregarPerfil(GomAuth.email);
+      var resultado = await _carregarPerfil(emailLogin);
       _limparUrlOAuth();
+
+      if (resultado === null) {
+        // E-mail autenticado pelo Google, mas sem cadastro ativo em perfis: nega.
+        await _negarAcessoNaoAutorizado(emailLogin);
+        return false;
+      }
+      if (resultado === '__INDET__') {
+        // Não foi possível confirmar o cadastro agora: não concede acesso.
+        await _negarAcessoNaoAutorizado(emailLogin, true);
+        return false;
+      }
       return true;
     } finally {
       setTimeout(function () { loginFinalizando = false; }, 500);
@@ -278,8 +294,12 @@
     });
   }
 
+  // Retorna o perfil do e-mail; ou null quando o e-mail NÃO está cadastrado/ativo
+  // em public.perfis (acesso negado); ou '__INDET__' quando não foi possível
+  // verificar a tempo (timeout/erro) e não há cache válido.
+  // Nunca concede um perfil padrão (ex.: SECRETARIA) a e-mails desconhecidos.
   async function _carregarPerfil(email) {
-    var fallback = _normalizarPerfilLogin(_obterPerfilCache(email) || (GomAuth.perfil && TELAS[GomAuth.perfil] ? GomAuth.perfil : 'SECRETARIA'));
+    var cache = _obterPerfilCache(email);
     try {
       var consulta = window.SB
         .from('perfis')
@@ -289,20 +309,51 @@
 
       var r = await _comTimeout(consulta, PERFIL_QUERY_TIMEOUT_MS, { gomTimeout: true });
       if (r && r.gomTimeout) {
-        GomAuth.perfil = fallback;
-        return fallback;
+        if (cache) { GomAuth.perfil = cache; return cache; }
+        GomAuth.perfil = null;
+        return '__INDET__';
       }
 
-      GomAuth.perfil = (r.data && r.data.ativo) ? _normalizarPerfilLogin(r.data.perfil) : 'SECRETARIA';
-      if (email && r.data && r.data.ativo && r.data.perfil) {
-        _salvarPerfilCache(email, GomAuth.perfil);
-      } else if (email) {
-        _limparPerfilCache(email);
+      if (r && r.data && r.data.ativo) {
+        GomAuth.perfil = _normalizarPerfilLogin(r.data.perfil);
+        if (email) _salvarPerfilCache(email, GomAuth.perfil);
+        return GomAuth.perfil;
       }
-      return GomAuth.perfil;
+
+      // Consulta respondeu, mas não há registro ativo para este e-mail: não autorizado.
+      if (email) _limparPerfilCache(email);
+      GomAuth.perfil = null;
+      return null;
     } catch (e) {
-      GomAuth.perfil = fallback;
-      return fallback;
+      if (cache) { GomAuth.perfil = cache; return cache; }
+      GomAuth.perfil = null;
+      return '__INDET__';
+    }
+  }
+
+  // Encerra a sessão e devolve o usuário à tela de login com mensagem clara.
+  // Usado quando um e-mail autenticado pelo Google não está cadastrado em perfis.
+  async function _negarAcessoNaoAutorizado(email, indeterminado) {
+    acessoFoiNegado = true;
+    var emailNegado = email || GomAuth.email || '';
+    try { sessionStorage.removeItem('gomPinPerfil'); } catch (e) {}
+    GomAuth.perfil = null;
+    GomAuth.session = null;
+    GomAuth.email = null;
+    if (email) { try { _limparPerfilCache(email); } catch (e) {} }
+    try {
+      if (window.SB && window.SB.auth) {
+        await Promise.race([ window.SB.auth.signOut({ scope: 'local' }), _esperar(1200) ]);
+      }
+    } catch (e) {}
+    _limparStorageAuthSupabase();
+    _limparUrlOAuth();
+    _ocultarApp();
+    _mostrarTelaLogin();
+    if (indeterminado) {
+      _msg('Não foi possível verificar seu acesso agora. Verifique a conexão e tente novamente.', 'erro');
+    } else {
+      _msg('Acesso não autorizado. O e-mail ' + (emailNegado || 'informado') + ' não está cadastrado no sistema. Procure a administração do GOM para liberar o acesso.', 'erro');
     }
   }
 
@@ -348,6 +399,7 @@
   window.gomEntrarGoogle = async function () {
     if (loginGoogleIniciando) return;
     loginGoogleIniciando = true;
+    acessoFoiNegado = false;
 
     var btn = document.getElementById('gomBtnGoogle');
     if (btn) {
@@ -897,6 +949,12 @@
         var logado = await _comTimeout(window.gomAuthInit(), temCallback ? 5200 : 1500, false);
         if (logado) {
           _loginSucesso();
+          return;
+        }
+
+        if (acessoFoiNegado) {
+          // A negação de acesso já exibiu a tela de login com a mensagem correta.
+          _limparUrlOAuth();
           return;
         }
 

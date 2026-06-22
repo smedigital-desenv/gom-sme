@@ -8,7 +8,7 @@
 window.GomDados = (function () {
   'use strict';
   const M = window.GomMap;
-  const SEL_CHAMADO = '*, escola:escolas(nome,tipo,endereco)';
+  const SEL_CHAMADO = '*, escola:escolas(nome,tipo,endereco,email)';
 
   const CONFIGS_PADRAO = [
     ['LOGIN_ATIVO','SIM','Login','Ativa a tela de login obrigatória antes de exibir informações do sistema.',true],
@@ -637,6 +637,7 @@ window.GomDados = (function () {
     if (p.dataPrevistaConclusao !== undefined) u.data_prevista_conclusao = _date(p.dataPrevistaConclusao);
     if (p.equipe !== undefined) { u.equipe_responsavel = p.equipe || ''; if (p.equipe) u.data_equipe = _nowISO(); }
     if (p.dataAgendamentoVisita !== undefined && p.dataAgendamentoVisita !== '') u.data_agendamento_visita = _date(p.dataAgendamentoVisita);
+    if (p.grupoVisita !== undefined) u.grupo_visita = (p.grupoVisita === '' || p.grupoVisita === null) ? null : String(p.grupoVisita);
     if (['Aguardando visita', 'Visita agendada', 'Em atendimento'].includes(stNovo) && !atual.data_hora_entrada_fila) u.data_hora_entrada_fila = _nowISO();
     if (['Solicitado Orçamento', 'Atendimento Emergencial', 'OS emitida', 'Aguardando visita', 'Visita agendada', 'Garantia de Obra', 'Garantia de Serviço'].includes(stNovo) && mudou) u.data_hora_encaminhamento = _nowISO();
     if (stNovo === 'OS emitida' && mudou) { let n = String(atual.numero_os || '').trim(); if (!n) n = await _gerarNumeroOsAutomatico(); if (!n) n = String(id) + '/' + new Date().getFullYear(); u.numero_os = n; }
@@ -977,6 +978,31 @@ window.GomDados = (function () {
     return JSON.stringify({ ok: true, id, status: 'Em análise' });
   }
 
+  // ── Fila de e-mails: o frontend grava aqui; o GAS processa a cada 15min ──
+  async function gravarFilaEmail(entrada) {
+    // entrada: { tipo, para, cc, assunto, corpoHtml, dadosRef }
+    try {
+      const row = {
+        tipo:       String(entrada.tipo       || 'aviso'),
+        para:       String(entrada.para       || ''),
+        cc:         String(entrada.cc         || ''),
+        assunto:    String(entrada.assunto    || ''),
+        corpo_html: String(entrada.corpoHtml  || ''),
+        dados_ref:  entrada.dadosRef || null,
+        status:     'pendente'
+      };
+      if (!row.para || !row.assunto) return { ok: false, erro: 'para e assunto são obrigatórios.' };
+      const { error } = await window.SB.from('email_fila').insert(row);
+      if (error) return { ok: false, erro: error.message };
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, erro: String((e && e.message) || e) };
+    }
+  }
+
+  // Expõe globalmente para uso em outros módulos (triagem-fila-inline.js etc.)
+  window.gomGravarFilaEmail = gravarFilaEmail;
+
   return {
     listarChamados, getDadosIniciais, usuarioAtual, listarObras, listarCampo, listarConfiguracoes, timeline,
     consultarProtocoloEscola,
@@ -984,6 +1010,6 @@ window.GomDados = (function () {
     salvarRespostaOrcamentoEmpresa, salvarServicoRealizadoEmpresa, aprovarOrcamento, salvarDecisaoAprovacao,
     atualizarPrevisaoOsEmpresa, finalizarOsEmpresa, salvarNovaEquipe,
     listarEquipesGerencial, salvarEquipeGerencial, salvarMembroEquipeGerencial, alterarStatusEquipeGerencial, alterarStatusMembroEquipeGerencial,
-    atualizarObra, salvarConfiguracoes, registrarComplementoEscola
+    atualizarObra, salvarConfiguracoes, registrarComplementoEscola, gravarFilaEmail
   };
 })();

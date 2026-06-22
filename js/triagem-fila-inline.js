@@ -278,14 +278,25 @@
 
   function gomRenderLista_(lista, contexto) {
     var ehFila = contexto === 'fila';
+    var agrupado = typeof window.gomAgrupAtivo === 'function' && window.gomAgrupAtivo(contexto);
+    var linhasHtml = typeof window.gomAgrupRenderLista === 'function'
+      ? window.gomAgrupRenderLista(lista || [], {
+          tela: contexto,
+          renderLinha: function(item, idx) { return gomRenderLinhaEditavel_(item, idx, contexto); },
+          loteHtml: function(grupo, grupoKey) { return gomAgrupLoteTriagemHtml_(grupo, grupoKey, contexto); }
+        })
+      : (lista || []).map(function(item, idx) { return gomRenderLinhaEditavel_(item, idx, contexto); }).join('');
     return [
-      '<div class="empresa-lista-os empresa-lista-compacta empresa-lista-dia-v2 empresa-lista-dia-sem-acao gom-tf-lista-v6 ' + (ehFila ? 'gom-tf-fila-v6' : 'gom-tf-triagem-v6') + '">',
+      (typeof window.gomAgrupBotaoHtml === 'function'
+        ? '<div class="gom-agrup-toolbar gom-tf-agrup-toolbar">' + window.gomAgrupBotaoHtml(contexto) + '</div>'
+        : ''),
+      '<div class="empresa-lista-os empresa-lista-compacta empresa-lista-dia-v2 empresa-lista-dia-sem-acao gom-tf-lista-v6 ' + (ehFila ? 'gom-tf-fila-v6' : 'gom-tf-triagem-v6') + (agrupado ? ' gom-tf-lista-agrupada' : '') + '">',
         '<div class="empresa-lista-head empresa-lista-head-v2 gom-tf-head-v6">',
           '<div>' + (ehFila ? 'Ordem / unidade' : 'Unidade / descrição') + '</div>',
           '<div>Status e encaminhamento</div>',
           '<div>' + (ehFila ? 'Observação / anexos apenas quando necessário' : 'Nova observação / anexos') + '</div>',
         '</div>',
-        (lista || []).map(function(item, idx) { return gomRenderLinhaEditavel_(item, idx, contexto); }).join(''),
+        linhasHtml,
       '</div>',
       // Barra flutuante de salvar — igual à Empresa e Configurações.
       // Só aparece quando há alterações pendentes.
@@ -304,6 +315,62 @@
 
   window.renderListaTriagemOperacional = function(lista) { return gomRenderLista_(lista, 'triagem'); };
   window.renderListaFilaOperacional = function(lista) { return gomRenderLista_(lista, 'fila'); };
+
+  // ── Agrupamento por visita: controle "Aplicar a todos" (situação em lote) ────
+  // Reutiliza o buffer de alterações já existente: apenas seta o select de cada
+  // linha do grupo e marca como alterada; o usuário confirma na barra "Salvar".
+  function gomAgrupLoteTriagemHtml_(grupo, grupoKey, contexto) {
+    var vistos = {};
+    var statuses = [];
+    (grupo || []).forEach(function(item) {
+      (gomStatusPermitidos_(item, contexto) || []).map(gomNormalizar_).forEach(function(s) {
+        if (s && !vistos[s]) { vistos[s] = true; statuses.push(s); }
+      });
+    });
+    if (!statuses.length) return '';
+    var selId = 'gomAgrupSel_' + grupoKey;
+    var out = ['<div class="fila-visita-lote">'];
+    out.push('<span class="fila-visita-lote-label"><i class="bi bi-stack me-1"></i>Aplicar a todos:</span>');
+    out.push('<select class="form-select form-select-sm" id="' + selId + '">');
+    out.push('<option value="">Encaminhamento da visita…</option>');
+    statuses.forEach(function(s) { out.push('<option value="' + gomHtml_(s) + '">' + gomHtml_(s) + '</option>'); });
+    out.push('</select>');
+    out.push('<button type="button" class="btn btn-primary btn-sm fw-bold" onclick="gomAgrupAplicarTriagem_(\'' + gomJs_(grupoKey) + '\',\'' + gomJs_(contexto) + '\',this)">Aplicar</button>');
+    out.push('</div>');
+    return out.join('');
+  }
+
+  window.gomAgrupAplicarTriagem_ = function(grupoKey, contexto, btn) {
+    var grupo = typeof window.gomAgrupGrupo === 'function' ? window.gomAgrupGrupo(grupoKey) : null;
+    var sel = document.getElementById('gomAgrupSel_' + grupoKey);
+    var raw = sel ? sel.value : '';
+    var alvo = gomNormalizar_(raw);
+    if (!grupo || !alvo) { alert('Selecione o encaminhamento da visita antes de aplicar.'); return; }
+    var aplicados = 0, pulados = 0;
+    (grupo.ids || []).forEach(function(id) {
+      var idSeguro = String(id).replace(/[^A-Za-z0-9_-]/g, '_');
+      var s = document.getElementById('gomTfStatus_' + idSeguro);
+      if (!s) { pulados++; return; }
+      var match = Array.prototype.filter.call(s.options, function(o) {
+        return o.value === raw || gomNormalizar_(o.value) === alvo;
+      })[0];
+      if (!match) { pulados++; return; }
+      s.value = match.value;
+      if (typeof window.gomTfAtualizarBlocoObsAnexosV6 === 'function') window.gomTfAtualizarBlocoObsAnexosV6(id);
+      if (typeof window.gomTfMarcarLinhaAlteradaV6 === 'function') window.gomTfMarcarLinhaAlteradaV6(id);
+      aplicados++;
+    });
+    if (!aplicados) {
+      alert('Nenhum chamado deste grupo aceita "' + raw + '" como encaminhamento.');
+      return;
+    }
+    if (typeof gomMostrarSucessoBotao === 'function') {
+      gomMostrarSucessoBotao(btn, aplicados + ' aplicado' + (aplicados === 1 ? '' : 's'), 1400);
+    }
+    if (pulados && window.console) {
+      console.info('[GOM] Lote por visita: ' + aplicados + ' aplicados, ' + pulados + ' ignorados (status incompatível).');
+    }
+  };
 
 
   // ── BUFFER DE ALTERAÇÕES (igual Empresa/Config) ──────────────────────────────
@@ -483,6 +550,29 @@
       payloads.push(payload);
     }
 
+    // Agrupamento de visitas (opção 2): solicitações da MESMA escola agendadas para a
+    // MESMA data de visita recebem um grupo_visita comum (1 visita -> N solicitações).
+    // O identificador é determinístico (vis_<escola>_<AAAAMMDD>), então agendamentos
+    // em lotes diferentes da mesma escola+data caem no mesmo grupo automaticamente.
+    (function aplicarGrupoVisita_() {
+      var porGrupo = {};
+      payloads.forEach(function(p) {
+        if (gomNormalizar_(p.situacao) !== 'Visita agendada' || !p.dataAgendamentoVisita) return;
+        var ch = (window.listaChamadosGlobal || []).find(function(x) { return String(x.id || '').trim() === String(p.id).trim(); }) || {};
+        var chaveEscola = String(ch.escolaId || ch.unidade || '').trim();
+        if (!chaveEscola) return;
+        var dataChave = String(p.dataAgendamentoVisita).replace(/[^0-9]/g, '');
+        if (!dataChave) return;
+        var chave = chaveEscola + '|' + dataChave;
+        (porGrupo[chave] = porGrupo[chave] || []).push(p);
+      });
+      Object.keys(porGrupo).forEach(function(chave) {
+        var partes = chave.split('|');
+        var idGrupo = 'vis_' + partes[0].replace(/[^A-Za-z0-9]/g, '') + '_' + partes[1];
+        porGrupo[chave].forEach(function(p) { p.grupoVisita = idGrupo; });
+      });
+    })();
+
     // Aplica OTIMISTA antes da resposta — tela responde na hora
     function aplicarOtimista() {
       payloads.forEach(function(p) {
@@ -494,6 +584,7 @@
         }
         if (p.dataAgendamentoVisita) { campos.dataAgendamentoVisita = p.dataAgendamentoVisita; campos.dataAgendamentoVisitaRaw = p.dataAgendamentoVisita; campos.dataAgendamento = p.dataAgendamentoVisita; campos.dataVisita = p.dataAgendamentoVisita; }
         if (p.equipe) campos.equipe = p.equipe;
+        if (p.grupoVisita) campos.grupoVisita = p.grupoVisita;
         if (typeof window.gomAtualizarChamadoLocal === 'function' && Object.keys(campos).length) {
           window.gomAtualizarChamadoLocal(p.id, campos);
         }
@@ -519,6 +610,8 @@
             alert('Salvos: ' + (retorno.salvos || 0) + '. Falharam: ' + retorno.erros.length + '\n' +
               retorno.erros.map(function(e) { return '#' + e.id + ': ' + e.erro; }).join('\n'));
           }
+          // C1: dispara e-mail de visita agendada para cada escola do lote
+          _dispararEmailVisitasSalvas_(payloads);
         })
         .withFailureHandler(function(err) {
           if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(btnSalvar);
@@ -730,6 +823,112 @@
       input.value = typeof gomDataParaBR === 'function' ? gomDataParaBR(iso) : iso;
     }
   };
+
+  // ── C1: grava na fila de e-mail quando payloads contêm "Visita agendada" ──
+  // Agrupa por grupo_visita (ou escola+data), monta 1 e-mail por escola e
+  // chama window.gomGravarFilaEmail (dados.js) — sem bloquear a UI.
+  function _dispararEmailVisitasSalvas_(payloads) {
+    if (typeof window.gomGravarFilaEmail !== 'function') return;
+
+    // Filtra só os que viraram "Visita agendada"
+    var visitaPayloads = (payloads || []).filter(function(p) {
+      return gomNormalizar_(p.situacao) === 'Visita agendada';
+    });
+    if (!visitaPayloads.length) return;
+
+    // Busca configs de e-mail (assunto, corpo, responsável GOM, extras)
+    var cfgs = window.configuracoesGlobal || [];
+    function cfg(chave, fb) {
+      var it = cfgs.find(function(c) { return c.chave === chave; });
+      return (it && it.valor) ? String(it.valor) : (fb || '');
+    }
+    if (cfg('EMAIL_VISITA_ATIVO', 'SIM').toUpperCase() !== 'SIM') return;
+
+    var assuntoTpl = cfg('EMAIL_VISITA_ASSUNTO', 'Visita técnica agendada — {{escola}} em {{data_visita}}');
+    var corpoTpl   = cfg('EMAIL_VISITA_CORPO', '<p>{{escola}}</p><p>{{data_visita}} · {{equipe}}</p>{{lista_chamados}}');
+    var responsavelGOM = cfg('EMAIL_RESPONSAVEL_GOM', '');
+    var extras        = cfg('EMAIL_VISITA_DESTINATARIOS_EXTRA', '');
+
+    // Agrupa payloads por chave de visita (grupo_visita ou escola+data)
+    var porVisita = {};
+    var ordemVisita = [];
+    visitaPayloads.forEach(function(p) {
+      var ch = (window.listaChamadosGlobal || []).find(function(x) {
+        return String(x.id || '') === String(p.id || '');
+      }) || {};
+      var chaveGrupo = p.grupoVisita || (String(ch.escolaId || p.id) + '_' + String(p.dataAgendamentoVisita || ''));
+      if (!porVisita[chaveGrupo]) { porVisita[chaveGrupo] = []; ordemVisita.push(chaveGrupo); }
+      porVisita[chaveGrupo].push({ p: p, ch: ch });
+    });
+
+    ordemVisita.forEach(function(chaveGrupo) {
+      var grupo = porVisita[chaveGrupo];
+      var primeiro = grupo[0];
+      var ch0 = primeiro.ch;
+      var p0  = primeiro.p;
+
+      var emailEscola = ch0.emailEscola || '';
+      if (!emailEscola) {
+        window.gomWarn && window.gomWarn('[GOM email] escola sem e-mail cadastrado — chamado #' + p0.id);
+        return;
+      }
+
+      var escolaNome  = ch0.unidade || '';
+      var dataVisita  = p0.dataAgendamentoVisita || '';
+      var equipe      = p0.equipe || ch0.equipe || '';
+
+      // Monta lista de chamados
+      var listaChamados = '<ul style="margin:8px 0;padding-left:20px;">'
+        + grupo.map(function(g) {
+            var c = g.ch;
+            return '<li style="margin-bottom:4px;"><strong>#' + (c.id || g.p.id) + '</strong>'
+              + (c.classificacao ? ' — ' + c.classificacao : '')
+              + (c.detalhamento  ? ': '  + String(c.detalhamento).slice(0, 80) : '') + '</li>';
+          }).join('')
+        + '</ul>';
+
+      // Substitui variáveis
+      function apVar(tpl, vars) {
+        var s = String(tpl || '');
+        Object.keys(vars).forEach(function(k) { s = s.split(k).join(String(vars[k] || '')); });
+        return s;
+      }
+      var vars = {
+        '{{escola}}':         escolaNome,
+        '{{data_visita}}':    dataVisita,
+        '{{equipe}}':         equipe,
+        '{{lista_chamados}}': listaChamados,
+        '{{numero}}':         String(ch0.id || p0.id || '')
+      };
+
+      var assunto = apVar(assuntoTpl, vars);
+      var corpo   = apVar(corpoTpl,   vars);
+
+      // CC: responsável GOM + lista extra
+      var ccArr = [responsavelGOM, extras].join(',').split(/[;,]/)
+        .map(function(e) { return String(e).trim(); })
+        .filter(function(e) { return e && /@/.test(e); });
+      var cc = ccArr.join(',');
+
+      window.gomGravarFilaEmail({
+        tipo:       'visita_agendada',
+        para:       emailEscola,
+        cc:         cc,
+        assunto:    assunto,
+        corpoHtml:  corpo,
+        dadosRef:   {
+          escola_id:    ch0.escolaId || '',
+          grupo_visita: chaveGrupo,
+          chamados:     grupo.map(function(g) { return g.p.id; })
+        }
+      }).then(function(r) {
+        if (!r.ok) window.gomWarn && window.gomWarn('[GOM email] falha ao gravar fila:', r.erro);
+        else window.gomLog && window.gomLog('[GOM email] visita agendada gravada na fila para', emailEscola);
+      }).catch(function(e) {
+        window.gomWarn && window.gomWarn('[GOM email] erro:', e);
+      });
+    });
+  }
 
   try { if (typeof renderizarTela !== 'undefined') renderizarTela = window.renderizarTela; } catch(e) {}
   try { if (typeof renderListaTriagemOperacional !== 'undefined') renderListaTriagemOperacional = window.renderListaTriagemOperacional; } catch(e) {}
