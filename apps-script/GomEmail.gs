@@ -391,7 +391,9 @@ function _sbPost_(cfg, path, body) {
 
 /** Lê uma lista de configurações do Supabase de uma vez. */
 function _lerConfigs_(cfg, chaves) {
-  var in_ = chaves.map(function(c) { return '"' + c + '"'; }).join(',');
+  // UrlFetchApp rejeita caracteres não-codificados (aspas, espaço, vírgula) na
+  // URL. Codificamos a lista; o PostgREST decodifica e separa pelos commas.
+  var in_ = encodeURIComponent(chaves.join(','));
   var r = _sbGet_(cfg, '/rest/v1/' + cfg.TABELA_CONF
     + '?select=chave,valor&chave=in.(' + in_ + ')&ativo=eq.true');
   var mapa = {};
@@ -510,8 +512,9 @@ function gomDispararAlertasSLA() {
   var paraJoin = destinatarios.join(',');
   if (!paraJoin) { Logger.log('gomDispararAlertasSLA: nenhum destinatário configurado.'); return; }
 
-  // Busca chamados em aberto
-  var statusAbertos = Object.keys(sla).map(function(s) { return '"' + s + '"'; }).join(',');
+  // Busca chamados em aberto. Os status têm espaço/acento (ex.: "Em análise"),
+  // então mantemos as aspas E codificamos a URL para o UrlFetchApp aceitar.
+  var statusAbertos = encodeURIComponent(Object.keys(sla).map(function(s) { return '"' + s + '"'; }).join(','));
   var chamados = _sbGet_(cfg,
     '/rest/v1/' + cfg.TABELA_SOL
     + '?select=id,situacao,data_hora_ultima_acao,data_hora_entrada_fila,escola_id,unidade_escolar'
@@ -522,7 +525,7 @@ function gomDispararAlertasSLA() {
   var inicioHoje = new Date(); inicioHoje.setHours(0,0,0,0);
   var jaEnviados = _sbGet_(cfg,
     '/rest/v1/' + cfg.TABELA_FILA
-    + '?tipo=eq.sla_alerta&criado_em=gte.' + inicioHoje.toISOString()
+    + '?tipo=eq.sla_alerta&criado_em=gte.' + encodeURIComponent(inicioHoje.toISOString())
     + '&select=dados_ref&limit=500');
   var idsJaEnviados = {};
   (Array.isArray(jaEnviados) ? jaEnviados : []).forEach(function(r) {
