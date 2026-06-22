@@ -16,6 +16,9 @@
  *        GOM_EMAIL_TESTE_PARA     = seu-email@exemplo.com   (destino do teste)
  *        GOM_EMAIL_REMETENTE_NOME = GOM · SME               (opcional)
  *        GOM_EMAIL_REPLY_TO       = email-de-resposta       (opcional)
+ *        GOM_EMAIL_REDIRECT_PARA  = seu-email@exemplo.com   (TRAVA DE TESTE:
+ *           enquanto preenchida, TODO e-mail vai SÓ para este endereço e nunca
+ *           para as escolas. Apague esta propriedade para liberar a produção.)
  *   3) Selecione a função gomEmailTesteDeFumaca e clique em Executar.
  *   4) Autorize os escopos quando solicitado (envio de e-mail).
  *   5) Confira a caixa de entrada do GOM_EMAIL_TESTE_PARA. O remetente deve ser
@@ -50,11 +53,39 @@ function gomEnviarEmail_(msg) {
   if (!assunto) return { ok: false, erro: 'Assunto é obrigatório.' };
 
   var corpoHtml = String(msg.corpoHtml || '');
-  var corpoTexto = String(msg.corpoTexto || '').trim() || _htmlParaTexto_(corpoHtml) || ' ';
+  var corpoTextoOrig = String(msg.corpoTexto || '').trim();
 
   var cc = _normalizarLista_(msg.cc);
   var bcc = _normalizarLista_(msg.bcc);
   var replyTo = _prop_('GOM_EMAIL_REPLY_TO', '');
+
+  // ── MODO TESTE (trava de segurança) ─────────────────────────────────────
+  // Se a propriedade do script GOM_EMAIL_REDIRECT_PARA estiver preenchida,
+  // NENHUM e-mail chega ao destinatário real (escola etc.): TUDO vai somente
+  // para esse endereço, com um aviso de quem seria o destinatário original
+  // (para/cc/bcc). Como esta é a única função que realmente envia, a trava vale
+  // para todo envio: teste de fumaça, visita agendada, alertas de SLA e o
+  // processador da fila. Para liberar produção, basta APAGAR/esvaziar a
+  // propriedade GOM_EMAIL_REDIRECT_PARA.
+  var redirect = _normalizarLista_(_prop_('GOM_EMAIL_REDIRECT_PARA', ''));
+  if (redirect.length) {
+    var origInfo = 'para: ' + (para.join(', ') || '(vazio)')
+      + (cc.length ? ' · cc: ' + cc.join(', ') : '')
+      + (bcc.length ? ' · bcc: ' + bcc.join(', ') : '');
+    assunto = '[TESTE] ' + assunto;
+    corpoHtml = '<div style="background:#fff3cd;border:1px solid #ffe08a;border-radius:8px;'
+      + 'padding:10px 14px;margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;'
+      + 'font-size:12px;color:#7a5b00;line-height:1.5;">'
+      + '<strong>MODO TESTE — e-mail redirecionado.</strong><br>'
+      + 'Destinatário original &rarr; ' + origInfo
+      + '</div>' + corpoHtml;
+    para = redirect;
+    cc = [];
+    bcc = [];
+    Logger.log('gomEnviarEmail_: MODO TESTE — redirecionado para ' + redirect.join(', ') + ' | original ' + origInfo);
+  }
+
+  var corpoTexto = corpoTextoOrig || _htmlParaTexto_(corpoHtml) || ' ';
 
   var blobs = [];
   var anexos = Array.isArray(msg.anexos) ? msg.anexos : [];
