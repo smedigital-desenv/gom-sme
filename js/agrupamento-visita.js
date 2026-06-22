@@ -56,8 +56,8 @@
     var on = gomAgrupAtivo(tela);
     return '<button type="button" class="btn btn-sm ' + (on ? 'btn-primary' : 'btn-outline-primary')
       + ' fw-bold gom-agrup-btn" onclick="gomAgrupToggle(\'' + js_(tela) + '\')" '
-      + 'title="Reunir os chamados da mesma escola/visita num card único">'
-      + '<i class="bi bi-collection me-1"></i>' + (on ? 'Agrupado por visita' : 'Agrupar por visita')
+      + 'title="Reunir os chamados da mesma escola num card único">'
+      + '<i class="bi bi-collection me-1"></i>' + (on ? 'Agrupado por escola' : 'Agrupar por escola')
       + '</button>';
   };
 

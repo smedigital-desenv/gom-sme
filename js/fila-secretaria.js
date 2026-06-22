@@ -559,7 +559,7 @@
         '<div class="fila-agenda-toolbar agenda-list-toolbar">',
           '<div><h5><i class="bi ' + (resp === 'empresa' ? 'bi-building' : 'bi-calendar2-week') + ' me-2"></i>' + html_(tituloTela) + '</h5><p>' + html_(descTela) + '</p></div>',
           '<div class="fila-agenda-toolbar-actions">',
-            '<button type="button" class="btn btn-sm ' + (agrupar ? 'btn-primary' : 'btn-outline-primary') + ' fw-bold" onclick="gomFilaToggleAgrupar(this)" title="Agrupar os chamados por escola/visita"><i class="bi bi-collection me-1"></i>' + (agrupar ? 'Agrupado por visita' : 'Agrupar por visita') + '</button>',
+            '<button type="button" class="btn btn-sm ' + (agrupar ? 'btn-primary' : 'btn-outline-primary') + ' fw-bold" onclick="gomFilaToggleAgrupar(this)" title="Agrupar os chamados por escola"><i class="bi bi-collection me-1"></i>' + (agrupar ? 'Agrupado por escola' : 'Agrupar por escola') + '</button>',
             '<span class="text-muted small fw-bold ms-2"><i class="bi bi-clock-history me-1"></i>Atualizado às ' + html_(atualizado) + '</span>',
           '</div>',
         '</div>',
