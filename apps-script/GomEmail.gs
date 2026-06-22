@@ -368,28 +368,39 @@ function _lerConfigs_(cfg, chaves) {
   return mapa;
 }
 
-/* ── C1: processa a fila de e-mails a cada 15 minutos ─────────────────────── */
+/* ── C1: processa as filas de e-mail (produção + homologação) a cada 15 min ──
+ *
+ * Uma única conta institucional envia tanto a fila de produção (email_fila)
+ * quanto a de homologação (hml_email_fila). Cada item da fila já carrega
+ * para/assunto/corpo prontos, então o envio independe do ambiente — basta
+ * drenar as duas tabelas. Se uma delas ainda não existir (ex.: antes de rodar
+ * as migrações em produção), a leitura é ignorada sem quebrar a outra.
+ */
 function gomProcessarFilaEmail() {
   var cfg = _cfgC_();
   if (!cfg.SUPABASE_URL || !cfg.SUPABASE_SERVICE_ROLE_KEY) {
     Logger.log('gomProcessarFilaEmail: SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY não configurados.');
     return;
   }
+  ['email_fila', 'hml_email_fila'].forEach(function(tabela) {
+    try { _processarUmaFila_(cfg, tabela); }
+    catch (e) { Logger.log('gomProcessarFilaEmail: erro na tabela ' + tabela + ' — ' + e); }
+  });
+}
 
-  Logger.log('gomProcessarFilaEmail: lendo tabela ' + cfg.TABELA_FILA);
-  var url = '/rest/v1/' + cfg.TABELA_FILA
+function _processarUmaFila_(cfg, tabelaFila) {
+  Logger.log('gomProcessarFilaEmail: lendo tabela ' + tabelaFila);
+  var url = '/rest/v1/' + tabelaFila
     + '?status=eq.pendente&tentativas=lt.' + cfg.MAX_TENTATIVAS
     + '&order=criado_em.asc&limit=' + cfg.LIMITE_FILA;
-  Logger.log('gomProcessarFilaEmail: query = ' + url);
 
   var pendentes = _sbGet_(cfg, url);
-  Logger.log('gomProcessarFilaEmail: resposta = ' + JSON.stringify(pendentes).slice(0, 300));
 
   if (!Array.isArray(pendentes) || !pendentes.length) {
-    Logger.log('gomProcessarFilaEmail: nenhum e-mail pendente.');
+    Logger.log('  ' + tabelaFila + ': nenhum e-mail pendente (ou tabela inexistente).');
     return;
   }
-  Logger.log('gomProcessarFilaEmail: processando ' + pendentes.length + ' e-mails.');
+  Logger.log('  ' + tabelaFila + ': processando ' + pendentes.length + ' e-mails.');
 
   pendentes.forEach(function(item) {
     var resultado = gomEnviarEmail_({
@@ -400,20 +411,20 @@ function gomProcessarFilaEmail() {
     });
 
     if (resultado.ok) {
-      _sbPatch_(cfg, '/rest/v1/' + cfg.TABELA_FILA + '?id=eq.' + item.id, {
+      _sbPatch_(cfg, '/rest/v1/' + tabelaFila + '?id=eq.' + item.id, {
         status:     'enviado',
         enviado_em: new Date().toISOString(),
         erro_msg:   null
       });
-      Logger.log('  #' + item.id + ' enviado para ' + item.para);
+      Logger.log('  #' + item.id + ' (' + tabelaFila + ') enviado para ' + item.para);
     } else {
       var novasTentativas = (item.tentativas || 0) + 1;
-      _sbPatch_(cfg, '/rest/v1/' + cfg.TABELA_FILA + '?id=eq.' + item.id, {
+      _sbPatch_(cfg, '/rest/v1/' + tabelaFila + '?id=eq.' + item.id, {
         status:     novasTentativas >= cfg.MAX_TENTATIVAS ? 'erro' : 'pendente',
         tentativas: novasTentativas,
         erro_msg:   resultado.erro
       });
-      Logger.log('  #' + item.id + ' FALHOU (tentativa ' + novasTentativas + '): ' + resultado.erro);
+      Logger.log('  #' + item.id + ' (' + tabelaFila + ') FALHOU (tentativa ' + novasTentativas + '): ' + resultado.erro);
     }
   });
 }
