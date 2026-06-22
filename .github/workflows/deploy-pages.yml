@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - homologacao
+      - develop
   workflow_dispatch:
 
 permissions:
@@ -30,8 +30,8 @@ jobs:
       - name: Checkout homologação
         uses: actions/checkout@v4
         with:
-          ref: homologacao
-          path: homologacao
+          ref: develop
+          path: develop
 
       - name: Montar site com produção e homologação
         run: |
@@ -54,7 +54,7 @@ jobs:
             --exclude='docs' \
             --exclude='*.zip' \
             --exclude='README.md' \
-            homologacao/ site/teste/
+            develop/ site/teste/
 
           touch site/.nojekyll
 
