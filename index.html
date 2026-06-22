@@ -949,6 +949,23 @@
   </div>
 </div>
 
+<!-- Editor de e-mail (pop-up): assunto + destinatários + corpo num só lugar -->
+<div class="modal fade" id="modalEmailEditor" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title fw-bold"><i class="bi bi-envelope-paper-fill me-2"></i><span id="emailEditorTitulo">Editar e-mail</span></h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4 bg-light" id="emailEditorCorpo"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light border fw-bold" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i>Cancelar</button>
+        <button type="button" class="btn btn-primary fw-bold px-4" id="emailEditorSalvar" onclick="gomSalvarEditorEmail(this)"><i class="bi bi-check-lg me-1"></i>Salvar e-mail</button>
+      </div>
+    </div>
+  </div>
+</div>
+
   </template>
 
 

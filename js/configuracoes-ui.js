@@ -56,6 +56,47 @@
     'EMAIL_SLA_ASSUNTO':    ['{{numero}}','{{escola}}','{{etapa}}','{{dias_atraso}}','{{status}}']
   };
 
+  // ── Editor de e-mail em pop-up: agrupa assunto + destinatários + corpo ──────
+  // Cada tipo de e-mail vira um card com botão "Editar", abrindo um modal único.
+  const CONFIG_EMAIL_MODAL_DEFS = {
+    visita: {
+      titulo: 'E-mail de visita agendada',
+      icone: 'bi-calendar-check-fill',
+      descricao: 'Enviado automaticamente à escola quando uma visita técnica é agendada.',
+      ativoKey: 'EMAIL_VISITA_ATIVO',
+      assuntoKey: 'EMAIL_VISITA_ASSUNTO',
+      destinatariosKey: 'EMAIL_VISITA_DESTINATARIOS_EXTRA',
+      destinatariosLabel: 'Quem recebe em cópia (CC)',
+      destinatariosHint: 'A escola recebe automaticamente. Os e-mails abaixo entram sempre em cópia.',
+      corpoKey: 'EMAIL_VISITA_CORPO'
+    },
+    sla: {
+      titulo: 'E-mail de alerta de SLA',
+      icone: 'bi-hourglass-split',
+      descricao: 'Enviado quando um chamado ultrapassa o prazo configurado da etapa.',
+      ativoKey: 'EMAIL_SLA_ATIVO',
+      assuntoKey: 'EMAIL_SLA_ASSUNTO',
+      destinatariosKey: 'EMAIL_SLA_DESTINATARIOS',
+      destinatariosLabel: 'Quem recebe os alertas',
+      destinatariosHint: 'Lista de e-mails que recebem os alertas diários de SLA.',
+      corpoKey: 'EMAIL_SLA_CORPO'
+    }
+  };
+
+  // Chaves controladas pelo pop-up (não aparecem como linhas soltas na lista).
+  const CONFIG_EMAIL_MODAL_KEYS = (function() {
+    const set = {};
+    Object.keys(CONFIG_EMAIL_MODAL_DEFS).forEach(function(t) {
+      const d = CONFIG_EMAIL_MODAL_DEFS[t];
+      [d.ativoKey, d.assuntoKey, d.destinatariosKey, d.corpoKey].forEach(function(k) { set[k] = true; });
+    });
+    return set;
+  })();
+
+  function isConfigEmailModalKey_(chave) {
+    return CONFIG_EMAIL_MODAL_KEYS[String(chave || '').trim()] === true;
+  }
+
   function isConfigEmailTempoCorpo_(chave) {
     return CONFIG_EMAIL_TEMPLATE_CORPO_KEYS.indexOf(String(chave || '').trim()) >= 0;
   }
@@ -289,12 +330,15 @@
     }).join('');
   }
 
-  function renderEmailListEditorConfig_(item, id, chave, valor) {
+  function renderEmailListEditorConfig_(item, id, chave, valor, opcoes) {
     const emails = normalizarListaEmailsConfig_(valor);
+    const tituloInterno = (opcoes && opcoes.tituloInterno) || 'Usuários deste perfil';
+    const ajuda = (opcoes && opcoes.ajuda)
+      || 'Na planilha será salvo automaticamente como lista separada por vírgulas. O sistema também aceita vírgula, ponto e vírgula, espaço ou quebra de linha.';
     return ''
       + '<div class="config-email-editor" data-chave="' + escapeHtml(chave) + '">'
       + '<input type="hidden" id="cfg_valor_' + escapeHtml(id) + '" value="' + escapeHtml(emails.join(', ')) + '">'
-      + '<div class="config-email-toolbar"><span><i class="bi bi-people-fill me-1"></i>Usuários deste perfil</span><strong id="cfg_email_count_' + escapeHtml(id) + '">' + emails.length + ' e-mail' + (emails.length === 1 ? '' : 's') + '</strong></div>'
+      + '<div class="config-email-toolbar"><span><i class="bi bi-people-fill me-1"></i>' + escapeHtml(tituloInterno) + '</span><strong id="cfg_email_count_' + escapeHtml(id) + '">' + emails.length + ' e-mail' + (emails.length === 1 ? '' : 's') + '</strong></div>'
       + '<div class="config-email-chips" id="cfg_email_chips_' + escapeHtml(id) + '">' + renderEmailChipsHtml_(chave, emails) + '</div>'
       + '<div class="config-email-add">'
         + '<input id="cfg_email_input_' + escapeHtml(id) + '" class="form-control form-control-sm" type="email" placeholder="Digite um e-mail e pressione Enter" onkeydown="if(event.key===\'Enter\'){event.preventDefault();adicionarEmailConfig(\'' + escapeJsAttr(chave) + '\');}">'
@@ -304,7 +348,7 @@
         + '<textarea id="cfg_email_bulk_' + escapeHtml(id) + '" class="form-control form-control-sm" rows="2" placeholder="Cole vários e-mails aqui, separados por vírgula, ponto e vírgula, espaço ou quebra de linha"></textarea>'
         + '<button type="button" class="btn btn-light border btn-sm fw-bold" onclick="importarEmailsConfig(\'' + escapeJsAttr(chave) + '\')"><i class="bi bi-clipboard-plus me-1"></i>Importar lista</button>'
       + '</div>'
-      + '<div class="config-email-help"><i class="bi bi-info-circle me-1"></i>Na planilha será salvo automaticamente como lista separada por vírgulas. O sistema também aceita vírgula, ponto e vírgula, espaço ou quebra de linha.</div>'
+      + '<div class="config-email-help"><i class="bi bi-info-circle me-1"></i>' + escapeHtml(ajuda) + '</div>'
       + '</div>';
   }
 
@@ -353,6 +397,153 @@
   window.limparEmailsConfig = function(chave) {
     if (!confirm('Remover todos os e-mails deste perfil?')) return;
     setEmailsConfigAtual_(chave, [], true);
+  };
+
+  /* ==========================================================
+     Editor de e-mail em pop-up (assunto + destinatários + corpo)
+     ========================================================== */
+
+  function emailModalAtivo_(def) {
+    const item = procurarConfig_(def.ativoKey);
+    const valor = item ? formatarValorConfigParaTela_(item) : 'SIM';
+    return String(valor || 'SIM').trim().toUpperCase().indexOf('N') !== 0;
+  }
+
+  function emailModalContagemDestinatarios_(def) {
+    const item = procurarConfig_(def.destinatariosKey);
+    const valor = item ? formatarValorConfigParaTela_(item) : '';
+    return normalizarListaEmailsConfig_(valor).length;
+  }
+
+  // Cards (um por tipo de e-mail) exibidos no topo do grupo "E-mail".
+  function renderEmailCompositorCards_() {
+    const cards = Object.keys(CONFIG_EMAIL_MODAL_DEFS).map(function(tipo) {
+      const def = CONFIG_EMAIL_MODAL_DEFS[tipo];
+      const ativo = emailModalAtivo_(def);
+      const qtd = emailModalContagemDestinatarios_(def);
+      const destLabel = qtd === 1 ? '1 destinatário' : qtd + ' destinatários';
+      return ''
+        + '<div class="cfg-email-card">'
+          + '<div class="cfg-email-card-icon"><i class="bi ' + escapeHtml(def.icone) + '"></i></div>'
+          + '<div class="cfg-email-card-body">'
+            + '<div class="cfg-email-card-titulo">' + escapeHtml(def.titulo)
+              + '<span class="cfg-email-card-status ' + (ativo ? 'on' : 'off') + '">'
+                + '<i class="bi ' + (ativo ? 'bi-broadcast' : 'bi-slash-circle') + '"></i>'
+                + (ativo ? 'Envio ativo' : 'Envio desativado') + '</span>'
+            + '</div>'
+            + '<div class="cfg-email-card-desc">' + escapeHtml(def.descricao) + '</div>'
+            + '<div class="cfg-email-card-meta"><i class="bi bi-people-fill me-1"></i>' + escapeHtml(destLabel) + '</div>'
+          + '</div>'
+          + '<button type="button" class="btn btn-primary fw-bold cfg-email-card-btn" onclick="gomAbrirEditorEmail(\'' + escapeJsAttr(tipo) + '\')">'
+            + '<i class="bi bi-pencil-square me-1"></i>Editar e-mail</button>'
+        + '</div>';
+    }).join('');
+    return '<div class="cfg-email-compositor">'
+      + '<div class="cfg-email-compositor-head"><i class="bi bi-stars me-2"></i>'
+        + 'Edite cada e-mail num só lugar — assunto, quem recebe e o corpo da mensagem.</div>'
+      + cards
+      + '</div>';
+  }
+
+  // Switch SIM/NÃO ligado a um cfg_valor_<id> oculto (lido pelo fluxo de salvar).
+  function renderEmailAtivoSwitch_(chave, valorTela) {
+    const id = chaveParaId_(chave);
+    const ligado = String(valorTela || 'SIM').trim().toUpperCase().indexOf('N') !== 0;
+    return '<div class="cfg-email-modal-ativo">'
+      + '<label class="form-check form-switch m-0">'
+        + '<input class="form-check-input" type="checkbox" id="emailEditorAtivoChk_' + escapeHtml(id) + '" '
+        + (ligado ? 'checked ' : '') + 'onchange="gomCfgEmailToggleAtivo(\'' + escapeJsAttr(chave) + '\')">'
+      + '</label>'
+      + '<input type="hidden" id="cfg_valor_' + escapeHtml(id) + '" value="' + (ligado ? 'SIM' : 'NÃO') + '">'
+      + '<span class="cfg-email-modal-ativo-text">Envio automático <strong id="emailEditorAtivoTxt_' + escapeHtml(id) + '">'
+        + (ligado ? 'ativado' : 'desativado') + '</strong></span>'
+      + '</div>';
+  }
+
+  window.gomCfgEmailToggleAtivo = function(chave) {
+    const id = chaveParaId_(chave);
+    const chk = document.getElementById('emailEditorAtivoChk_' + id);
+    const hidden = document.getElementById('cfg_valor_' + id);
+    const txt = document.getElementById('emailEditorAtivoTxt_' + id);
+    const ligado = !!(chk && chk.checked);
+    if (hidden) hidden.value = ligado ? 'SIM' : 'NÃO';
+    if (txt) txt.textContent = ligado ? 'ativado' : 'desativado';
+    marcarConfiguracaoAlterada(chave);
+  };
+
+  function itemConfig_(chave) {
+    return procurarConfig_(chave) || { chave: chave, valor: '', grupo: 'E-mail', descricao: '', ativo: 'SIM' };
+  }
+
+  function secaoEditorEmail_(titulo, icone, conteudo, hint) {
+    return '<div class="cfg-email-modal-secao">'
+      + '<div class="cfg-email-modal-secao-titulo"><i class="bi ' + escapeHtml(icone) + ' me-2"></i>' + escapeHtml(titulo) + '</div>'
+      + (hint ? '<div class="cfg-email-modal-secao-hint">' + escapeHtml(hint) + '</div>' : '')
+      + conteudo
+      + '</div>';
+  }
+
+  window.gomAbrirEditorEmail = function(tipo) {
+    const def = CONFIG_EMAIL_MODAL_DEFS[tipo];
+    const corpoEl = document.getElementById('emailEditorCorpo');
+    const tituloEl = document.getElementById('emailEditorTitulo');
+    const salvarBtn = document.getElementById('emailEditorSalvar');
+    const modalEl = document.getElementById('modalEmailEditor');
+    if (!def || !corpoEl || !modalEl) return;
+
+    if (tituloEl) tituloEl.innerHTML = '<i class="bi ' + escapeHtml(def.icone) + ' me-2"></i>' + escapeHtml(def.titulo);
+    if (salvarBtn) salvarBtn.dataset.tipo = tipo;
+
+    const itAtivo   = itemConfig_(def.ativoKey);
+    const itAssunto = itemConfig_(def.assuntoKey);
+    const itDest    = itemConfig_(def.destinatariosKey);
+    const itCorpo   = itemConfig_(def.corpoKey);
+
+    corpoEl.innerHTML = ''
+      + '<div class="cfg-email-modal-topo">'
+        + '<div class="cfg-email-modal-topo-desc"><i class="bi bi-info-circle me-1"></i>' + escapeHtml(def.descricao) + '</div>'
+        + renderEmailAtivoSwitch_(def.ativoKey, formatarValorConfigParaTela_(itAtivo))
+      + '</div>'
+      + secaoEditorEmail_('Assunto', 'bi-card-heading',
+          renderEmailAssuntoEditor_(itAssunto, chaveParaId_(def.assuntoKey), def.assuntoKey, formatarValorConfigParaTela_(itAssunto)))
+      + secaoEditorEmail_(def.destinatariosLabel, 'bi-people-fill',
+          renderEmailListEditorConfig_(itDest, chaveParaId_(def.destinatariosKey), def.destinatariosKey, formatarValorConfigParaTela_(itDest),
+            { tituloInterno: def.destinatariosLabel, ajuda: 'Digite um e-mail e pressione Enter, ou cole vários separados por vírgula. Aceita vírgula, ponto e vírgula, espaço ou quebra de linha.' }),
+          def.destinatariosHint)
+      + secaoEditorEmail_('Corpo da mensagem', 'bi-body-text',
+          renderEmailCorpoEditor_(itCorpo, chaveParaId_(def.corpoKey), def.corpoKey, formatarValorConfigParaTela_(itCorpo)));
+
+    if (window.bootstrap && bootstrap.Modal) {
+      bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    } else {
+      modalEl.classList.add('show');
+      modalEl.style.display = 'block';
+    }
+  };
+
+  window.gomSalvarEditorEmail = function(btn) {
+    const alvo = btn || document.getElementById('emailEditorSalvar');
+    const tipo = alvo && alvo.dataset ? alvo.dataset.tipo : '';
+    const def = CONFIG_EMAIL_MODAL_DEFS[tipo];
+    if (!def) return;
+
+    // Garante que o corpo (contenteditable) esteja sincronizado no campo oculto.
+    if (typeof window.gomCfgEmailSincronizar === 'function') {
+      window.gomCfgEmailSincronizar(chaveParaId_(def.corpoKey), def.corpoKey);
+    }
+
+    // Marca as 4 chaves como alteradas (lê os cfg_valor_* dentro do modal).
+    [def.ativoKey, def.assuntoKey, def.destinatariosKey, def.corpoKey].forEach(function(k) {
+      marcarConfiguracaoAlterada(k);
+    });
+
+    const modalEl = document.getElementById('modalEmailEditor');
+    // coletarConfiguracoesAlteradas() roda de forma síncrona dentro de salvar,
+    // lendo o DOM do modal antes de fecharmos — seguro fechar logo após.
+    salvarConfiguracoesTela(btn);
+    if (modalEl && window.bootstrap && bootstrap.Modal) {
+      bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+    }
   };
 
   function doisDigitos_(valor) {
@@ -607,9 +798,16 @@
     });
 
     painel.innerHTML = Object.keys(porGrupo).map(function(grupo) {
+      var itens = porGrupo[grupo];
+      var compositor = '';
+      var visiveis = itens;
+      if (grupo === 'E-mail') {
+        compositor = renderEmailCompositorCards_();
+        visiveis = itens.filter(function(it) { return !isConfigEmailModalKey_(it.chave); });
+      }
       return '<div class="config-group-card">'
-        + '<div class="config-group-head"><h5><i class="bi ' + escapeHtml(getIconeConfigGrupo(grupo)) + ' me-2"></i>' + escapeHtml(grupo) + '</h5><span>' + porGrupo[grupo].length + ' itens</span></div>'
-        + '<div class="config-list">' + porGrupo[grupo].map(renderLinhaConfiguracao).join('') + '</div>'
+        + '<div class="config-group-head"><h5><i class="bi ' + escapeHtml(getIconeConfigGrupo(grupo)) + ' me-2"></i>' + escapeHtml(grupo) + '</h5><span>' + itens.length + ' itens</span></div>'
+        + '<div class="config-list">' + compositor + visiveis.map(renderLinhaConfiguracao).join('') + '</div>'
         + '</div>';
     }).join('');
 
