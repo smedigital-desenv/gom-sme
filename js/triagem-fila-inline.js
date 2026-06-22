@@ -278,14 +278,25 @@
 
   function gomRenderLista_(lista, contexto) {
     var ehFila = contexto === 'fila';
+    var agrupado = typeof window.gomAgrupAtivo === 'function' && window.gomAgrupAtivo(contexto);
+    var linhasHtml = typeof window.gomAgrupRenderLista === 'function'
+      ? window.gomAgrupRenderLista(lista || [], {
+          tela: contexto,
+          renderLinha: function(item, idx) { return gomRenderLinhaEditavel_(item, idx, contexto); },
+          loteHtml: function(grupo, grupoKey) { return gomAgrupLoteTriagemHtml_(grupo, grupoKey, contexto); }
+        })
+      : (lista || []).map(function(item, idx) { return gomRenderLinhaEditavel_(item, idx, contexto); }).join('');
     return [
-      '<div class="empresa-lista-os empresa-lista-compacta empresa-lista-dia-v2 empresa-lista-dia-sem-acao gom-tf-lista-v6 ' + (ehFila ? 'gom-tf-fila-v6' : 'gom-tf-triagem-v6') + '">',
+      (typeof window.gomAgrupBotaoHtml === 'function'
+        ? '<div class="gom-agrup-toolbar gom-tf-agrup-toolbar">' + window.gomAgrupBotaoHtml(contexto) + '</div>'
+        : ''),
+      '<div class="empresa-lista-os empresa-lista-compacta empresa-lista-dia-v2 empresa-lista-dia-sem-acao gom-tf-lista-v6 ' + (ehFila ? 'gom-tf-fila-v6' : 'gom-tf-triagem-v6') + (agrupado ? ' gom-tf-lista-agrupada' : '') + '">',
         '<div class="empresa-lista-head empresa-lista-head-v2 gom-tf-head-v6">',
           '<div>' + (ehFila ? 'Ordem / unidade' : 'Unidade / descrição') + '</div>',
           '<div>Status e encaminhamento</div>',
           '<div>' + (ehFila ? 'Observação / anexos apenas quando necessário' : 'Nova observação / anexos') + '</div>',
         '</div>',
-        (lista || []).map(function(item, idx) { return gomRenderLinhaEditavel_(item, idx, contexto); }).join(''),
+        linhasHtml,
       '</div>',
       // Barra flutuante de salvar — igual à Empresa e Configurações.
       // Só aparece quando há alterações pendentes.
@@ -304,6 +315,62 @@
 
   window.renderListaTriagemOperacional = function(lista) { return gomRenderLista_(lista, 'triagem'); };
   window.renderListaFilaOperacional = function(lista) { return gomRenderLista_(lista, 'fila'); };
+
+  // ── Agrupamento por visita: controle "Aplicar a todos" (situação em lote) ────
+  // Reutiliza o buffer de alterações já existente: apenas seta o select de cada
+  // linha do grupo e marca como alterada; o usuário confirma na barra "Salvar".
+  function gomAgrupLoteTriagemHtml_(grupo, grupoKey, contexto) {
+    var vistos = {};
+    var statuses = [];
+    (grupo || []).forEach(function(item) {
+      (gomStatusPermitidos_(item, contexto) || []).map(gomNormalizar_).forEach(function(s) {
+        if (s && !vistos[s]) { vistos[s] = true; statuses.push(s); }
+      });
+    });
+    if (!statuses.length) return '';
+    var selId = 'gomAgrupSel_' + grupoKey;
+    var out = ['<div class="fila-visita-lote">'];
+    out.push('<span class="fila-visita-lote-label"><i class="bi bi-stack me-1"></i>Aplicar a todos:</span>');
+    out.push('<select class="form-select form-select-sm" id="' + selId + '">');
+    out.push('<option value="">Encaminhamento da visita…</option>');
+    statuses.forEach(function(s) { out.push('<option value="' + gomHtml_(s) + '">' + gomHtml_(s) + '</option>'); });
+    out.push('</select>');
+    out.push('<button type="button" class="btn btn-primary btn-sm fw-bold" onclick="gomAgrupAplicarTriagem_(\'' + gomJs_(grupoKey) + '\',\'' + gomJs_(contexto) + '\',this)">Aplicar</button>');
+    out.push('</div>');
+    return out.join('');
+  }
+
+  window.gomAgrupAplicarTriagem_ = function(grupoKey, contexto, btn) {
+    var grupo = typeof window.gomAgrupGrupo === 'function' ? window.gomAgrupGrupo(grupoKey) : null;
+    var sel = document.getElementById('gomAgrupSel_' + grupoKey);
+    var raw = sel ? sel.value : '';
+    var alvo = gomNormalizar_(raw);
+    if (!grupo || !alvo) { alert('Selecione o encaminhamento da visita antes de aplicar.'); return; }
+    var aplicados = 0, pulados = 0;
+    (grupo.ids || []).forEach(function(id) {
+      var idSeguro = String(id).replace(/[^A-Za-z0-9_-]/g, '_');
+      var s = document.getElementById('gomTfStatus_' + idSeguro);
+      if (!s) { pulados++; return; }
+      var match = Array.prototype.filter.call(s.options, function(o) {
+        return o.value === raw || gomNormalizar_(o.value) === alvo;
+      })[0];
+      if (!match) { pulados++; return; }
+      s.value = match.value;
+      if (typeof window.gomTfAtualizarBlocoObsAnexosV6 === 'function') window.gomTfAtualizarBlocoObsAnexosV6(id);
+      if (typeof window.gomTfMarcarLinhaAlteradaV6 === 'function') window.gomTfMarcarLinhaAlteradaV6(id);
+      aplicados++;
+    });
+    if (!aplicados) {
+      alert('Nenhum chamado deste grupo aceita "' + raw + '" como encaminhamento.');
+      return;
+    }
+    if (typeof gomMostrarSucessoBotao === 'function') {
+      gomMostrarSucessoBotao(btn, aplicados + ' aplicado' + (aplicados === 1 ? '' : 's'), 1400);
+    }
+    if (pulados && window.console) {
+      console.info('[GOM] Lote por visita: ' + aplicados + ' aplicados, ' + pulados + ' ignorados (status incompatível).');
+    }
+  };
 
 
   // ── BUFFER DE ALTERAÇÕES (igual Empresa/Config) ──────────────────────────────

@@ -8264,6 +8264,28 @@ body.gom-modal-open { overflow: hidden; }
   flex-wrap: wrap;
   gap: 6px;
 }
+
+/* Toolbar do toggle "Agrupar por visita" reutilizada em Fila/Triagem/Empresa */
+.gom-agrup-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 10px;
+}
+.empresa-agenda-toolbar-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+/* Com o agrupamento ligado, as linhas vão para dentro dos cards por escola;
+   o cabeçalho de colunas da lista plana não se alinha mais, então fica oculto. */
+.gom-tf-lista-agrupada > .empresa-lista-head,
+.gom-tf-lista-agrupada > .empresa-gerencial-head {
+  display: none;
+}
 .fila-visitas-list {
   display: flex;
   flex-direction: column;
