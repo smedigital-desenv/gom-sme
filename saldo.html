@@ -207,6 +207,31 @@
     max-height: 280px !important;
   }
 
+  .tabela-detalhamento {
+    font-size: 0.75rem;
+  }
+  .tabela-detalhamento th,
+  .tabela-detalhamento td {
+    padding: 6px 8px !important;
+  }
+  .tabela-detalhamento thead th {
+    font-size: 0.7rem;
+    padding: 5px 6px !important;
+  }
+  .tabela-detalhamento tbody tr {
+    border-bottom-width: 0.5px;
+  }
+  .tabela-detalhamento .med-clicavel {
+    cursor: pointer;
+    color: var(--primary);
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
+  .tabela-detalhamento .med-clicavel:hover {
+    text-decoration: underline;
+    color: var(--neon-blue);
+  }
+
   /* Ajustes de tamanho */
   .kpi-value {
     font-size: 1.5rem !important;
@@ -345,17 +370,6 @@
           <div class="kpi-icon"><i class="bi bi-arrow-repeat"></i></div>
         </div>
         <div class="kpi-sub">Em progresso</div>
-      </div>
-
-      <div class="kpi-box clic" onclick="abrirGraficoProjecao()" style="--kpi-color: var(--neon-blue);">
-        <div class="kpi-box-head">
-          <div>
-            <div class="kpi-label">Saldo a Emitir</div>
-            <div class="kpi-value" id="c-saldo">–</div>
-          </div>
-          <div class="kpi-icon"><i class="bi bi-graph-up-arrow"></i></div>
-        </div>
-        <div class="kpi-sub" id="c-saldo-sub">Clique para ver projeção</div>
       </div>
 
       <div class="kpi-box clic" onclick="detalheCard('pend')" style="--kpi-color: var(--griffo);">
@@ -556,6 +570,11 @@ function atualizarProjecao() {
       <div class="contrato-stat-label">Total comprometido</div>
       <div class="contrato-stat-value">${R$(comprometido)}</div>
       <div class="contrato-stat-sub">${compPct}% do teto</div>
+    </div>
+    <div class="contrato-stat" style="cursor: pointer;" onclick="abrirGraficoProjecao()">
+      <div class="contrato-stat-label">${saldoNeg ? 'Estourou o teto' : 'Saldo a Emitir'}</div>
+      <div class="contrato-stat-value" style="color: ${saldoNeg ? '#ef4444' : '#22c55e'};">${R$(saldoPos)}</div>
+      <div class="contrato-stat-sub" id="saldo-sub">Clique para projeção</div>
     </div>`;
 
   const N = c.medicoesContrato;
@@ -912,12 +931,18 @@ function detalharPorUnidade() {
   // Montar linhas
   const linhas = Object.values(porUnidade)
     .sort((a, b) => a.unidade.localeCompare(b.unidade))
-    .map(u => {
+    .map((u, idx) => {
       const valores = medicoes.map(m => u.medicoes[m] || 0);
       const subtotal = valores.reduce((s, v) => s + v, 0);
+      const colMedicoes = valores.map((v, i) => {
+        const medNum = medicoes[i];
+        return v > 0
+          ? `<span class="med-clicavel" onclick="abrirDetalheMedicao(${medNum}, '${u.unidade}')" title="Clique para detalhes">${R$(v)}</span>`
+          : R$(v);
+      });
       const colunas = [
         u.unidade,
-        ...valores.map(v => R$(v)),
+        ...colMedicoes,
         `<strong>${R$(subtotal)}</strong>`
       ].join('</td><td class="text-end">') + '</td>';
       return `<tr><td>${colunas}</td></tr>`;
@@ -933,17 +958,18 @@ function detalharPorUnidade() {
   });
   const totalGeral = totaisPorMedicao.reduce((s, v) => s + v, 0);
 
+  const colTotais = totaisPorMedicao.map(v => `<strong>${R$(v)}</strong>`);
   const rodape = [
     '<strong>Total por medição</strong>',
-    ...totaisPorMedicao.map(v => `<strong>${R$(v)}</strong>`),
+    ...colTotais,
     `<strong>${R$(totalGeral)}</strong>`
   ].join('</td><td class="text-end">') + '</td>';
 
   document.getElementById('modal-titulo').textContent = '💰 Valor Executado por Unidade e Medição';
-  document.getElementById('modal-sub').textContent = `${Object.keys(porUnidade).length} unidades · ${medicoes.length} medição(ões)`;
+  document.getElementById('modal-sub').textContent = `${Object.keys(porUnidade).length} unidades · ${medicoes.length} medição(ões) · Clique nas medições para detalhes`;
   document.getElementById('modal-body').innerHTML = `
     <div class="table-responsive">
-      <table class="table table-sm">
+      <table class="table tabela-detalhamento">
         <thead style="background: rgba(0, 43, 94, 0.05); position: sticky; top: 0;">
           <tr><th>${cabecalho}</tr>
         </thead>
@@ -955,11 +981,54 @@ function detalharPorUnidade() {
         </tfoot>
       </table>
     </div>
-    <div style="margin-top: 16px; text-align: center;">
-      <button class="btn btn-outline-primary" onclick="detalharPorMedicao()">
-        <i class="bi bi-arrow-left me-2"></i>Voltar para Resumo
+    <div style="margin-top: 16px; text-align: center; display: flex; gap: 8px; justify-content: center;">
+      <button class="btn btn-outline-primary btn-sm" onclick="detalharPorMedicao()">
+        <i class="bi bi-arrow-left me-2"></i>Voltar
       </button>
     </div>`;
+}
+
+function abrirDetalheMedicao(medNum, unidade) {
+  const osComMedicao = todosOsDados.filter(r => r.unidade === unidade && r.med && r.med[medNum] > 0);
+
+  if (!osComMedicao.length) {
+    abrirInfo(`Medição ${medNum}ª - ${unidade}`, 'Nenhuma O.S com valor nesta medição.');
+    return;
+  }
+
+  const linhas = osComMedicao.map(r => `
+    <tr>
+      <td><strong>OS ${r.os || '–'}</strong></td>
+      <td>${r.servico || '–'}</td>
+      <td class="text-end text-success">${R$(r.med[medNum])}</td>
+    </tr>
+  `).join('');
+
+  const total = osComMedicao.reduce((s, r) => s + (r.med[medNum] || 0), 0);
+
+  const modal = new bootstrap.Modal(document.getElementById('modalDetalhes'));
+  document.getElementById('modal-titulo').textContent = `📋 Medição ${medNum}ª - ${unidade}`;
+  document.getElementById('modal-sub').textContent = `${osComMedicao.length} O.S com valores`;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <thead style="background: rgba(0, 43, 94, 0.05);">
+          <tr><th>O.S</th><th>Serviço</th><th class="text-end">Valor</th></tr>
+        </thead>
+        <tbody>
+          ${linhas}
+        </tbody>
+        <tfoot style="background: rgba(0, 43, 94, 0.05);">
+          <tr style="font-weight: 700;"><td></td><td class="text-end">Total</td><td class="text-end text-success">${R$(total)}</td></tr>
+        </tfoot>
+      </table>
+    </div>
+    <div style="margin-top: 12px; text-align: center;">
+      <button class="btn btn-outline-primary btn-sm" onclick="detalharPorUnidade()">
+        <i class="bi bi-arrow-left me-1"></i>Voltar
+      </button>
+    </div>`;
+  modal.show();
 }
 
 function inicializar(payload) {
