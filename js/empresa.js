@@ -1378,7 +1378,7 @@ function renderCardOrcamentoEmpresa(item) {
         '<div class="col-md-4"><label class="form-label small fw-bold">Previsão de conclusão</label><input class="form-control form-control-sm gom-date-br-input" type="date" name="dataPrevistaConclusao" value="' + dataPrevInput + '" onchange="gomNormalizarDataBrInput(this)"></div>',
         '<div class="col-md-4"><label class="form-label small fw-bold"><i class="bi bi-paperclip me-1"></i>Anexos do orçamento</label><input class="form-control form-control-sm" type="file" name="anexosOrcamento" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"></div>',
         '<div class="col-12"><label class="form-label small fw-bold">Observações da empresa <span class="text-muted fw-normal">(opcional)</span></label><textarea class="form-control form-control-sm" name="observacoes" rows="2">' + obs + '</textarea></div>',
-        '<div class="col-12"><button class="btn btn-primary btn-sm fw-bold mt-2"><i class="bi bi-send-check me-1"></i> Devolver orçamento para aprovação</button></div>',
+        '<div class="col-12"><button class="btn btn-primary btn-sm fw-bold mt-2"><i class="bi bi-send-check me-1"></i> Enviar orçamento para aprovação</button></div>',
       '</form>',
     '</div>'
   ].join('');
@@ -1443,7 +1443,7 @@ function renderLinhaOrcamentoEmpresa(item) {
       '<form id="' + formId + '" class="empresa-os-form-inline" data-label="Observações (opcional)" onsubmit="enviarOrcamentoEmpresa(event,\'' + idJs + '\')">',
         '<label class="empresa-field-label"><i class="bi bi-chat-left-text me-1"></i>Observações <span class="text-muted fw-normal">(opcional)</span></label>',
         '<textarea class="form-control form-control-sm" name="observacoes" rows="2" placeholder="Observações da empresa...">' + obs + '</textarea>',
-        '<button type="submit" class="btn btn-primary btn-sm fw-bold mt-2"><i class="bi bi-send-check me-1"></i>Devolver orçamento</button>',
+        '<button type="submit" class="btn btn-primary btn-sm fw-bold mt-2"><i class="bi bi-send-check me-1"></i>Enviar orçamento</button>',
       '</form>',
     '</div>'
   ].join('');
