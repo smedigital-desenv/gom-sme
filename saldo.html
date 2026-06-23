@@ -531,9 +531,37 @@ function atualizarProjecao() {
       scales: {
         x: { stacked: true },
         y: { stacked: true, ticks: { callback: fmtKM } }
+      },
+      onClick: (evt, elements) => {
+        if (!elements.length) return;
+        const i  = elements[0].index;
+        const ds = elements[0].datasetIndex;
+        const medNum = i + 1;
+        if (ds === 0) {
+          const lista = todosOsDados.filter(r => r.med && r.med[medNum] > 0);
+          abrirDetalhe(`Medição ${medNum}ª — realizado`, lista);
+        } else if (ds === 1) {
+          abrirDetalhe(`Próxima medição (${proximaMedicao}ª) — a executar`,
+            todosOsDados.filter(r => r.valor_aberto > 0));
+        } else {
+          abrirInfo(`Média projetada · ${medNum}ª medição`,
+            `Projeção: o <b>saldo a emitir</b> de <b>${R$(c.saldo)}</b> distribuído em ` +
+            `<b>${medicoesNovas}</b> medições (da ${proximaMedicao + 1}ª à ${c.medicoesContrato}ª) ` +
+            `resulta em <b>${R$(mediaRestante)}</b> por medição.<br><br>` +
+            `São valores projetados — ainda não há O.S emitidas para estas medições.`);
+        }
       }
     }
   });
+}
+
+function toggle(i) {
+  const card = document.getElementById(`u-${i}`);
+  card.classList.toggle('open');
+  const container = card.querySelector('[data-os-container]');
+  if (container) {
+    container.style.display = container.style.display === 'none' ? 'block' : 'none';
+  }
 }
 
 function renderLista(dados, termo) {
@@ -547,7 +575,7 @@ function renderLista(dados, termo) {
 
   lista.innerHTML = grupos.map((g, i) => `
     <div class="unidade-item" id="u-${i}">
-      <div class="unidade-header" onclick="document.getElementById('u-${i}').classList.toggle('open')">
+      <div class="unidade-header" onclick="toggle(${i})">
         <div>
           <div class="unidade-nome">${highlight(g.unidade, termo)}</div>
           <small class="text-muted">${g.os.length} O.S · ${g.conc} ✅ ${g.and} 🟡 ${g.pend} 🔴</small>
@@ -568,7 +596,7 @@ function renderLista(dados, termo) {
         </div>
         <i class="bi bi-chevron-right" style="color: var(--primary);"></i>
       </div>
-      <div style="display: none; border-top: 1px solid rgba(148, 163, 184, 0.24); padding-top: 12px;">
+      <div data-os-container style="display: none; border-top: 1px solid rgba(148, 163, 184, 0.24); padding-top: 12px;">
         <div class="table-responsive">
           <table class="table table-sm mb-0">
             <thead style="background: rgba(0, 43, 94, 0.05);">
@@ -663,6 +691,14 @@ function abrirDetalhe(titulo, lista) {
         </tfoot>
       </table>
     </div>`;
+  modal.show();
+}
+
+function abrirInfo(titulo, html) {
+  const modal = new bootstrap.Modal(document.getElementById('modalDetalhes'));
+  document.getElementById('modal-titulo').textContent = titulo;
+  document.getElementById('modal-sub').textContent = '';
+  document.getElementById('modal-body').innerHTML = `<div class="p-3">${html}</div>`;
   modal.show();
 }
 
