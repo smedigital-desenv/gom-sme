@@ -499,15 +499,21 @@ function atualizarCards(dados, pfx) {
   const and     = dados.filter(r => statusClass(resolverStatus(r)) === 'a').length;
   const pend    = dados.filter(r => statusClass(resolverStatus(r)) === 'p').length;
 
-  document.getElementById(pfx+'total').textContent    = dados.length;
-  document.getElementById(pfx+'unidades').textContent = `${grupos.length} unidades`;
-  document.getElementById(pfx+'valor').textContent    = R$(emitido);
-  document.getElementById(pfx+'pago').textContent     = R$(pago);
-  document.getElementById(pfx+'pct').textContent      = `${pct(pago,tot)}% executado`;
-  document.getElementById(pfx+'aberto').textContent   = R$(aberto);
-  document.getElementById(pfx+'conc').textContent     = conc;
-  document.getElementById(pfx+'and').textContent      = and;
-  document.getElementById(pfx+'pend').textContent     = pend;
+  // Atualizar elementos apenas se existem
+  const updateEl = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  };
+
+  updateEl(pfx+'total', dados.length);
+  updateEl(pfx+'unidades', `${grupos.length} unidades`);
+  updateEl(pfx+'valor', R$(emitido));
+  updateEl(pfx+'pago', R$(pago));
+  updateEl(pfx+'pct', `${pct(pago,tot)}% executado`);
+  updateEl(pfx+'aberto', R$(aberto));
+  updateEl(pfx+'conc', conc);
+  updateEl(pfx+'and', and);
+  updateEl(pfx+'pend', pend);
 
   if (pfx === 'c-' && contratoInfo) {
     const c = contratoInfo;
@@ -515,11 +521,17 @@ function atualizarCards(dados, pfx) {
     const saldoAbs = Math.abs(c.saldo);
     const medicoesNovas = c.medicoesNovas ?? Math.max(0, c.restantes - 1);
     const mediaRestante = medicoesNovas > 0 ? c.saldo / medicoesNovas : 0;
-    document.getElementById('c-saldo').textContent = R$(saldoAbs);
-    document.getElementById('c-saldo-sub').textContent =
-      saldoNeg
-        ? `Estourou | Média: ${R$(Math.abs(mediaRestante))}`
-        : `Média: ${R$(mediaRestante)} (${medicoesNovas} med.)`;
+
+    // Atualizar apenas se os elementos existem
+    const saldoEl = document.getElementById('c-saldo');
+    const saldoSubEl = document.getElementById('c-saldo-sub');
+    if (saldoEl) saldoEl.textContent = R$(saldoAbs);
+    if (saldoSubEl) {
+      saldoSubEl.textContent =
+        saldoNeg
+          ? `Estourou | Média: ${R$(Math.abs(mediaRestante))}`
+          : `Média: ${R$(mediaRestante)} (${medicoesNovas} med.)`;
+    }
   }
 }
 
