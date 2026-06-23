@@ -111,30 +111,42 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 12px;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .unidade-header > div:first-child {
+    flex: 1;
+    min-width: 200px;
   }
   .unidade-nome {
-    font-weight: 600;
+    font-weight: 700;
     color: var(--primary);
     font-size: 0.95rem;
+    line-height: 1.3;
   }
   .unidade-stats {
     display: flex;
-    gap: 20px;
+    gap: 24px;
     font-size: 0.85rem;
+    margin-left: auto;
+    flex-shrink: 0;
   }
   .unidade-stat {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    text-align: right;
   }
   .unidade-stat-label {
     color: #94a3b8;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
   }
   .unidade-stat-value {
     font-weight: 700;
     color: var(--primary);
+    font-size: 0.9rem;
   }
 
   .buscas-toolbar {
@@ -191,17 +203,45 @@
     to { transform: rotate(360deg); }
   }
 
+  .grafico-wrapper canvas {
+    max-height: 280px !important;
+  }
+
+  /* Ajustes de tamanho */
+  .kpi-value {
+    font-size: 1.5rem !important;
+  }
+  .contrato-stat-value {
+    font-size: 1.1rem !important;
+  }
+  .unidade-stats {
+    flex: 0 0 auto;
+    gap: 32px;
+  }
+
   /* Responsive */
+  @media (max-width: 1200px) {
+    .grafico-wrapper {
+      margin-top: 20px;
+    }
+    .contrato-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
   @media (max-width: 768px) {
     .unidade-stats {
       flex-direction: column;
-      gap: 8px;
+      gap: 12px;
     }
     .contrato-grid {
       grid-template-columns: repeat(2, 1fr);
     }
     .buscas-toolbar {
       flex-wrap: wrap;
+    }
+    .kpi-grid {
+      grid-template-columns: repeat(2, 1fr);
     }
   }
 </style>
@@ -323,9 +363,11 @@
     <div class="contrato-grid" id="contrato-resumo"></div>
 
     <!-- Gráfico de Projeção -->
-    <div class="grafico-wrapper">
+    <div class="grafico-wrapper" style="margin-top: 24px;">
       <h5><i class="bi bi-graph-up me-2"></i>Projeção de saldo por medição (R$)</h5>
-      <canvas id="chart-projecao" height="110"></canvas>
+      <div style="position: relative; height: 280px; width: 100%;">
+        <canvas id="chart-projecao"></canvas>
+      </div>
     </div>
 
     <!-- Buscas e Filtros -->
