@@ -916,7 +916,78 @@
     return new Promise(function (resolve) { setTimeout(resolve, ms); });
   }
 
+  // ── Primeiro acesso da empresa: link com token p/ cadastrar o PIN ──────────
+  function _empresaSetupTokenDaUrl_() {
+    try {
+      var m = (window.location.search || '').match(/[?&]empresa-setup=([^&]+)/);
+      return m ? decodeURIComponent(m[1]) : '';
+    } catch (e) { return ''; }
+  }
+
+  function _setupMsg_(texto, tipo) {
+    var el = document.getElementById('gomSetupMsg');
+    if (!el) return;
+    el.style.display = '';
+    el.textContent = texto;
+    el.style.background = tipo === 'ok' ? '#dcfce7' : '#fee2e2';
+    el.style.color = tipo === 'ok' ? '#166534' : '#991b1b';
+  }
+
+  function _mostrarTelaDefinirPinEmpresa(token) {
+    _ocultarApp();
+    var overlay = _obterOverlayAuth();
+    overlay.style.background = 'linear-gradient(135deg,#002b5e,#075f82)';
+    overlay.innerHTML = `
+      <div style="background:#fff;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.4);padding:40px 36px;max-width:420px;width:100%;">
+        <div style="text-align:center;margin-bottom:20px;">
+          <i class="bi bi-shield-lock-fill" style="font-size:2.6rem;color:#075f82;"></i>
+          <h2 style="font-weight:900;color:#002b5e;margin:8px 0 4px;">Primeiro acesso da Empresa</h2>
+          <p style="color:#64748b;font-size:.9rem;">Defina o código de acesso (PIN) que a empresa usará para entrar no sistema.</p>
+        </div>
+        <div id="gomSetupMsg" style="display:none;margin-bottom:14px;border-radius:10px;padding:10px 14px;font-size:.88rem;"></div>
+        <label class="form-label fw-bold text-muted small">NOVO PIN <span class="fw-normal">(mín. 4 caracteres)</span></label>
+        <input type="password" id="gomSetupPin1" class="form-control mb-3" placeholder="Digite o PIN" autocomplete="new-password">
+        <label class="form-label fw-bold text-muted small">CONFIRME O PIN</label>
+        <input type="password" id="gomSetupPin2" class="form-control mb-3" placeholder="Repita o PIN" autocomplete="new-password"
+               onkeydown="if(event.key==='Enter') gomDefinirPinEmpresa()">
+        <button id="gomBtnSetupPin" class="btn btn-primary fw-bold w-100" onclick="gomDefinirPinEmpresa()">
+          <i class="bi bi-check2-circle me-1"></i>Salvar PIN
+        </button>
+      </div>`;
+    overlay.dataset.setupToken = token;
+  }
+
+  window.gomDefinirPinEmpresa = async function () {
+    var p1 = document.getElementById('gomSetupPin1');
+    var p2 = document.getElementById('gomSetupPin2');
+    var btn = document.getElementById('gomBtnSetupPin');
+    var pin = p1 ? p1.value.trim() : '';
+    var pin2 = p2 ? p2.value.trim() : '';
+    if (pin.length < 4) { _setupMsg_('O PIN deve ter ao menos 4 caracteres.', 'erro'); return; }
+    if (pin !== pin2) { _setupMsg_('Os PINs não coincidem.', 'erro'); return; }
+    var overlay = document.getElementById('gomAuthOverlay');
+    var token = overlay && overlay.dataset ? overlay.dataset.setupToken : '';
+    function _resetBtn() { if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Salvar PIN'; } }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...'; }
+    try {
+      var r = await window.SB.rpc('definir_pin_empresa', {
+        p_token: token, p_pin: pin, p_hml: (String(window.GOM_DB_PREFIX || '') === 'hml_')
+      });
+      if (r && r.error) { _setupMsg_('Erro: ' + r.error.message, 'erro'); _resetBtn(); return; }
+      var data = r ? r.data : null;
+      if (!data || data.ok !== true) { _setupMsg_((data && data.erro) || 'Não foi possível salvar o PIN.', 'erro'); _resetBtn(); return; }
+      _setupMsg_('PIN cadastrado com sucesso! Redirecionando para o login...', 'ok');
+      setTimeout(function () { window.location.href = window.location.origin + window.location.pathname; }, 1600);
+    } catch (e) {
+      _setupMsg_('Não foi possível salvar o PIN. Tente novamente.', 'erro');
+      _resetBtn();
+    }
+  };
+
   document.addEventListener('DOMContentLoaded', function () {
+    var _setupTok = _empresaSetupTokenDaUrl_();
+    if (_setupTok) { _mostrarTelaDefinirPinEmpresa(_setupTok); return; }
+
     var veioDeLogout = (window.location.search || '').indexOf('gom_logout=') >= 0 || _msLogoutRestante() > 0;
     if (veioDeLogout) {
       _mostrarTelaSaindo('Preparando acesso...', 'Estamos finalizando a saída anterior e abrindo a tela de login.');

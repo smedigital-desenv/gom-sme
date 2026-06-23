@@ -748,6 +748,42 @@
     renderizarConfiguracoes();
   };
 
+  // Gera o link de primeiro acesso da empresa (token de uso único via RPC).
+  window.gomGerarLinkPrimeiroAcessoEmpresa = async function(btn) {
+    var box = document.getElementById('gomLinkPrimeiroAcessoBox');
+    if (typeof gomSetButtonLoading === 'function') gomSetButtonLoading(btn, 'Gerando...');
+    else if (btn) btn.disabled = true;
+    try {
+      var hml = String(window.GOM_DB_PREFIX || '') === 'hml_';
+      var r = await window.SB.rpc('gerar_token_setup_empresa', { p_hml: hml });
+      if (r && r.error) throw new Error(r.error.message);
+      var token = r ? r.data : '';
+      if (!token) throw new Error('Token vazio retornado.');
+      var link = window.location.origin + window.location.pathname + '?empresa-setup=' + encodeURIComponent(token);
+      if (box) {
+        box.style.display = '';
+        box.innerHTML = '<div class="alert alert-success py-2 mb-1"><i class="bi bi-check2-circle me-1"></i><strong>Link gerado (uso único):</strong></div>'
+          + '<div class="input-group input-group-sm"><input class="form-control" id="gomLinkPrimeiroAcessoInput" readonly value="' + escapeHtml(link) + '">'
+          + '<button class="btn btn-primary fw-bold" type="button" onclick="gomCopiarLinkPrimeiroAcesso(this)"><i class="bi bi-clipboard me-1"></i>Copiar</button></div>'
+          + '<div class="text-muted small mt-1">Envie este link para a empresa. Ao definir o PIN, o link expira automaticamente.</div>';
+      }
+      if (typeof gomMostrarSucessoBotao === 'function') gomMostrarSucessoBotao(btn, 'Gerado');
+      else if (btn) btn.disabled = false;
+    } catch (e) {
+      alert('Não foi possível gerar o link: ' + (e && e.message ? e.message : e));
+      if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(btn);
+      else if (btn) btn.disabled = false;
+    }
+  };
+
+  window.gomCopiarLinkPrimeiroAcesso = function(btn) {
+    var input = document.getElementById('gomLinkPrimeiroAcessoInput');
+    if (!input) return;
+    input.select();
+    try { navigator.clipboard.writeText(input.value); } catch (e) { try { document.execCommand('copy'); } catch (e2) {} }
+    if (typeof gomMostrarSucessoBotao === 'function') gomMostrarSucessoBotao(btn, 'Copiado');
+  };
+
   window.marcarConfiguracaoAlterada = function(chave) {
     chave = String(chave || '').trim();
     if (!chave) return;
@@ -909,13 +945,18 @@
           ? renderEmailAssuntoEditor_(item, id, chave, valorTela)
           : '<input id="cfg_valor_' + escapeHtml(id) + '" class="form-control form-control-sm fw-bold" value="' + valor + '" placeholder="Valor da configuração" oninput="marcarConfiguracaoAlterada(\'' + escapeJsAttr(chave) + '\')">';
     const classeEmail = isConfigEmailList_(chave) ? ' config-row-email-list' : (isConfigEmailTempoCorpo_(chave) ? ' config-row-email-template' : '');
+    // Linha do PIN da empresa: botão para gerar o link de primeiro acesso.
+    const extraEmpresaPin = chave === 'CODIGO_ACESSO_EMPRESA'
+      ? '<div class="mt-2"><button type="button" class="btn btn-outline-primary btn-sm fw-bold" onclick="gomGerarLinkPrimeiroAcessoEmpresa(this)"><i class="bi bi-link-45deg me-1"></i>Gerar link de primeiro acesso</button>'
+        + '<div id="gomLinkPrimeiroAcessoBox" class="mt-2" style="display:none;"></div></div>'
+      : '';
 
     return '<div class="config-row' + classeEmail + (alterada ? ' alterada' : '') + '" data-chave="' + escapeHtml(chave) + '">'
       + '<div class="config-row-main">'
       + '<div class="config-key"><i class="bi bi-key-fill"></i><span>' + escapeHtml(chave) + '</span>' + (alterada ? '<span class="config-dirty-pill">Alterado</span>' : '') + '</div>'
       + '<div class="config-desc">' + descricao + (padrao ? '<br><span>Padrão: ' + padrao + '</span>' : '') + '</div>'
       + '</div>'
-      + '<div class="config-value">' + editorValor + '</div>'
+      + '<div class="config-value">' + editorValor + extraEmpresaPin + '</div>'
       + '<div class="config-active"><select id="cfg_ativo_' + escapeHtml(id) + '" class="form-select form-select-sm fw-bold" onchange="marcarConfiguracaoAlterada(\'' + escapeJsAttr(chave) + '\')"><option value="SIM"' + (ativo === 'SIM' ? ' selected' : '') + '>SIM</option><option value="NÃO"' + (ativo === 'NÃO' ? ' selected' : '') + '>NÃO</option></select></div>'
       + '</div>';
   };
