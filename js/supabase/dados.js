@@ -627,7 +627,9 @@ window.GomDados = (function () {
     const recebida = String(p.situacao || p.status || '').trim();
     const stNovo = recebida ? M.normalizarStatus(recebida) : stAnt;
     const mudou = stNovo !== stAnt;
-    if (recebida && mudou && !M.podeTransicionar(stAnt, stNovo)) throw new Error('Transição não permitida: ' + stAnt + ' → ' + stNovo);
+    // p.forcarTransicao = true ignora a régua de transições (ex.: ação dedicada
+    // "Voltar para a Secretaria", que devolve o chamado sem travas).
+    if (recebida && mudou && !p.forcarTransicao && !M.podeTransicionar(stAnt, stNovo)) throw new Error('Transição não permitida: ' + stAnt + ' → ' + stNovo);
 
     const u = {};
     if (recebida && mudou) u.situacao = stNovo;

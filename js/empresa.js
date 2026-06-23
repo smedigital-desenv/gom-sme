@@ -868,6 +868,18 @@ function gomEmpresaChaveEscola_(item) {
   return String((item && (item.unidade || item.escolaId)) || 'sem-escola').trim() || 'sem-escola';
 }
 
+// Botão "Voltar para a Secretaria" na linha do chamado. Só aparece para
+// Solicitado Orçamento, Atendimento Emergencial, Garantia de Obra e Garantia de
+// Serviço, e para quem não é a Empresa. Devolve para "Aguardando visita".
+function gomBotaoVoltarSecretariaEmpresa_(item) {
+  var stReal = typeof normalizarSituacaoSistema === 'function' ? normalizarSituacaoSistema(item.situacao || item.status) : String(item.situacao || item.status || '');
+  if (['Solicitado Orçamento', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'].indexOf(stReal) < 0) return '';
+  var perfil = String((window.GomAuth && window.GomAuth.perfil) || (window.usuarioAtualGom && window.usuarioAtualGom.perfil) || '').trim().toUpperCase().replace(/[\s-]+/g, '_');
+  if (perfil === 'EMPRESA') return '';
+  var idJs = typeof escapeJsAttr === 'function' ? escapeJsAttr(item.id) : String(item.id || '');
+  return '<button type="button" class="btn btn-outline-warning btn-sm fw-bold gom-btn-voltar-sec mt-2" onclick="voltarChamadoParaSecretaria(\'' + idJs + '\', this)" title="Devolve o chamado para a Secretaria (fila de agendamento de visita)"><i class="bi bi-arrow-counterclockwise me-1"></i>Voltar para a Secretaria</button>';
+}
+
 // Linha individual da Agenda da Empresa (extraída para permitir agrupamento por visita).
 function renderLinhaAgendaEmpresa_(item, chave) {
   var id = empresaAgendaHtml_(item.id || '-');
@@ -876,6 +888,9 @@ function renderLinhaAgendaEmpresa_(item, chave) {
   var eq = item._empresaAgendaEquipe || 'Equipe não definida';
   var os = item._empresaAgendaOs || 'Sem OS';
   var tituloData = chave === 'sem-data' ? 'Sem data' : empresaAgendaDataBr_(chave);
+
+  var btnVoltar = gomBotaoVoltarSecretariaEmpresa_(item);
+
   return [
     '<article class="fila-agenda-row empresa-agenda-row" style="--card-accent:' + empresaAgendaHtml_(empresaAgendaCor_(st)) + '">',
       '<div class="fila-agenda-row-main">',
@@ -888,7 +903,7 @@ function renderLinhaAgendaEmpresa_(item, chave) {
         '<span><i class="bi bi-file-earmark-check"></i>' + empresaAgendaHtml_(os) + '</span>',
         '<span><i class="bi bi-calendar3"></i>' + empresaAgendaHtml_(tituloData) + '</span>',
       '</div>',
-      '<div class="fila-agenda-row-action"><button type="button" class="btn btn-light btn-sm border fw-bold" onclick="abrirModalAnalise(\'' + idJs + '\')"><i class="bi bi-box-arrow-up-right me-1"></i>Abrir chamado</button></div>',
+      '<div class="fila-agenda-row-action">' + btnVoltar + '<button type="button" class="btn btn-light btn-sm border fw-bold" onclick="abrirModalAnalise(\'' + idJs + '\')"><i class="bi bi-box-arrow-up-right me-1"></i>Abrir chamado</button></div>',
     '</article>'
   ].join('');
 }
@@ -1378,7 +1393,7 @@ function renderCardOrcamentoEmpresa(item) {
         '<div class="col-md-4"><label class="form-label small fw-bold">Previsão de conclusão</label><input class="form-control form-control-sm gom-date-br-input" type="date" name="dataPrevistaConclusao" value="' + dataPrevInput + '" onchange="gomNormalizarDataBrInput(this)"></div>',
         '<div class="col-md-4"><label class="form-label small fw-bold"><i class="bi bi-paperclip me-1"></i>Anexos do orçamento</label><input class="form-control form-control-sm" type="file" name="anexosOrcamento" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"></div>',
         '<div class="col-12"><label class="form-label small fw-bold">Observações da empresa <span class="text-muted fw-normal">(opcional)</span></label><textarea class="form-control form-control-sm" name="observacoes" rows="2">' + obs + '</textarea></div>',
-        '<div class="col-12"><button class="btn btn-primary btn-sm fw-bold mt-2"><i class="bi bi-send-check me-1"></i> Devolver orçamento para aprovação</button></div>',
+        '<div class="col-12"><button class="btn btn-primary btn-sm fw-bold mt-2"><i class="bi bi-send-check me-1"></i> Enviar orçamento para aprovação</button></div>',
       '</form>',
     '</div>'
   ].join('');
@@ -1443,7 +1458,8 @@ function renderLinhaOrcamentoEmpresa(item) {
       '<form id="' + formId + '" class="empresa-os-form-inline" data-label="Observações (opcional)" onsubmit="enviarOrcamentoEmpresa(event,\'' + idJs + '\')">',
         '<label class="empresa-field-label"><i class="bi bi-chat-left-text me-1"></i>Observações <span class="text-muted fw-normal">(opcional)</span></label>',
         '<textarea class="form-control form-control-sm" name="observacoes" rows="2" placeholder="Observações da empresa...">' + obs + '</textarea>',
-        '<button type="submit" class="btn btn-primary btn-sm fw-bold mt-2"><i class="bi bi-send-check me-1"></i>Devolver orçamento</button>',
+        '<button type="submit" class="btn btn-primary btn-sm fw-bold mt-2"><i class="bi bi-send-check me-1"></i>Enviar orçamento</button>',
+        gomBotaoVoltarSecretariaEmpresa_(item),
       '</form>',
     '</div>'
   ].join('');
@@ -1752,6 +1768,7 @@ function renderLinhaGerencialOsEmpresa(item) {
       '</div>',
       '<div class="empresa-gerencial-acoes" data-label="Ações">',
         '<button type="button" class="btn btn-light border btn-sm fw-bold" onclick="abrirModalAnalise(\'' + idJs + '\')"><i class="bi bi-box-arrow-up-right me-1"></i>Abrir chamado</button>',
+        gomBotaoVoltarSecretariaEmpresa_(item),
         '<form onsubmit="finalizarOsEmpresaFront(event,\'' + idJs + '\')" class="empresa-finaliza-form">',
           '<textarea class="form-control form-control-sm" name="observacoes" rows="2" placeholder="Observação de finalização"></textarea>',
           '<input class="form-control form-control-sm" type="file" name="anexosServico" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx">',
