@@ -586,45 +586,7 @@ function atualizarProjecao() {
   const proxima   = labels.map((_, i) => (i === c.medicoesFeitas ? valorProxima          : null));
   const projecao  = labels.map((_, i) => (i >   c.medicoesFeitas ? mediaRestante         : null));
 
-  if (chartProjecao) chartProjecao.destroy();
-  chartProjecao = new Chart(document.getElementById('chart-projecao'), {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        { label: 'Realizado', data: realizado, backgroundColor: 'rgba(0, 43, 94, 0.5)', borderColor: 'var(--primary)', borderWidth: 2, borderRadius: 6 },
-        { label: 'Próxima medição', data: proxima, backgroundColor: 'rgba(245, 158, 11, 0.2)', borderColor: 'var(--orcamento)', borderWidth: 2, borderRadius: 6 },
-        { label: 'Média projetada', data: projecao, backgroundColor: 'rgba(34, 197, 94, 0.2)', borderColor: 'var(--servico-realizado)', borderWidth: 2, borderRadius: 6 }
-      ]
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { stacked: true },
-        y: { stacked: true, ticks: { callback: fmtKM } }
-      },
-      onClick: (evt, elements) => {
-        if (!elements.length) return;
-        const i  = elements[0].index;
-        const ds = elements[0].datasetIndex;
-        const medNum = i + 1;
-        if (ds === 0) {
-          const lista = todosOsDados.filter(r => r.med && r.med[medNum] > 0);
-          abrirDetalhe(`Medição ${medNum}ª — realizado`, lista);
-        } else if (ds === 1) {
-          abrirDetalhe(`Próxima medição (${proximaMedicao}ª) — a executar`,
-            todosOsDados.filter(r => r.valor_aberto > 0));
-        } else {
-          abrirInfo(`Média projetada · ${medNum}ª medição`,
-            `Projeção: o <b>saldo a emitir</b> de <b>${R$(c.saldo)}</b> distribuído em ` +
-            `<b>${medicoesNovas}</b> medições (da ${proximaMedicao + 1}ª à ${c.medicoesContrato}ª) ` +
-            `resulta em <b>${R$(mediaRestante)}</b> por medição.<br><br>` +
-            `São valores projetados — ainda não há O.S emitidas para estas medições.`);
-        }
-      }
-    }
-  });
+  // Gráfico agora é criado apenas dentro da modal abrirGraficoProjecao()
 }
 
 function toggle(i) {
