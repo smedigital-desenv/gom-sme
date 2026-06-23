@@ -1529,7 +1529,9 @@ function renderLinhaExecucaoDiaria(item) {
   var unidade = escapeHtml(item.unidade || 'Unidade não informada');
   var detalheCompleto = escapeHtml(item.detalhamento || 'Sem detalhamento informado.');
   var detalheCurto = escapeHtml(resumirTextoEmpresa(item.detalhamento || 'Sem detalhamento informado.', 135));
-  var dataEnc = escapeHtml(item.dataHoraEncaminhamento || item.dataHoraUltimaAcao || item.dataHora || item.data || 'Sem data');
+  // Data do chamado (abertura). A migração carimbou encaminhamento/última ação
+  // com a data de importação, então usamos a data de abertura como referência.
+  var dataEnc = escapeHtml(item.dataHora || item.data || 'Sem data');
   var numeroOsBruto = String(item.numeroOs || '').trim();
   var numeroOs = escapeHtml(numeroOsBruto);
   var classe = getClasseStatus(st);
@@ -1688,7 +1690,7 @@ function renderLinhaGerencialOsEmpresa(item) {
   var classe = getClasseStatus(st);
   var cor = getCorStatus(st);
   var dataSol = escapeHtml(item.dataHora || item.data || '-');
-  var dataEnc = escapeHtml(item.dataHoraEncaminhamento || item.dataHoraUltimaAcao || '-');
+  var dataEnc = escapeHtml(item.dataHora || item.data || '-');
   var dataPrev = escapeHtml(item.dataPrevistaConclusao || '-');
   var dataConc = escapeHtml(item.dataConclusaoOs || item.dataConclusao || '-');
   var dataPrevInput = escapeHtml(formatarInputDateEmpresa(item.dataPrevistaConclusao || item.dataPrevistaConclusaoRaw));
@@ -1697,7 +1699,7 @@ function renderLinhaGerencialOsEmpresa(item) {
   var ultima = historico && historico.length ? historico[0] : null;
   var ultimaEquipe = escapeHtml(ultima && ultima.equipe ? ultima.equipe : (item.equipe || 'Sem equipe registrada'));
   var ultimaObs = escapeHtml(resumirTextoEmpresa((ultima && ultima.observacoes) || item.observacoes || 'Sem observações registradas.', 120));
-  var dias = escapeHtml(calcularDiasGerencial(item.dataHoraEncaminhamento || item.dataHoraUltimaAcao || item.dataHora || item.data));
+  var dias = escapeHtml(calcularDiasGerencial(item.dataHora || item.data));
   var alertaOs = st === 'OS emitida' && !String(item.numeroOs || '').trim()
     ? '<div class="empresa-aviso mb-2"><i class="bi bi-info-circle-fill"></i> OS ainda sem numeração informada pela GOM.</div>'
     : '';

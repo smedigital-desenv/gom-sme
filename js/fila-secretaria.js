@@ -9,6 +9,8 @@
   window.filaSubmodoAtual = window.filaSubmodoAtual || 'fila';
   window.filaAgendaResponsavelAtual = 'secretaria';
   window.filaAgendaFiltroAtual = window.filaAgendaFiltroAtual || 'todos';
+  // Filtro da Agenda por campo (busca por digitação + dropdown de campo).
+  window.filaAgendaCampoFiltro = window.filaAgendaCampoFiltro || 'tudo';
 
   function telaAtual_() {
     return window.telaAtual || (typeof telaAtual !== 'undefined' ? telaAtual : 'dashboard');
@@ -222,11 +224,17 @@
 
   function listaAgenda_() {
     var termo = typeof termoPesquisa === 'function' ? termoPesquisa() : texto_(document.getElementById('pesquisa')?.value || '');
+    var campo = window.filaAgendaCampoFiltro || 'tudo';
     return (window.listaChamadosGlobal || []).filter(function(item) {
       var st = normalizar_(item.situacao || item.status || item['Situação'] || item['Status']);
       if (!isStatusAgenda_(st)) return false;
-      var texto = texto_([item.id, item.unidade, item.detalhamento, item.descricao, st, item.observacoes, equipeAgenda_(item), numeroOs_(item), campoDataAgenda_(item)].join(' '));
-      return !termo || texto.indexOf(termo) >= 0;
+      var alvo;
+      if (campo === 'unidade')     alvo = texto_(item.unidade);
+      else if (campo === 'status') alvo = texto_(st);
+      else if (campo === 'equipe') alvo = texto_(equipeAgenda_(item));
+      else if (campo === 'data')   alvo = texto_(dataBr_(campoDataAgenda_(item)) + ' ' + campoDataAgenda_(item));
+      else alvo = texto_([item.id, item.unidade, item.detalhamento, item.descricao, st, item.observacoes, equipeAgenda_(item), numeroOs_(item), campoDataAgenda_(item)].join(' '));
+      return !termo || alvo.indexOf(termo) >= 0;
     }).map(function(item) {
       var st = normalizar_(item.situacao || item.status || item['Situação'] || item['Status']);
       var responsavel = grupoResponsavel_(st);
@@ -265,9 +273,8 @@
     lista = listaResponsavel_(lista);
 
     if (resp === 'secretaria') {
-      if (filtro === 'aguardando-visita') return lista.filter(function(i){ return i._agendaStatus === 'Aguardando visita'; });
-      if (filtro === 'visita-agendada') return lista.filter(function(i){ return i._agendaStatus === 'Visita agendada'; });
-      return lista.filter(function(i){ return i._agendaStatus === 'Aguardando visita' || i._agendaStatus === 'Visita agendada'; });
+      // Sem filtro por status (KPIs removidos): a busca por texto + campo refina.
+      return lista;
     }
 
     if (filtro === 'orcamentos') return lista.filter(function(i){ return i._agendaEmpresaTipo === 'orcamentos'; });
@@ -519,9 +526,6 @@
     }
 
     window.filaAgendaResponsavelAtual = 'secretaria';
-    if (window.filaAgendaFiltroAtual !== 'aguardando-visita' && window.filaAgendaFiltroAtual !== 'visita-agendada') {
-      window.filaAgendaFiltroAtual = 'aguardando-visita';
-    }
     var listaCompleta = listaAgenda_();
     if (typeof window.gomFilaAgrupado === 'undefined') {
       try { window.gomFilaAgrupado = sessionStorage.getItem('gomFilaAgrupado') === '1'; } catch (e) { window.gomFilaAgrupado = false; }
@@ -530,7 +534,6 @@
     window.__gomFilaGruposVisita = {};
     var listaResp = listaResponsavel_(listaCompleta);
     var lista = filtrarAgenda_(listaCompleta);
-    renderKpisAgenda_(listaCompleta);
     var contador = document.getElementById('contador');
     if (contador) contador.textContent = lista.length + ' em acompanhamento';
 
@@ -554,11 +557,19 @@
       return dataOrdenacao_(a) - dataOrdenacao_(b);
     });
 
+    var campoAtual = window.filaAgendaCampoFiltro || 'tudo';
+    var camposAgenda = [['tudo','Todos os campos'],['unidade','Unidade'],['status','Status'],['equipe','Equipe'],['data','Data']];
+    var campoSelect = '<select class="form-select form-select-sm fw-bold gom-agenda-campo" onchange="setFilaAgendaCampo(this.value)" title="Escolha o campo para filtrar a agenda" style="max-width:170px;">'
+      + camposAgenda.map(function(c){ return '<option value="' + c[0] + '"' + (campoAtual === c[0] ? ' selected' : '') + '>' + c[1] + '</option>'; }).join('')
+      + '</select>';
+
     var html = [
       '<div class="fila-agenda-shell agenda-list-mode agenda-v14">',
         '<div class="fila-agenda-toolbar agenda-list-toolbar">',
           '<div><h5><i class="bi ' + (resp === 'empresa' ? 'bi-building' : 'bi-calendar2-week') + ' me-2"></i>' + html_(tituloTela) + '</h5><p>' + html_(descTela) + '</p></div>',
           '<div class="fila-agenda-toolbar-actions">',
+            '<span class="gom-agenda-campo-label small fw-bold text-muted me-1"><i class="bi bi-funnel me-1"></i>Filtrar por:</span>',
+            campoSelect,
             '<button type="button" class="btn btn-sm ' + (agrupar ? 'btn-primary' : 'btn-outline-primary') + ' fw-bold" onclick="gomFilaToggleAgrupar(this)" title="Agrupar os chamados por escola"><i class="bi bi-collection me-1"></i>' + (agrupar ? 'Agrupado por escola' : 'Agrupar por escola') + '</button>',
             '<span class="text-muted small fw-bold ms-2"><i class="bi bi-clock-history me-1"></i>Atualizado às ' + html_(atualizado) + '</span>',
           '</div>',
@@ -973,6 +984,32 @@
     if (typeof renderBase === 'function') renderBase.apply(this, arguments);
     if (telaAtual_() === 'fila') atualizarSubmenuAtivo_();
   };
+
+  // Dropdown de campo da Agenda: define o campo da busca por digitação.
+  window.setFilaAgendaCampo = function(campo) {
+    var validos = { tudo: 1, unidade: 1, status: 1, equipe: 1, data: 1 };
+    window.filaAgendaCampoFiltro = validos[campo] ? campo : 'tudo';
+    if (typeof renderAgenda_ === 'function') renderAgenda_();
+  };
+
+  // Aba "Fila" = somente casos SEM andamento: Aguardando visita ainda sem data
+  // agendada e sem equipe. Os que já têm visita agendada/andamento vão na Agenda.
+  (function() {
+    var renderListaFilaOriginal = window.renderListaFilaOperacional;
+    if (typeof renderListaFilaOriginal !== 'function') return;
+    window.renderListaFilaOperacional = function(lista) {
+      var filtrada = (lista || []).filter(function(it) {
+        var st = normalizar_(it.situacao || it.status);
+        if (st !== 'Aguardando visita') return false;
+        var temDataVisita = !!(it.dataAgendamentoVisitaRaw || it.dataAgendamentoVisita || it.data_agendamento_visita);
+        var temEquipe = !!(it.equipe && String(it.equipe).trim());
+        return !temDataVisita && !temEquipe;
+      });
+      var contador = document.getElementById('contador');
+      if (contador && telaAtual_() === 'fila') contador.textContent = filtrada.length + ' na fila (sem andamento)';
+      return renderListaFilaOriginal(filtrada);
+    };
+  })();
 
   try { if (typeof renderizarTela !== 'undefined') renderizarTela = window.renderizarTela; } catch(e) {}
   window.renderFilaAgendaSecretaria = renderAgenda_;
