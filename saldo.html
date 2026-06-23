@@ -283,11 +283,21 @@
     <button class="btn-nav gom-top-saldo active" title="Dashboard de saldo do contrato">
       <i class="bi bi-cash-stack"></i><span>Saldo</span>
     </button>
-    <button class="btn-nav gom-top-voltar" onclick="window.close()" title="Voltar ao sistema">
+    <button class="btn-nav gom-top-voltar" onclick="gomVoltarAoSistema()" title="Voltar ao sistema GOM">
       <i class="bi bi-arrow-left"></i><span>Voltar</span>
     </button>
   </nav>
 </header>
+
+<script>
+  // Volta para a tela do sistema GOM. Se a página foi aberta de dentro do app
+  // (mesma aba), history.back() retorna preservando o estado; caso contrário
+  // (acesso direto/bookmark), abre o index do sistema.
+  function gomVoltarAoSistema() {
+    if (window.history.length > 1) { window.history.back(); }
+    else { window.location.href = 'index.html'; }
+  }
+</script>
 
 <main class="container-fluid px-4 pb-5">
 
