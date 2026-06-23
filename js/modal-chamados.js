@@ -455,17 +455,6 @@ function abrirModalAnalise(id) {
   document.querySelectorAll('.modal-extra-aprovacao').forEach(el => { el.style.display = emAprovacaoModal ? '' : 'none'; });
   if (emAprovacaoModal) atualizarCamposModalAprovacao();
 
-  // Botão "Voltar para a Secretaria": só para chamados em estágios da Empresa
-  // (orçamento, emergencial, garantias). Retorna o chamado à fila de
-  // agendamento de visita ("Aguardando visita") sem exigir nenhuma informação.
-  const btnVoltarSec = document.getElementById('mdlBtnVoltarSecretaria');
-  if (btnVoltarSec) {
-    const stVoltar = normalizarSituacaoSistema(c.situacao || c.status);
-    const permiteVoltar = ['Solicitado Orçamento', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'].indexOf(stVoltar) >= 0;
-    const perfilVoltar = String((window.GomAuth && window.GomAuth.perfil) || (window.usuarioAtualGom && window.usuarioAtualGom.perfil) || '').trim().toUpperCase().replace(/[\s-]+/g, '_');
-    btnVoltarSec.style.display = (permiteVoltar && perfilVoltar !== 'EMPRESA') ? '' : 'none';
-  }
-
   new bootstrap.Modal(document.getElementById('modalAnalise')).show();
 }
 
@@ -736,15 +725,17 @@ window.salvarStatusDoModal = salvarStatusDoModal;
 // Retorna um chamado da Empresa (orçamento/emergencial/garantias) para a
 // Secretaria, na fila de agendamento de visita ("Aguardando visita"). Sem travas:
 // não exige equipe, data nem observação — basta confirmar.
-async function voltarChamadoParaSecretaria(botao) {
-  const c = (window.listaChamadosGlobal || []).find(function (x) { return String(x.id) === String(idChamadoAberto); }) || {};
+async function voltarChamadoParaSecretaria(id, botao) {
+  id = id || (typeof idChamadoAberto !== 'undefined' ? idChamadoAberto : '');
+  const c = (window.listaChamadosGlobal || []).find(function (x) { return String(x.id) === String(id); }) || {};
   if (!c.id) return;
   if (!confirm('Voltar este chamado para a Secretaria, na fila de agendamento de visita?\n\nUnidade: ' + (c.unidade || ('#' + c.id)))) return;
-  const btn = botao || document.getElementById('mdlBtnVoltarSecretaria');
+  const btn = botao || null;
   const payload = {
     id: c.id,
     situacao: 'Aguardando visita',
-    observacoes: '[VOLTA À SECRETARIA] Chamado retornado para reagendamento de visita.'
+    observacoes: '[VOLTA À SECRETARIA] Chamado retornado para reagendamento de visita.',
+    forcarTransicao: true
   };
   if (typeof gomSetButtonLoading === 'function') gomSetButtonLoading(btn, 'Voltando...');
   else if (btn) btn.disabled = true;

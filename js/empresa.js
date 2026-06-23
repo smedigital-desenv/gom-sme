@@ -876,6 +876,17 @@ function renderLinhaAgendaEmpresa_(item, chave) {
   var eq = item._empresaAgendaEquipe || 'Equipe não definida';
   var os = item._empresaAgendaOs || 'Sem OS';
   var tituloData = chave === 'sem-data' ? 'Sem data' : empresaAgendaDataBr_(chave);
+
+  // Botão "Voltar para a Secretaria" na própria linha — só para Solicitado
+  // Orçamento, Atendimento Emergencial, Garantia de Obra e Garantia de Serviço,
+  // e para quem não é a Empresa. Devolve o chamado para "Aguardando visita".
+  var stReal = typeof normalizarSituacaoSistema === 'function' ? normalizarSituacaoSistema(item.situacao || item.status) : String(item.situacao || item.status || '');
+  var perfilRow = String((window.GomAuth && window.GomAuth.perfil) || (window.usuarioAtualGom && window.usuarioAtualGom.perfil) || '').trim().toUpperCase().replace(/[\s-]+/g, '_');
+  var podeVoltar = perfilRow !== 'EMPRESA' && ['Solicitado Orçamento', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'].indexOf(stReal) >= 0;
+  var btnVoltar = podeVoltar
+    ? '<button type="button" class="btn btn-outline-warning btn-sm fw-bold" onclick="voltarChamadoParaSecretaria(\'' + idJs + '\', this)" title="Devolve o chamado para a Secretaria (fila de agendamento de visita)"><i class="bi bi-arrow-counterclockwise me-1"></i>Voltar p/ Secretaria</button>'
+    : '';
+
   return [
     '<article class="fila-agenda-row empresa-agenda-row" style="--card-accent:' + empresaAgendaHtml_(empresaAgendaCor_(st)) + '">',
       '<div class="fila-agenda-row-main">',
@@ -888,7 +899,7 @@ function renderLinhaAgendaEmpresa_(item, chave) {
         '<span><i class="bi bi-file-earmark-check"></i>' + empresaAgendaHtml_(os) + '</span>',
         '<span><i class="bi bi-calendar3"></i>' + empresaAgendaHtml_(tituloData) + '</span>',
       '</div>',
-      '<div class="fila-agenda-row-action"><button type="button" class="btn btn-light btn-sm border fw-bold" onclick="abrirModalAnalise(\'' + idJs + '\')"><i class="bi bi-box-arrow-up-right me-1"></i>Abrir chamado</button></div>',
+      '<div class="fila-agenda-row-action">' + btnVoltar + '<button type="button" class="btn btn-light btn-sm border fw-bold" onclick="abrirModalAnalise(\'' + idJs + '\')"><i class="bi bi-box-arrow-up-right me-1"></i>Abrir chamado</button></div>',
     '</article>'
   ].join('');
 }
