@@ -226,6 +226,10 @@ function aplicarPermissoesInterface() {
   var topEmpresa = document.getElementById('btn-empresa');
   if (topEmpresa) topEmpresa.classList.toggle('gom-permissao-oculto', restrito && telas.indexOf('empresa') < 0);
 
+  // Botão Saldo (Dashboard de saldo do contrato): só Administrador GOM, por ora.
+  var topSaldo = document.getElementById('btn-saldo');
+  if (topSaldo) topSaldo.classList.toggle('gom-permissao-oculto', perfil !== 'ADMIN_GOM');
+
   document.querySelectorAll('.nav-more, .mobile-more-panel').forEach(function(box) {
     var visiveis = box.querySelectorAll('[data-page]:not(.gom-permissao-oculto)').length;
     box.classList.toggle('gom-permissao-oculto', restrito && visiveis === 0);

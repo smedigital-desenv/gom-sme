@@ -721,7 +721,8 @@ function empresaAgendaData_(item) {
     item.dataPrevistaConclusaoRaw,
     item.dataPrevistaConclusao,
     item.data_prevista_conclusao,
-    item.dataHoraUltimaAcao,
+    // NÃO usar data_hora_ultima_acao/encaminhamento aqui: a migração carimbou
+    // esses campos com a data de importação. Cai na data de abertura do chamado.
     item.dataHora,
     item.data
   ];
@@ -861,6 +862,12 @@ function empresaAgendaResumo_(listaCompleta) {
   ].join('');
 }
 
+// Chave de agrupamento das telas da Empresa: estritamente pelo NOME da escola
+// (não por grupo de visita), conforme combinado.
+function gomEmpresaChaveEscola_(item) {
+  return String((item && (item.unidade || item.escolaId)) || 'sem-escola').trim() || 'sem-escola';
+}
+
 // Linha individual da Agenda da Empresa (extraída para permitir agrupamento por visita).
 function renderLinhaAgendaEmpresa_(item, chave) {
   var id = empresaAgendaHtml_(item.id || '-');
@@ -893,17 +900,7 @@ function renderAgendaAcompanhamentoEmpresa() {
   var contador = document.getElementById('contador');
   if (contador) contador.textContent = lista.length + ' em acompanhamento';
 
-  var grupos = {};
-  lista.forEach(function(item) {
-    var k = item._empresaAgendaData || 'sem-data';
-    if (!grupos[k]) grupos[k] = [];
-    grupos[k].push(item);
-  });
-  var chaves = Object.keys(grupos).sort(function(a, b) {
-    if (a === 'sem-data') return 1;
-    if (b === 'sem-data') return -1;
-    return empresaAgendaDataOrdenacao_(a) - empresaAgendaDataOrdenacao_(b);
-  });
+  var agrupadoEscola = typeof window.gomAgrupAtivo === 'function' && window.gomAgrupAtivo('empresa-agenda');
   var atualizado = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   var html = [
     '<div class="fila-agenda-shell agenda-list-mode agenda-v14 empresa-agenda-shell">',
@@ -923,24 +920,39 @@ function renderAgendaAcompanhamentoEmpresa() {
     html.push('<div class="empty-state"><h5>Nenhum registro neste filtro.</h5><p class="text-muted">Clique em outro KPI ou limpe a busca.</p></div>');
   }
 
-  chaves.forEach(function(chave) {
-    var itens = grupos[chave] || [];
-    var titulo = chave === 'sem-data' ? 'Sem data definida' : empresaAgendaDataBr_(chave);
-    var subtitulo = chave === 'sem-data' ? 'Registros que precisam de data/previsão' : empresaAgendaDiaSemana_(chave);
-    html.push('<section class="fila-agenda-dia-list ' + (chave === 'sem-data' ? 'is-sem-data' : '') + '">');
-    html.push('<div class="fila-agenda-dia-list-head"><div><strong>' + empresaAgendaHtml_(titulo) + '</strong><small>' + empresaAgendaHtml_(subtitulo) + '</small></div><span>' + itens.length + ' atendimento' + (itens.length === 1 ? '' : 's') + '</span></div>');
-    if (typeof window.gomAgrupAtivo === 'function' && window.gomAgrupAtivo('empresa-agenda')) {
-      html.push(window.gomAgrupRenderLista(itens, {
-        tela: 'empresa-agenda',
-        renderLinha: function(item) { return renderLinhaAgendaEmpresa_(item, chave); }
-      }));
-    } else {
+  if (agrupadoEscola) {
+    // Agrupar por ESCOLA (não por data): um card guarda-chuva por unidade, com
+    // todos os atendimentos da escola juntos; cada linha mantém a própria data.
+    html.push(window.gomAgrupRenderLista(lista, {
+      tela: 'empresa-agenda',
+      chaveGrupo: gomEmpresaChaveEscola_,
+      renderLinha: function(item) { return renderLinhaAgendaEmpresa_(item, item._empresaAgendaData || 'sem-data'); }
+    }));
+  } else {
+    // Visão por data (seções por dia).
+    var grupos = {};
+    lista.forEach(function(item) {
+      var k = item._empresaAgendaData || 'sem-data';
+      if (!grupos[k]) grupos[k] = [];
+      grupos[k].push(item);
+    });
+    var chaves = Object.keys(grupos).sort(function(a, b) {
+      if (a === 'sem-data') return 1;
+      if (b === 'sem-data') return -1;
+      return empresaAgendaDataOrdenacao_(a) - empresaAgendaDataOrdenacao_(b);
+    });
+    chaves.forEach(function(chave) {
+      var itens = grupos[chave] || [];
+      var titulo = chave === 'sem-data' ? 'Sem data definida' : empresaAgendaDataBr_(chave);
+      var subtitulo = chave === 'sem-data' ? 'Registros que precisam de data/previsão' : empresaAgendaDiaSemana_(chave);
+      html.push('<section class="fila-agenda-dia-list ' + (chave === 'sem-data' ? 'is-sem-data' : '') + '">');
+      html.push('<div class="fila-agenda-dia-list-head"><div><strong>' + empresaAgendaHtml_(titulo) + '</strong><small>' + empresaAgendaHtml_(subtitulo) + '</small></div><span>' + itens.length + ' atendimento' + (itens.length === 1 ? '' : 's') + '</span></div>');
       html.push('<div class="fila-agenda-rows">');
       itens.forEach(function(item) { html.push(renderLinhaAgendaEmpresa_(item, chave)); });
       html.push('</div>');
-    }
-    html.push('</section>');
-  });
+      html.push('</section>');
+    });
+  }
   html.push('</div></div>');
   return html.join('');
 }
@@ -1375,7 +1387,7 @@ function renderCardOrcamentoEmpresa(item) {
 function renderListaOrcamentoEmpresa(lista) {
   var agrupado = typeof window.gomAgrupAtivo === 'function' && window.gomAgrupAtivo('empresa-orcamentos');
   var linhasHtml = typeof window.gomAgrupRenderLista === 'function'
-    ? window.gomAgrupRenderLista(lista || [], { tela: 'empresa-orcamentos', renderLinha: renderLinhaOrcamentoEmpresa })
+    ? window.gomAgrupRenderLista(lista || [], { tela: 'empresa-orcamentos', chaveGrupo: gomEmpresaChaveEscola_, renderLinha: renderLinhaOrcamentoEmpresa })
     : (lista || []).map(renderLinhaOrcamentoEmpresa).join('');
   return [
     (typeof window.gomAgrupBotaoHtml === 'function' ? '<div class="gom-agrup-toolbar">' + window.gomAgrupBotaoHtml('empresa-orcamentos') + '</div>' : ''),
@@ -1441,7 +1453,7 @@ function renderListaExecucaoDiaria(lista) {
   setTimeout(atualizarEstadoEncaminhamentosDiaEmpresa, 0);
   var agrupado = typeof window.gomAgrupAtivo === 'function' && window.gomAgrupAtivo('empresa-diario');
   var linhasHtml = typeof window.gomAgrupRenderLista === 'function'
-    ? window.gomAgrupRenderLista(lista || [], { tela: 'empresa-diario', renderLinha: renderLinhaExecucaoDiaria, loteHtml: gomAgrupLoteDiarioHtml_ })
+    ? window.gomAgrupRenderLista(lista || [], { tela: 'empresa-diario', chaveGrupo: gomEmpresaChaveEscola_, renderLinha: renderLinhaExecucaoDiaria, loteHtml: gomAgrupLoteDiarioHtml_ })
     : (lista || []).map(renderLinhaExecucaoDiaria).join('');
   return [
     (typeof window.gomAgrupBotaoHtml === 'function' ? '<div class="gom-agrup-toolbar">' + window.gomAgrupBotaoHtml('empresa-diario') + '</div>' : ''),
@@ -1529,7 +1541,9 @@ function renderLinhaExecucaoDiaria(item) {
   var unidade = escapeHtml(item.unidade || 'Unidade não informada');
   var detalheCompleto = escapeHtml(item.detalhamento || 'Sem detalhamento informado.');
   var detalheCurto = escapeHtml(resumirTextoEmpresa(item.detalhamento || 'Sem detalhamento informado.', 135));
-  var dataEnc = escapeHtml(item.dataHoraEncaminhamento || item.dataHoraUltimaAcao || item.dataHora || item.data || 'Sem data');
+  // Data do chamado (abertura). A migração carimbou encaminhamento/última ação
+  // com a data de importação, então usamos a data de abertura como referência.
+  var dataEnc = escapeHtml(item.dataHora || item.data || 'Sem data');
   var numeroOsBruto = String(item.numeroOs || '').trim();
   var numeroOs = escapeHtml(numeroOsBruto);
   var classe = getClasseStatus(st);
@@ -1658,7 +1672,7 @@ function renderGerencialOsEmpresa(lista) {
           '</div>',
           listaFiltrada.length
             ? (typeof window.gomAgrupRenderLista === 'function'
-                ? window.gomAgrupRenderLista(listaFiltrada, { tela: 'empresa-gerencial', renderLinha: renderLinhaGerencialOsEmpresa })
+                ? window.gomAgrupRenderLista(listaFiltrada, { tela: 'empresa-gerencial', chaveGrupo: gomEmpresaChaveEscola_, renderLinha: renderLinhaGerencialOsEmpresa })
                 : listaFiltrada.map(renderLinhaGerencialOsEmpresa).join(''))
             : '<div class="empty-state"><h5>Nenhuma OS encontrada para os filtros atuais.</h5></div>',
         '</div>',
@@ -1688,7 +1702,7 @@ function renderLinhaGerencialOsEmpresa(item) {
   var classe = getClasseStatus(st);
   var cor = getCorStatus(st);
   var dataSol = escapeHtml(item.dataHora || item.data || '-');
-  var dataEnc = escapeHtml(item.dataHoraEncaminhamento || item.dataHoraUltimaAcao || '-');
+  var dataEnc = escapeHtml(item.dataHora || item.data || '-');
   var dataPrev = escapeHtml(item.dataPrevistaConclusao || '-');
   var dataConc = escapeHtml(item.dataConclusaoOs || item.dataConclusao || '-');
   var dataPrevInput = escapeHtml(formatarInputDateEmpresa(item.dataPrevistaConclusao || item.dataPrevistaConclusaoRaw));
@@ -1697,7 +1711,7 @@ function renderLinhaGerencialOsEmpresa(item) {
   var ultima = historico && historico.length ? historico[0] : null;
   var ultimaEquipe = escapeHtml(ultima && ultima.equipe ? ultima.equipe : (item.equipe || 'Sem equipe registrada'));
   var ultimaObs = escapeHtml(resumirTextoEmpresa((ultima && ultima.observacoes) || item.observacoes || 'Sem observações registradas.', 120));
-  var dias = escapeHtml(calcularDiasGerencial(item.dataHoraEncaminhamento || item.dataHoraUltimaAcao || item.dataHora || item.data));
+  var dias = escapeHtml(calcularDiasGerencial(item.dataHora || item.data));
   var alertaOs = st === 'OS emitida' && !String(item.numeroOs || '').trim()
     ? '<div class="empresa-aviso mb-2"><i class="bi bi-info-circle-fill"></i> OS ainda sem numeração informada pela GOM.</div>'
     : '';

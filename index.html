@@ -53,6 +53,9 @@
       <button id="btn-secretaria" class="btn-nav gom-top-secretaria active" data-page="dashboard" onclick="loadSecretariaHome()">
         <i class="bi bi-layout-sidebar-inset"></i><span>Secretaria</span>
       </button>
+      <button id="btn-saldo" class="btn-nav gom-top-saldo gom-permissao-oculto" onclick="window.location.href='saldo.html'" title="Dashboard de saldo do contrato (somente Administrador GOM)">
+        <i class="bi bi-cash-stack"></i><span>Saldo</span>
+      </button>
       <button id="btn-empresa" class="btn-nav gom-top-empresa" data-page="empresa" onclick="loadPage('empresa')">
         <i class="bi bi-building-check"></i><span>Empresa</span>
       </button>
@@ -142,8 +145,9 @@
           <div class="col-md-3 text-end"><div class="modal-label">ID</div><div class="modal-data"><span class="badge bg-secondary fs-6" id="mdlId"></span></div></div>
         </div>
         <div class="row">
-          <div class="col-md-6"><div class="modal-label">Origem</div><div class="modal-data" id="mdlSistema"></div></div>
-          <div class="col-md-6"><div class="modal-label">Data</div><div class="modal-data" id="mdlData"></div></div>
+          <div class="col-md-4"><div class="modal-label">Origem</div><div class="modal-data" id="mdlSistema"></div></div>
+          <div class="col-md-4"><div class="modal-label">Abertura</div><div class="modal-data" id="mdlData"></div></div>
+          <div class="col-md-4"><div class="modal-label"><i class="bi bi-clock-history me-1"></i>Última intervenção</div><div class="modal-data" id="mdlUltimaIntervencao"></div></div>
         </div>
         <div class="modal-label">Detalhamento</div>
         <div class="bg-white p-3 border rounded mb-3" id="mdlDetalhe" style="min-height:80px; white-space:pre-line;"></div>
@@ -312,7 +316,6 @@
   <button type="button" class="gom-submenu-btn" data-fila-modo="agenda" onclick="setFilaSubmodo('agenda', this)"><i class="bi bi-calendar2-week"></i><span>Agenda / Acompanhamento</span></button>
   <button type="button" class="gom-submenu-btn gom-submenu-refresh ms-auto" onclick="gomAtualizarFilaAgora(this)"><i class="bi bi-arrow-clockwise"></i><span>Atualizar agora</span></button>
 </div>
-<div id="kpiGrid" class="kpi-grid"></div>
 <div class="fila-help"><i class="bi bi-info-circle-fill"></i><span>Da fila de visita, o chamado pode ser devolvido para a escola, encaminhado como emergencial ou enviado para orçamento.</span></div>
 <div class="gom-tela-toolbar p-3 bg-white rounded shadow-sm border-start border-4 border-primary mb-3">
   <div class="d-flex align-items-center gap-3 flex-wrap flex-grow-1">
@@ -328,7 +331,8 @@
       </button>
     </div>
   </div>
-  <span class="badge bg-primary px-3 py-2 ms-auto" id="contador">0 na fila</span>
+  <span id="filaAgrupSlot" class="d-flex align-items-center gap-2 ms-auto"></span>
+  <span class="badge bg-primary px-3 py-2" id="contador">0 na fila</span>
 </div>
 <div id="painelDados" class="operacional-lista-shell"></div>
   </template>

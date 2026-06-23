@@ -192,7 +192,7 @@
     var obsAtuais = gomHtml_(gomResumo_(item.observacoes || item.observacaoAntiga || 'Sem observações registradas.', 140));
     var ehFila = contexto === 'fila';
     var posicao = String(index + 1).padStart(2, '0');
-    var entradaFila = gomHtml_(item.dataHoraEntradaFila || item.dataEntradaFila || item.dataHoraEncaminhamento || item.dataHoraUltimaAcao || item.dataHora || item.data || 'Sem data');
+    var entradaFila = gomHtml_(item.dataHora || item.data || 'Sem data');
     var tempoFila = gomHtml_(typeof formatarTempoFila === 'function' ? formatarTempoFila(typeof parseDataOrdenacao === 'function' ? parseDataOrdenacao(item) : null) : '');
     var precisaRevisar = ehFila && typeof deveRevisarFila === 'function' && deveRevisarFila(item);
     var avisoFila = precisaRevisar

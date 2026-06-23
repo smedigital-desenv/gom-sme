@@ -96,9 +96,8 @@
       item.data_visita,
       item.previsaoVisita,
       item.previsao_visita,
-      item.dataHoraEntradaFila,
-      item.dataEntradaFila,
-      item.dataHoraUltimaAcao,
+      // Migração carimbou entrada_fila/ultima_acao com a data de importação;
+      // sem data de visita, cai na data de abertura do chamado.
       item.dataHora,
       item.data
     ];
@@ -265,9 +264,8 @@
     lista = listaResponsavel_(lista);
 
     if (resp === 'secretaria') {
-      if (filtro === 'aguardando-visita') return lista.filter(function(i){ return i._agendaStatus === 'Aguardando visita'; });
-      if (filtro === 'visita-agendada') return lista.filter(function(i){ return i._agendaStatus === 'Visita agendada'; });
-      return lista.filter(function(i){ return i._agendaStatus === 'Aguardando visita' || i._agendaStatus === 'Visita agendada'; });
+      // Sem filtro por status (KPIs removidos): a busca por texto + campo refina.
+      return lista;
     }
 
     if (filtro === 'orcamentos') return lista.filter(function(i){ return i._agendaEmpresaTipo === 'orcamentos'; });
@@ -295,6 +293,11 @@
 
     var wrapData = document.getElementById('gomDataGlobalWrap_fila');
     if (wrapData) wrapData.style.display = modo === 'agenda' ? 'none' : '';
+
+    // O botão "Agrupar por escola" só existe no modo agenda (preenchido por
+    // renderAgenda_); na fila o slot fica vazio.
+    var slotAgrupar = document.getElementById('filaAgrupSlot');
+    if (slotAgrupar && modo !== 'agenda') slotAgrupar.innerHTML = '';
 
     var pesquisa = document.getElementById('pesquisa');
     if (pesquisa) {
@@ -519,9 +522,6 @@
     }
 
     window.filaAgendaResponsavelAtual = 'secretaria';
-    if (window.filaAgendaFiltroAtual !== 'aguardando-visita' && window.filaAgendaFiltroAtual !== 'visita-agendada') {
-      window.filaAgendaFiltroAtual = 'aguardando-visita';
-    }
     var listaCompleta = listaAgenda_();
     if (typeof window.gomFilaAgrupado === 'undefined') {
       try { window.gomFilaAgrupado = sessionStorage.getItem('gomFilaAgrupado') === '1'; } catch (e) { window.gomFilaAgrupado = false; }
@@ -530,7 +530,6 @@
     window.__gomFilaGruposVisita = {};
     var listaResp = listaResponsavel_(listaCompleta);
     var lista = filtrarAgenda_(listaCompleta);
-    renderKpisAgenda_(listaCompleta);
     var contador = document.getElementById('contador');
     if (contador) contador.textContent = lista.length + ' em acompanhamento';
 
@@ -554,13 +553,16 @@
       return dataOrdenacao_(a) - dataOrdenacao_(b);
     });
 
+    // O botão "Agrupar por escola" sobe para a barra de cima (junto da busca e
+    // do contador "X em acompanhamento"), preenchendo o slot #filaAgrupSlot.
+    var btnAgrupar = '<button type="button" class="btn btn-sm ' + (agrupar ? 'btn-primary' : 'btn-outline-primary') + ' fw-bold" onclick="gomFilaToggleAgrupar(this)" title="Agrupar os chamados da mesma escola"><i class="bi bi-collection me-1"></i>' + (agrupar ? 'Agrupado por escola' : 'Agrupar por escola') + '</button>';
+
     var html = [
       '<div class="fila-agenda-shell agenda-list-mode agenda-v14">',
         '<div class="fila-agenda-toolbar agenda-list-toolbar">',
           '<div><h5><i class="bi ' + (resp === 'empresa' ? 'bi-building' : 'bi-calendar2-week') + ' me-2"></i>' + html_(tituloTela) + '</h5><p>' + html_(descTela) + '</p></div>',
           '<div class="fila-agenda-toolbar-actions">',
-            '<button type="button" class="btn btn-sm ' + (agrupar ? 'btn-primary' : 'btn-outline-primary') + ' fw-bold" onclick="gomFilaToggleAgrupar(this)" title="Agrupar os chamados por escola"><i class="bi bi-collection me-1"></i>' + (agrupar ? 'Agrupado por escola' : 'Agrupar por escola') + '</button>',
-            '<span class="text-muted small fw-bold ms-2"><i class="bi bi-clock-history me-1"></i>Atualizado às ' + html_(atualizado) + '</span>',
+            '<span class="text-muted small fw-bold"><i class="bi bi-clock-history me-1"></i>Atualizado às ' + html_(atualizado) + '</span>',
           '</div>',
         '</div>',
         montarResponsaveisAgenda_(),
@@ -592,6 +594,10 @@
     html.push('</div></div>');
     painel.className = 'fila-agenda-shell agenda-list-mode agenda-v14';
     painel.innerHTML = html.join('');
+
+    // Botão "Agrupar por escola" na barra de cima (mesma linha da busca/contador).
+    var slotAgrupar = document.getElementById('filaAgrupSlot');
+    if (slotAgrupar) slotAgrupar.innerHTML = btnAgrupar;
   }
 
   function acharChamado_(id) {
@@ -973,6 +979,25 @@
     if (typeof renderBase === 'function') renderBase.apply(this, arguments);
     if (telaAtual_() === 'fila') atualizarSubmenuAtivo_();
   };
+
+  // Aba "Fila" = somente casos SEM andamento: Aguardando visita ainda sem data
+  // agendada e sem equipe. Os que já têm visita agendada/andamento vão na Agenda.
+  (function() {
+    var renderListaFilaOriginal = window.renderListaFilaOperacional;
+    if (typeof renderListaFilaOriginal !== 'function') return;
+    window.renderListaFilaOperacional = function(lista) {
+      var filtrada = (lista || []).filter(function(it) {
+        var st = normalizar_(it.situacao || it.status);
+        if (st !== 'Aguardando visita') return false;
+        var temDataVisita = !!(it.dataAgendamentoVisitaRaw || it.dataAgendamentoVisita || it.data_agendamento_visita);
+        var temEquipe = !!(it.equipe && String(it.equipe).trim());
+        return !temDataVisita && !temEquipe;
+      });
+      var contador = document.getElementById('contador');
+      if (contador && telaAtual_() === 'fila') contador.textContent = filtrada.length + ' na fila (sem andamento)';
+      return renderListaFilaOriginal(filtrada);
+    };
+  })();
 
   try { if (typeof renderizarTela !== 'undefined') renderizarTela = window.renderizarTela; } catch(e) {}
   window.renderFilaAgendaSecretaria = renderAgenda_;
