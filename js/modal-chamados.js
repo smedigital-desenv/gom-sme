@@ -413,7 +413,11 @@ function abrirModalAnalise(id) {
   document.getElementById('mdlId').innerText = c.id;
   document.getElementById('mdlUnidade').innerText = c.unidade || '';
   document.getElementById('mdlSistema').innerText = c.sistema || '';
-  document.getElementById('mdlData').innerText = c.dataHoraEncaminhamento || c.dataHoraEntradaFila || c.dataHora || c.data || '';
+  // "Abertura" = data real do chamado; "Última intervenção" = quando o chamado
+  // mudou pela última vez (data_hora_ultima_acao) — é a data que os alertas usam.
+  document.getElementById('mdlData').innerText = c.dataHora || c.data || '';
+  var elUltimaInterv = document.getElementById('mdlUltimaIntervencao');
+  if (elUltimaInterv) elUltimaInterv.innerText = c.dataHoraUltimaAcao || c.dataHora || c.data || '—';
   document.getElementById('mdlDetalhe').innerText = c.detalhamento || 'Sem detalhe';
   document.getElementById('mdlObservacoes').innerText = c.observacoes || 'Sem observações';
   fecharEdicaoObservacoesChamado_();
