@@ -350,12 +350,12 @@
       <div class="kpi-box clic" onclick="abrirGraficoProjecao()" style="--kpi-color: var(--neon-blue);">
         <div class="kpi-box-head">
           <div>
-            <div class="kpi-label">Média Projetada</div>
-            <div class="kpi-value" id="c-media">–</div>
+            <div class="kpi-label">Saldo a Emitir</div>
+            <div class="kpi-value" id="c-saldo">–</div>
           </div>
           <div class="kpi-icon"><i class="bi bi-graph-up-arrow"></i></div>
         </div>
-        <div class="kpi-sub" id="c-media-sub">por medição</div>
+        <div class="kpi-sub" id="c-saldo-sub">Clique para ver projeção</div>
       </div>
 
       <div class="kpi-box clic" onclick="detalheCard('pend')" style="--kpi-color: var(--griffo);">
@@ -372,14 +372,6 @@
 
     <!-- Painel de Contrato -->
     <div class="contrato-grid" id="contrato-resumo"></div>
-
-    <!-- Gráfico de Projeção -->
-    <div class="grafico-wrapper" style="margin-top: 24px;">
-      <h5><i class="bi bi-graph-up me-2"></i>Projeção de saldo por medição (R$)</h5>
-      <div style="position: relative; height: 280px; width: 100%;">
-        <canvas id="chart-projecao"></canvas>
-      </div>
-    </div>
 
     <!-- Buscas e Filtros -->
     <div class="buscas-toolbar">
@@ -504,10 +496,16 @@ function atualizarCards(dados, pfx) {
   document.getElementById(pfx+'pend').textContent     = pend;
 
   if (pfx === 'c-' && contratoInfo) {
-    const medicoesNovas = contratoInfo.medicoesNovas ?? Math.max(0, contratoInfo.restantes - 1);
-    const mediaRestante = medicoesNovas > 0 ? contratoInfo.saldo / medicoesNovas : 0;
-    document.getElementById('c-media').textContent = R$(mediaRestante);
-    document.getElementById('c-media-sub').textContent = `${medicoesNovas} medições`;
+    const c = contratoInfo;
+    const saldoNeg = c.saldo < 0;
+    const saldoAbs = Math.abs(c.saldo);
+    const medicoesNovas = c.medicoesNovas ?? Math.max(0, c.restantes - 1);
+    const mediaRestante = medicoesNovas > 0 ? c.saldo / medicoesNovas : 0;
+    document.getElementById('c-saldo').textContent = R$(saldoAbs);
+    document.getElementById('c-saldo-sub').textContent =
+      saldoNeg
+        ? `Estourou | Média: ${R$(Math.abs(mediaRestante))}`
+        : `Média: ${R$(mediaRestante)} (${medicoesNovas} med.)`;
   }
 }
 
@@ -814,41 +812,84 @@ function abrirGraficoProjecao() {
 }
 
 function detalharPorMedicao() {
-  const c = contratoInfo;
-  if (!c || !medicoesSerie.length) {
-    abrirInfo('Valor Executado por Medição', 'Nenhuma medição realizada ainda.');
+  if (!todosOsDados.length) {
+    abrirInfo('Valor Executado por Medição', 'Nenhuma O.S registrada ainda.');
     return;
   }
 
-  const linhas = medicoesSerie.map(m => {
-    const med = parseInt(m.label, 10);
-    const valor = m.valor || 0;
-    return `
-      <tr>
-        <td><strong>${med}ª medição</strong></td>
-        <td class="text-end">${R$(valor)}</td>
-      </tr>`;
-  }).join('');
+  // Descobrir todas as medições
+  const medicoesSet = new Set();
+  todosOsDados.forEach(r => {
+    if (r.med) Object.keys(r.med).forEach(m => medicoesSet.add(parseInt(m)));
+  });
+  const medicoes = Array.from(medicoesSet).sort((a, b) => a - b);
 
-  const total = medicoesSerie.reduce((s, m) => s + (m.valor || 0), 0);
+  if (!medicoes.length) {
+    abrirInfo('Valor Executado por Medição', 'Nenhuma medição paga ainda.');
+    return;
+  }
+
+  // Agrupar por unidade e somar valores por medição
+  const porUnidade = {};
+  todosOsDados.forEach(r => {
+    if (!porUnidade[r.unidade]) {
+      porUnidade[r.unidade] = { unidade: r.unidade, medicoes: {} };
+    }
+    if (r.med) {
+      Object.entries(r.med).forEach(([med, valor]) => {
+        const medNum = parseInt(med);
+        porUnidade[r.unidade].medicoes[medNum] = (porUnidade[r.unidade].medicoes[medNum] || 0) + valor;
+      });
+    }
+  });
+
+  // Montar cabeçalho com medições
+  const cabecalho = ['Unidade Escolar', ...medicoes.map(m => `${m}ª`), 'Total'].join('</th><th class="text-end">') + '</th>';
+
+  // Montar linhas
+  const linhas = Object.values(porUnidade)
+    .sort((a, b) => a.unidade.localeCompare(b.unidade))
+    .map(u => {
+      const valores = medicoes.map(m => u.medicoes[m] || 0);
+      const subtotal = valores.reduce((s, v) => s + v, 0);
+      const colunas = [
+        u.unidade,
+        ...valores.map(v => R$(v)),
+        `<strong>${R$(subtotal)}</strong>`
+      ].join('</td><td class="text-end">') + '</td>';
+      return `<tr><td>${colunas}</td></tr>`;
+    }).join('');
+
+  // Rodapé com totais
+  const totaisPorMedicao = medicoes.map(m => {
+    let total = 0;
+    Object.values(porUnidade).forEach(u => {
+      total += u.medicoes[m] || 0;
+    });
+    return total;
+  });
+  const totalGeral = totaisPorMedicao.reduce((s, v) => s + v, 0);
+
+  const rodape = [
+    '<strong>Total por medição</strong>',
+    ...totaisPorMedicao.map(v => `<strong>${R$(v)}</strong>`),
+    `<strong>${R$(totalGeral)}</strong>`
+  ].join('</td><td class="text-end">') + '</td>';
 
   const modal = new bootstrap.Modal(document.getElementById('modalDetalhes'));
-  document.getElementById('modal-titulo').textContent = '💰 Valor Executado por Medição';
-  document.getElementById('modal-sub').textContent = `Total de ${medicoesSerie.length} medição(ões) realizada(s)`;
+  document.getElementById('modal-titulo').textContent = '💰 Valor Executado por Unidade e Medição';
+  document.getElementById('modal-sub').textContent = `${Object.keys(porUnidade).length} unidades · ${medicoes.length} medição(ões)`;
   document.getElementById('modal-body').innerHTML = `
     <div class="table-responsive">
-      <table class="table">
-        <thead style="background: rgba(0, 43, 94, 0.05);">
-          <tr><th>Medição</th><th class="text-end">Valor Pago</th></tr>
+      <table class="table table-sm">
+        <thead style="background: rgba(0, 43, 94, 0.05); position: sticky; top: 0;">
+          <tr><th>${cabecalho}</tr>
         </thead>
         <tbody>
           ${linhas}
         </tbody>
-        <tfoot style="background: rgba(0, 43, 94, 0.05);">
-          <tr style="font-weight: 700;">
-            <td>Total executado</td>
-            <td class="text-end text-success">${R$(total)}</td>
-          </tr>
+        <tfoot style="background: rgba(0, 43, 94, 0.05); position: sticky; bottom: 0; font-weight: 700;">
+          <tr><td>${rodape}</td></tr>
         </tfoot>
       </table>
     </div>`;
