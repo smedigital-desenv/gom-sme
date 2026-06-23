@@ -87,10 +87,14 @@
 
     window.__gomAgrupGrupos = window.__gomAgrupGrupos || {};
 
+    // opts.chaveGrupo permite a tela definir a chave de agrupamento (ex.: agrupar
+    // estritamente pelo nome da escola, ignorando grupo de visita).
+    var chaveFn = typeof opts.chaveGrupo === 'function' ? opts.chaveGrupo : gomAgrupChaveVisita_;
+
     var porEscola = {};
     var ordem = [];
     lista.forEach(function(item, idx) {
-      var chave = gomAgrupChaveVisita_(item);
+      var chave = chaveFn(item);
       if (!porEscola[chave]) { porEscola[chave] = []; ordem.push(chave); }
       porEscola[chave].push({ item: item, idx: idx });
     });

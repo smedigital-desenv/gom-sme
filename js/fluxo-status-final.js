@@ -94,6 +94,14 @@
       else if (['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'].indexOf(st) >= 0) lista = ['Serviço Realizado'];
       else if (st === 'Serviço Realizado') lista = ['Concluído', 'Garantia de Serviço'];
     }
+    // O Administrador GOM pode reagendar a visita a partir de QUALQUER estado
+    // (inclusive OS emitida, Concluído etc.), independente do fluxo padrão.
+    if (perfilAtual() === 'ADMIN_GOM') {
+      var visita = ['Visita agendada', 'Aguardando visita'].filter(function (s) {
+        return norm(s) !== st && lista.indexOf(s) < 0;
+      });
+      lista = visita.concat(lista);
+    }
     return lista;
   }
 
@@ -199,5 +207,15 @@
 
   document.addEventListener('shown.bs.modal', function (ev) {
     if (ev && ev.target && ev.target.id === 'modalAnalise') setTimeout(reprocessarModalAberto, 0);
+  });
+
+  // Ao escolher "Visita agendada"/"Aguardando visita" no modal (ex.: ADMIN
+  // reagendando um chamado já em OS/execução), revela o campo de data da visita.
+  document.addEventListener('change', function (ev) {
+    if (!ev.target || ev.target.id !== 'mdlSelectStatus') return;
+    var v = norm(ev.target.value);
+    if (v === 'Visita agendada' || v === 'Aguardando visita') {
+      document.querySelectorAll('.modal-extra-fila').forEach(function (el) { el.style.display = ''; });
+    }
   });
 })();
