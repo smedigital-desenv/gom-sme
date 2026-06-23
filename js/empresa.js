@@ -721,7 +721,8 @@ function empresaAgendaData_(item) {
     item.dataPrevistaConclusaoRaw,
     item.dataPrevistaConclusao,
     item.data_prevista_conclusao,
-    item.dataHoraUltimaAcao,
+    // NÃO usar data_hora_ultima_acao/encaminhamento aqui: a migração carimbou
+    // esses campos com a data de importação. Cai na data de abertura do chamado.
     item.dataHora,
     item.data
   ];

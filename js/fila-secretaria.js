@@ -9,8 +9,6 @@
   window.filaSubmodoAtual = window.filaSubmodoAtual || 'fila';
   window.filaAgendaResponsavelAtual = 'secretaria';
   window.filaAgendaFiltroAtual = window.filaAgendaFiltroAtual || 'todos';
-  // Filtro da Agenda por campo (busca por digitação + dropdown de campo).
-  window.filaAgendaCampoFiltro = window.filaAgendaCampoFiltro || 'tudo';
 
   function telaAtual_() {
     return window.telaAtual || (typeof telaAtual !== 'undefined' ? telaAtual : 'dashboard');
@@ -98,9 +96,8 @@
       item.data_visita,
       item.previsaoVisita,
       item.previsao_visita,
-      item.dataHoraEntradaFila,
-      item.dataEntradaFila,
-      item.dataHoraUltimaAcao,
+      // Migração carimbou entrada_fila/ultima_acao com a data de importação;
+      // sem data de visita, cai na data de abertura do chamado.
       item.dataHora,
       item.data
     ];
@@ -224,17 +221,11 @@
 
   function listaAgenda_() {
     var termo = typeof termoPesquisa === 'function' ? termoPesquisa() : texto_(document.getElementById('pesquisa')?.value || '');
-    var campo = window.filaAgendaCampoFiltro || 'tudo';
     return (window.listaChamadosGlobal || []).filter(function(item) {
       var st = normalizar_(item.situacao || item.status || item['Situação'] || item['Status']);
       if (!isStatusAgenda_(st)) return false;
-      var alvo;
-      if (campo === 'unidade')     alvo = texto_(item.unidade);
-      else if (campo === 'status') alvo = texto_(st);
-      else if (campo === 'equipe') alvo = texto_(equipeAgenda_(item));
-      else if (campo === 'data')   alvo = texto_(dataBr_(campoDataAgenda_(item)) + ' ' + campoDataAgenda_(item));
-      else alvo = texto_([item.id, item.unidade, item.detalhamento, item.descricao, st, item.observacoes, equipeAgenda_(item), numeroOs_(item), campoDataAgenda_(item)].join(' '));
-      return !termo || alvo.indexOf(termo) >= 0;
+      var texto = texto_([item.id, item.unidade, item.detalhamento, item.descricao, st, item.observacoes, equipeAgenda_(item), numeroOs_(item), campoDataAgenda_(item)].join(' '));
+      return !termo || texto.indexOf(termo) >= 0;
     }).map(function(item) {
       var st = normalizar_(item.situacao || item.status || item['Situação'] || item['Status']);
       var responsavel = grupoResponsavel_(st);
@@ -302,6 +293,11 @@
 
     var wrapData = document.getElementById('gomDataGlobalWrap_fila');
     if (wrapData) wrapData.style.display = modo === 'agenda' ? 'none' : '';
+
+    // O botão "Agrupar por escola" só existe no modo agenda (preenchido por
+    // renderAgenda_); na fila o slot fica vazio.
+    var slotAgrupar = document.getElementById('filaAgrupSlot');
+    if (slotAgrupar && modo !== 'agenda') slotAgrupar.innerHTML = '';
 
     var pesquisa = document.getElementById('pesquisa');
     if (pesquisa) {
@@ -557,21 +553,16 @@
       return dataOrdenacao_(a) - dataOrdenacao_(b);
     });
 
-    var campoAtual = window.filaAgendaCampoFiltro || 'tudo';
-    var camposAgenda = [['tudo','Todos os campos'],['unidade','Unidade'],['status','Status'],['equipe','Equipe'],['data','Data']];
-    var campoSelect = '<select class="form-select form-select-sm fw-bold gom-agenda-campo" onchange="setFilaAgendaCampo(this.value)" title="Escolha o campo para filtrar a agenda" style="max-width:170px;">'
-      + camposAgenda.map(function(c){ return '<option value="' + c[0] + '"' + (campoAtual === c[0] ? ' selected' : '') + '>' + c[1] + '</option>'; }).join('')
-      + '</select>';
+    // O botão "Agrupar por escola" sobe para a barra de cima (junto da busca e
+    // do contador "X em acompanhamento"), preenchendo o slot #filaAgrupSlot.
+    var btnAgrupar = '<button type="button" class="btn btn-sm ' + (agrupar ? 'btn-primary' : 'btn-outline-primary') + ' fw-bold" onclick="gomFilaToggleAgrupar(this)" title="Agrupar os chamados da mesma escola"><i class="bi bi-collection me-1"></i>' + (agrupar ? 'Agrupado por escola' : 'Agrupar por escola') + '</button>';
 
     var html = [
       '<div class="fila-agenda-shell agenda-list-mode agenda-v14">',
         '<div class="fila-agenda-toolbar agenda-list-toolbar">',
           '<div><h5><i class="bi ' + (resp === 'empresa' ? 'bi-building' : 'bi-calendar2-week') + ' me-2"></i>' + html_(tituloTela) + '</h5><p>' + html_(descTela) + '</p></div>',
           '<div class="fila-agenda-toolbar-actions">',
-            '<span class="gom-agenda-campo-label small fw-bold text-muted me-1"><i class="bi bi-funnel me-1"></i>Filtrar por:</span>',
-            campoSelect,
-            '<button type="button" class="btn btn-sm ' + (agrupar ? 'btn-primary' : 'btn-outline-primary') + ' fw-bold" onclick="gomFilaToggleAgrupar(this)" title="Agrupar os chamados por escola"><i class="bi bi-collection me-1"></i>' + (agrupar ? 'Agrupado por escola' : 'Agrupar por escola') + '</button>',
-            '<span class="text-muted small fw-bold ms-2"><i class="bi bi-clock-history me-1"></i>Atualizado às ' + html_(atualizado) + '</span>',
+            '<span class="text-muted small fw-bold"><i class="bi bi-clock-history me-1"></i>Atualizado às ' + html_(atualizado) + '</span>',
           '</div>',
         '</div>',
         montarResponsaveisAgenda_(),
@@ -603,6 +594,10 @@
     html.push('</div></div>');
     painel.className = 'fila-agenda-shell agenda-list-mode agenda-v14';
     painel.innerHTML = html.join('');
+
+    // Botão "Agrupar por escola" na barra de cima (mesma linha da busca/contador).
+    var slotAgrupar = document.getElementById('filaAgrupSlot');
+    if (slotAgrupar) slotAgrupar.innerHTML = btnAgrupar;
   }
 
   function acharChamado_(id) {
@@ -983,13 +978,6 @@
     }
     if (typeof renderBase === 'function') renderBase.apply(this, arguments);
     if (telaAtual_() === 'fila') atualizarSubmenuAtivo_();
-  };
-
-  // Dropdown de campo da Agenda: define o campo da busca por digitação.
-  window.setFilaAgendaCampo = function(campo) {
-    var validos = { tudo: 1, unidade: 1, status: 1, equipe: 1, data: 1 };
-    window.filaAgendaCampoFiltro = validos[campo] ? campo : 'tudo';
-    if (typeof renderAgenda_ === 'function') renderAgenda_();
   };
 
   // Aba "Fila" = somente casos SEM andamento: Aguardando visita ainda sem data
