@@ -868,6 +868,18 @@ function gomEmpresaChaveEscola_(item) {
   return String((item && (item.unidade || item.escolaId)) || 'sem-escola').trim() || 'sem-escola';
 }
 
+// Botão "Voltar para a Secretaria" na linha do chamado. Só aparece para
+// Solicitado Orçamento, Atendimento Emergencial, Garantia de Obra e Garantia de
+// Serviço, e para quem não é a Empresa. Devolve para "Aguardando visita".
+function gomBotaoVoltarSecretariaEmpresa_(item) {
+  var stReal = typeof normalizarSituacaoSistema === 'function' ? normalizarSituacaoSistema(item.situacao || item.status) : String(item.situacao || item.status || '');
+  if (['Solicitado Orçamento', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'].indexOf(stReal) < 0) return '';
+  var perfil = String((window.GomAuth && window.GomAuth.perfil) || (window.usuarioAtualGom && window.usuarioAtualGom.perfil) || '').trim().toUpperCase().replace(/[\s-]+/g, '_');
+  if (perfil === 'EMPRESA') return '';
+  var idJs = typeof escapeJsAttr === 'function' ? escapeJsAttr(item.id) : String(item.id || '');
+  return '<button type="button" class="btn btn-outline-warning btn-sm fw-bold gom-btn-voltar-sec mt-2" onclick="voltarChamadoParaSecretaria(\'' + idJs + '\', this)" title="Devolve o chamado para a Secretaria (fila de agendamento de visita)"><i class="bi bi-arrow-counterclockwise me-1"></i>Voltar para a Secretaria</button>';
+}
+
 // Linha individual da Agenda da Empresa (extraída para permitir agrupamento por visita).
 function renderLinhaAgendaEmpresa_(item, chave) {
   var id = empresaAgendaHtml_(item.id || '-');
@@ -877,15 +889,7 @@ function renderLinhaAgendaEmpresa_(item, chave) {
   var os = item._empresaAgendaOs || 'Sem OS';
   var tituloData = chave === 'sem-data' ? 'Sem data' : empresaAgendaDataBr_(chave);
 
-  // Botão "Voltar para a Secretaria" na própria linha — só para Solicitado
-  // Orçamento, Atendimento Emergencial, Garantia de Obra e Garantia de Serviço,
-  // e para quem não é a Empresa. Devolve o chamado para "Aguardando visita".
-  var stReal = typeof normalizarSituacaoSistema === 'function' ? normalizarSituacaoSistema(item.situacao || item.status) : String(item.situacao || item.status || '');
-  var perfilRow = String((window.GomAuth && window.GomAuth.perfil) || (window.usuarioAtualGom && window.usuarioAtualGom.perfil) || '').trim().toUpperCase().replace(/[\s-]+/g, '_');
-  var podeVoltar = perfilRow !== 'EMPRESA' && ['Solicitado Orçamento', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'].indexOf(stReal) >= 0;
-  var btnVoltar = podeVoltar
-    ? '<button type="button" class="btn btn-outline-warning btn-sm fw-bold" onclick="voltarChamadoParaSecretaria(\'' + idJs + '\', this)" title="Devolve o chamado para a Secretaria (fila de agendamento de visita)"><i class="bi bi-arrow-counterclockwise me-1"></i>Voltar p/ Secretaria</button>'
-    : '';
+  var btnVoltar = gomBotaoVoltarSecretariaEmpresa_(item);
 
   return [
     '<article class="fila-agenda-row empresa-agenda-row" style="--card-accent:' + empresaAgendaHtml_(empresaAgendaCor_(st)) + '">',
@@ -1455,6 +1459,7 @@ function renderLinhaOrcamentoEmpresa(item) {
         '<label class="empresa-field-label"><i class="bi bi-chat-left-text me-1"></i>Observações <span class="text-muted fw-normal">(opcional)</span></label>',
         '<textarea class="form-control form-control-sm" name="observacoes" rows="2" placeholder="Observações da empresa...">' + obs + '</textarea>',
         '<button type="submit" class="btn btn-primary btn-sm fw-bold mt-2"><i class="bi bi-send-check me-1"></i>Enviar orçamento</button>',
+        gomBotaoVoltarSecretariaEmpresa_(item),
       '</form>',
     '</div>'
   ].join('');
@@ -1763,6 +1768,7 @@ function renderLinhaGerencialOsEmpresa(item) {
       '</div>',
       '<div class="empresa-gerencial-acoes" data-label="Ações">',
         '<button type="button" class="btn btn-light border btn-sm fw-bold" onclick="abrirModalAnalise(\'' + idJs + '\')"><i class="bi bi-box-arrow-up-right me-1"></i>Abrir chamado</button>',
+        gomBotaoVoltarSecretariaEmpresa_(item),
         '<form onsubmit="finalizarOsEmpresaFront(event,\'' + idJs + '\')" class="empresa-finaliza-form">',
           '<textarea class="form-control form-control-sm" name="observacoes" rows="2" placeholder="Observação de finalização"></textarea>',
           '<input class="form-control form-control-sm" type="file" name="anexosServico" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx">',
