@@ -395,7 +395,7 @@
 
 <!-- Modal de detalhes -->
 <div class="modal fade" id="modalDetalhes" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+  <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
     <div class="modal-content border-0 shadow-lg">
       <div class="modal-header bg-primary text-white">
         <div>
@@ -556,11 +556,6 @@ function atualizarProjecao() {
       <div class="contrato-stat-label">Total comprometido</div>
       <div class="contrato-stat-value">${R$(comprometido)}</div>
       <div class="contrato-stat-sub">${compPct}% do teto</div>
-    </div>
-    <div class="contrato-stat" style="background: ${saldoNeg ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.1)'};">
-      <div class="contrato-stat-label">${saldoNeg ? 'Estourou' : 'Saldo a emitir'}</div>
-      <div class="contrato-stat-value" style="color: ${saldoNeg ? '#ef4444' : '#22c55e'};">${R$(Math.abs(c.saldo))}</div>
-      <div class="contrato-stat-sub">teto − comprometido</div>
     </div>`;
 
   const N = c.medicoesContrato;
@@ -829,7 +824,75 @@ function detalharPorMedicao() {
     return;
   }
 
-  // Agrupar por unidade e somar valores por medição
+  // Calcular totais por medição
+  const totaisPorMedicao = medicoes.map(m => {
+    let total = 0;
+    todosOsDados.forEach(r => {
+      if (r.med && r.med[m]) total += r.med[m];
+    });
+    return total;
+  });
+  const totalGeral = totaisPorMedicao.reduce((s, v) => s + v, 0);
+
+  // Agrupar por unidade (para função detalhar depois)
+  const porUnidade = {};
+  todosOsDados.forEach(r => {
+    if (!porUnidade[r.unidade]) {
+      porUnidade[r.unidade] = { unidade: r.unidade, medicoes: {} };
+    }
+    if (r.med) {
+      Object.entries(r.med).forEach(([med, valor]) => {
+        const medNum = parseInt(med);
+        porUnidade[r.unidade].medicoes[medNum] = (porUnidade[r.unidade].medicoes[medNum] || 0) + valor;
+      });
+    }
+  });
+
+  // Tabela inicial: apenas totais por medição
+  const linhasSimples = medicoes.map(m => `
+    <tr>
+      <td><strong>${m}ª medição</strong></td>
+      <td class="text-end">${R$(totaisPorMedicao[medicoes.indexOf(m)])}</td>
+    </tr>
+  `).join('');
+
+  const modal = new bootstrap.Modal(document.getElementById('modalDetalhes'));
+  document.getElementById('modal-titulo').textContent = '💰 Valor Executado por Medição';
+  document.getElementById('modal-sub').textContent = `${medicoes.length} medição(ões) realizada(s)`;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="table-responsive">
+      <table class="table">
+        <thead style="background: rgba(0, 43, 94, 0.05);">
+          <tr><th>Medição</th><th class="text-end">Valor Pago</th></tr>
+        </thead>
+        <tbody>
+          ${linhasSimples}
+        </tbody>
+        <tfoot style="background: rgba(0, 43, 94, 0.05);">
+          <tr style="font-weight: 700;">
+            <td>Total geral</td>
+            <td class="text-end text-success">${R$(totalGeral)}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div style="margin-top: 16px; text-align: center;">
+      <button class="btn btn-primary" onclick="detalharPorUnidade()">
+        <i class="bi bi-zoom-in me-2"></i>Detalhar por Unidade Escolar
+      </button>
+    </div>`;
+  modal.show();
+}
+
+function detalharPorUnidade() {
+  // Descobrir todas as medições
+  const medicoesSet = new Set();
+  todosOsDados.forEach(r => {
+    if (r.med) Object.keys(r.med).forEach(m => medicoesSet.add(parseInt(m)));
+  });
+  const medicoes = Array.from(medicoesSet).sort((a, b) => a - b);
+
+  // Agrupar por unidade
   const porUnidade = {};
   todosOsDados.forEach(r => {
     if (!porUnidade[r.unidade]) {
@@ -876,7 +939,6 @@ function detalharPorMedicao() {
     `<strong>${R$(totalGeral)}</strong>`
   ].join('</td><td class="text-end">') + '</td>';
 
-  const modal = new bootstrap.Modal(document.getElementById('modalDetalhes'));
   document.getElementById('modal-titulo').textContent = '💰 Valor Executado por Unidade e Medição';
   document.getElementById('modal-sub').textContent = `${Object.keys(porUnidade).length} unidades · ${medicoes.length} medição(ões)`;
   document.getElementById('modal-body').innerHTML = `
@@ -892,8 +954,12 @@ function detalharPorMedicao() {
           <tr><td>${rodape}</td></tr>
         </tfoot>
       </table>
+    </div>
+    <div style="margin-top: 16px; text-align: center;">
+      <button class="btn btn-outline-primary" onclick="detalharPorMedicao()">
+        <i class="bi bi-arrow-left me-2"></i>Voltar para Resumo
+      </button>
     </div>`;
-  modal.show();
 }
 
 function inicializar(payload) {
