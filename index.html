@@ -59,8 +59,8 @@
       <button id="btn-empresa" class="btn-nav gom-top-empresa" data-page="empresa" onclick="loadPage('empresa')">
         <i class="bi bi-building-check"></i><span>Empresa</span>
       </button>
-      <button id="btn-cadastro" class="btn-nav gom-top-cadastro" data-page="cadastro" onclick="loadPage('cadastro')">
-        <i class="bi bi-plus-circle"></i><span>Cadastro</span>
+      <button id="btn-escola" class="btn-nav gom-top-escola" data-page="escola" onclick="loadPage('escola')">
+        <i class="bi bi-building"></i><span>Minha Escola</span>
       </button>
     </nav>
   </header>
@@ -72,6 +72,7 @@
     </button>
     <div class="gom-secretaria-sidebar-items">
       <button type="button" class="gom-secretaria-iconbtn active" data-page="dashboard" onclick="loadSecretariaPage('dashboard')" title="Dashboard"><i class="bi bi-speedometer2"></i><span>Dashboard</span></button>
+      <button type="button" class="gom-secretaria-iconbtn" data-page="cadastro" onclick="window.__cadastroModo='interno'; loadSecretariaPage('cadastro')" title="Cadastro interno"><i class="bi bi-journal-plus"></i><span>Cadastro</span></button>
       <button type="button" class="gom-secretaria-iconbtn" data-page="triagem" onclick="loadSecretariaPage('triagem')" title="Triagem"><i class="bi bi-funnel"></i><span>Triagem</span></button>
       <button type="button" class="gom-secretaria-iconbtn" data-page="fila" onclick="loadSecretariaPage('fila')" title="Fila"><i class="bi bi-list-check"></i><span>Fila</span></button>
       <button type="button" class="gom-secretaria-iconbtn" data-page="aprovacao" onclick="loadSecretariaPage('aprovacao')" title="Aprovação"><i class="bi bi-clipboard2-check"></i><span>Aprovação</span></button>
@@ -83,6 +84,17 @@
       <button type="button" class="gom-secretaria-iconbtn" data-page="equipes" onclick="loadSecretariaPage('equipes')" title="Gerenciar Equipes"><i class="bi bi-diagram-3"></i><span>Gerenciar Equipes</span></button>
       <button type="button" class="gom-secretaria-iconbtn" data-page="acompanhar" onclick="loadSecretariaPage('acompanhar')" title="Acompanhar"><i class="bi bi-search-heart"></i><span>Acompanhar</span></button>
       <button type="button" class="gom-secretaria-iconbtn" data-page="configuracoes" onclick="loadSecretariaPage('configuracoes')" title="Configurações"><i class="bi bi-sliders"></i><span>Configurações</span></button>
+    </div>
+  </aside>
+
+  <aside class="gom-secretaria-sidebar gom-escola-sidebar" id="gomEscolaSidebar" aria-label="Menu da escola" onmouseleave="fecharMenuEscola()">
+    <button type="button" class="gom-secretaria-hamb" onclick="toggleMenuEscola(event)" aria-label="Abrir menu da escola" title="Menu da escola">
+      <i class="bi bi-list gom-secretaria-hamb-icon" aria-hidden="true"></i>
+      <span class="gom-secretaria-label">Minha Escola</span>
+    </button>
+    <div class="gom-secretaria-sidebar-items">
+      <button type="button" class="gom-secretaria-iconbtn active" data-page="escola" onclick="loadEscolaPage('escola')" title="Minha Escola"><i class="bi bi-building"></i><span>Minha Escola</span></button>
+      <button type="button" class="gom-secretaria-iconbtn" onclick="fecharMenuEscola(); gomAbrirCadastroEscola_()" title="Abrir chamado — preenchimento da escola"><i class="bi bi-journal-plus"></i><span>Cadastro</span></button>
     </div>
   </aside>
 
@@ -113,7 +125,6 @@
         <button class="mobile-more-item" data-page="obras" onclick="loadPage('obras')"><i class="bi bi-buildings"></i><span>Obras</span></button>
         <button class="mobile-more-item" data-page="historico" onclick="loadPage('historico')"><i class="bi bi-archive"></i><span>Memorial</span></button>
         <button class="mobile-more-item" data-page="relatorios" onclick="loadPage('relatorios')"><i class="bi bi-bar-chart-line"></i><span>Relatórios</span></button>
-        <button class="mobile-more-item" data-page="cadastro" onclick="loadPage('cadastro')"><i class="bi bi-plus-circle"></i><span>Cadastro</span></button>
         <button class="mobile-more-item" data-page="equipes" onclick="loadPage('equipes')"><i class="bi bi-diagram-3"></i><span>Gerenciar Equipes</span></button>
         <button class="mobile-more-item" data-page="acompanhar" onclick="loadPage('acompanhar')"><i class="bi bi-search-heart"></i><span>Acompanhar</span></button>
         <button class="mobile-more-item" data-page="configuracoes" onclick="loadPage('configuracoes')"><i class="bi bi-sliders"></i><span>Configurações</span></button>
@@ -124,7 +135,7 @@
   <nav class="mobile-bottom-nav" aria-label="Menu mobile">
     <button class="mobile-nav-item active" data-page="dashboard" onclick="loadSecretariaHome()"><i class="bi bi-layout-sidebar-inset"></i><span>Secretaria</span></button>
     <button class="mobile-nav-item" data-page="empresa" onclick="loadPage('empresa')"><i class="bi bi-building-check"></i><span>Empresa</span></button>
-    <button class="mobile-nav-item" data-page="cadastro" onclick="loadPage('cadastro')"><i class="bi bi-plus-circle"></i><span>Cadastro</span></button>
+    <button class="mobile-nav-item" data-page="escola" onclick="loadPage('escola')"><i class="bi bi-building"></i><span>Minha Escola</span></button>
     <button class="mobile-nav-item mobile-nav-more" data-page="mais" onclick="abrirMobileMais()"><i class="bi bi-grid-3x3-gap"></i><span>Mais</span></button>
   </nav>
 
@@ -760,41 +771,53 @@
   </div>
 </div>
 
-<ul class="nav nav-pills mb-4 bg-white shadow-sm p-2 rounded-pill d-inline-flex" role="tablist">
-  <li class="nav-item"><button class="nav-link active rounded-pill px-4 fw-bold" data-bs-toggle="pill" data-bs-target="#cad-escola" type="button">Preenchimento da escola</button></li>
-  <li class="nav-item"><button class="nav-link rounded-pill px-4 fw-bold" data-bs-toggle="pill" data-bs-target="#cad-interno" type="button">Cadastro interno</button></li>
-</ul>
-
 <div class="tab-content">
   <div class="tab-pane fade show active" id="cad-escola">
     <form class="form-card" id="formCadastroEscola" onsubmit="enviarCadastroEscola(event)">
+      <!-- Cabeçalho da unidade (preenchido uma vez) -->
       <div class="row g-3">
         <div class="col-md-8"><label class="form-label">Unidade escolar</label><select class="form-select" name="unidade" id="selectUnidadeEscola" required></select></div>
         <div class="col-md-4"><label class="form-label">Telefone / WhatsApp</label><input class="form-control" name="telefone" required></div>
         <div class="col-md-8"><label class="form-label">Nome do responsável pelo preenchimento</label><input class="form-control" name="nome_responsavel" required></div>
         <div class="col-md-4"><label class="form-label">Cargo/Função</label><select class="form-select" name="cargo" required><option>Diretor(a)</option><option>Vice-diretor(a)</option><option>Secretário(a) escolar</option><option>Coordenador(a)</option><option>Outro</option></select></div>
-        <div class="col-md-4"><label class="form-label">Tipo principal da solicitação</label><select class="form-select" name="tipo_solicitacao" required><option>Elétrica</option><option>Hidráulica</option><option>Telhado / cobertura</option><option>Estrutura / alvenaria</option><option>Pintura / acabamento</option><option>Esquadrias / portas / janelas</option><option>Banheiros / sanitários</option><option>Cozinha / refeitório</option><option>Acessibilidade</option><option>Segurança</option><option>Área externa</option><option>Outro</option></select></div>
-        <div class="col-md-4"><label class="form-label">Local da ocorrência</label><select class="form-select" name="local_ocorrencia" required><option>Sala de aula</option><option>Banheiro</option><option>Cozinha</option><option>Refeitório</option><option>Pátio</option><option>Cobertura / telhado</option><option>Área externa</option><option>Corredor</option><option>Secretaria</option><option>Muro / portão</option><option>Outro</option></select></div>
-        <div class="col-md-4"><label class="form-label">Há quanto tempo?</label><select class="form-select" name="tempo_problema" required><option>Hoje</option><option>Nos últimos 3 dias</option><option>Há cerca de 1 semana</option><option>Há mais de 1 semana</option><option>Há mais de 1 mês</option></select></div>
-        <div class="col-12"><label class="form-label">Descreva detalhadamente o problema</label><textarea class="form-control" name="descricao" rows="4" required></textarea></div>
-        <div class="col-md-4"><label class="form-label">Intervenção urgente?</label><select class="form-select" name="urgente"><option>Sim</option><option>Não</option></select></div>
-        <div class="col-md-4"><label class="form-label">Risco à segurança</label><select class="form-select" name="risco"><option>Sim, risco elevado</option><option>Sim, risco moderado</option><option>Não</option></select></div>
-        <div class="col-md-4"><label class="form-label">Impacto no funcionamento</label><select class="form-select" name="funcionamento"><option>Sim, totalmente</option><option>Sim, parcialmente</option><option>Não</option></select></div>
+      </div>
+
+      <!-- Problemas (blocos repetíveis com "+") -->
+      <hr class="my-4">
+      <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+        <h6 class="fw-bold mb-0"><i class="bi bi-list-check me-1"></i>Problemas a relatar</h6>
+        <button type="button" class="btn btn-success btn-sm fw-bold" onclick="gomCadEscolaAddItem()"><i class="bi bi-plus-lg me-1"></i>Adicionar problema</button>
+      </div>
+      <div id="cadEscolaItens"></div>
+
+      <!-- Informações gerais (preenchidas uma vez) -->
+      <hr class="my-4">
+      <div class="row g-3">
         <div class="col-md-6"><label class="form-label">Afeta turma/serviço essencial?</label><select class="form-select" name="afeta_turma"><option>Sim</option><option>Não</option></select></div>
+        <div class="col-md-6"><label class="form-label">Risco à segurança</label><select class="form-select" name="risco"><option>Sim, risco elevado</option><option>Sim, risco moderado</option><option>Não</option></select></div>
+        <div class="col-md-6"><label class="form-label">Impacto no funcionamento</label><select class="form-select" name="funcionamento"><option>Sim, totalmente</option><option>Sim, parcialmente</option><option>Não</option></select></div>
         <div class="col-md-6"><label class="form-label">Precisa isolamento imediato?</label><select class="form-select" name="isolamento"><option>Sim</option><option>Não</option></select></div>
-        <div class="col-md-6"><label class="form-label">Possui recursos da subvenção?</label><select class="form-select" name="recursos"><option>Sim</option><option>Não</option><option>Parcialmente</option><option>Não sei informar</option></select></div>
-        <div class="col-md-6"><label class="form-label">Poderia ser executada com recursos próprios?</label><select class="form-select" name="execucao_propria"><option>Sim</option><option>Não</option><option>Depende de avaliação técnica</option></select></div>
-        <div class="col-md-6"><label class="form-label">Prestador já avaliou?</label><select class="form-select" name="prestador_avaliou"><option>Sim</option><option>Não</option></select></div>
-        <div class="col-md-6"><label class="form-label">Foi elaborado orçamento?</label><select class="form-select" name="orcamento_elaborado"><option>Sim</option><option>Não</option></select></div>
-        <div class="col-md-4"><label class="form-label">Valor estimado</label><input class="form-control" name="valor_estimado"></div>
-        <div class="col-md-8"><label class="form-label">Nome do prestador/empresa</label><input class="form-control" name="prestador_nome"></div>
-        <div class="col-12"><label class="form-label">Observações sobre a avaliação</label><textarea class="form-control" name="observacoes_avaliacao" rows="2"></textarea></div>
-        <div class="col-md-8"><label class="form-label">Ambientes/serviços afetados</label><input class="form-control" name="ambientes_afetados" placeholder="Ex: sala de aula, banheiro, cobertura..."></div>
-        <div class="col-md-4"><label class="form-label">Quantidade afetada</label><select class="form-select" name="qtd_afetada"><option>1</option><option>2 a 3</option><option>4 ou mais</option><option>Não se aplica</option></select></div>
         <div class="col-12"><label class="form-label">Observações adicionais</label><textarea class="form-control" name="observacoes_adicionais" rows="3"></textarea></div>
-        <div class="col-12"><label class="form-label">Anexos da solicitação</label><input type="file" class="form-control" name="anexos" multiple></div>
         <div class="col-12 text-end"><button class="btn btn-primary px-5 fw-bold">ENVIAR SOLICITAÇÃO</button></div>
       </div>
+
+      <!-- Modelo de um bloco de problema -->
+      <template id="tplCadEscolaItem">
+        <div class="cad-escola-item border rounded p-3 mb-3" style="background:#f8fafc;">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <strong class="cad-escola-item-titulo">Problema</strong>
+            <button type="button" class="btn btn-outline-danger btn-sm cad-escola-item-rm" onclick="gomCadEscolaRemoveItem(this)" title="Remover este problema"><i class="bi bi-x-lg"></i></button>
+          </div>
+          <div class="row g-3">
+            <div class="col-md-4"><label class="form-label">Tipo principal da solicitação</label><select class="form-select" data-campo="tipo_solicitacao" required><option value="">Selecione…</option><option>Elétrica</option><option>Hidráulica</option><option>Telhado / cobertura</option><option>Estrutura / alvenaria</option><option>Pintura / acabamento</option><option>Esquadrias / portas / janelas</option><option>Banheiros / sanitários</option><option>Cozinha / refeitório</option><option>Acessibilidade</option><option>Segurança</option><option>Área externa</option><option>Outro</option></select></div>
+            <div class="col-md-4"><label class="form-label">Local da ocorrência</label><select class="form-select" data-campo="local_ocorrencia" required><option value="">Selecione…</option><option>Sala de aula</option><option>Banheiro</option><option>Cozinha</option><option>Refeitório</option><option>Pátio</option><option>Cobertura / telhado</option><option>Área externa</option><option>Corredor</option><option>Secretaria</option><option>Muro / portão</option><option>Outro</option></select></div>
+            <div class="col-md-4"><label class="form-label">Há quanto tempo?</label><select class="form-select" data-campo="tempo_problema" required><option value="">Selecione…</option><option>Hoje</option><option>Nos últimos 3 dias</option><option>Há cerca de 1 semana</option><option>Há mais de 1 semana</option><option>Há mais de 1 mês</option></select></div>
+            <div class="col-12"><label class="form-label">Descreva detalhadamente o problema</label><textarea class="form-control" data-campo="descricao" rows="3" required></textarea></div>
+            <div class="col-md-4"><label class="form-label">Intervenção urgente?</label><select class="form-select" data-campo="urgente"><option>Sim</option><option>Não</option></select></div>
+            <div class="col-md-8"><label class="form-label">Anexos deste problema</label><input type="file" class="form-control" data-campo="anexos" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"></div>
+          </div>
+        </div>
+      </template>
     </form>
   </div>
 
@@ -898,6 +921,32 @@
 </div>
 
 <div id="acompanharResultado" class="acompanhar-resultado"></div>
+  </template>
+
+  <template id="tpl-escola">
+<div class="dashboard-hero mb-3">
+  <div>
+    <span class="dashboard-eyebrow"><i class="bi bi-building me-1"></i>Painel da escola</span>
+    <h4 id="escolaDashTitulo">Minha Escola</h4>
+    <p>Acompanhe aqui, em um só lugar, todos os chamados da sua unidade.</p>
+    <div id="escolaSeletorWrap" class="mt-2"></div>
+  </div>
+  <div class="dashboard-hero-actions">
+    <button class="btn btn-light border fw-bold" onclick="refreshEscolaDashboard()"><i class="bi bi-arrow-clockwise me-1"></i>Atualizar</button>
+  </div>
+</div>
+
+<div id="escolaKpis" class="dashboard-kpi-grid"></div>
+
+<div class="dashboard-card mt-1">
+  <div class="dashboard-card-head">
+    <div>
+      <h5><i class="bi bi-list-check me-2"></i>Chamados da sua unidade</h5>
+      <p>Clique em um chamado para ver o andamento completo. Quando um chamado for devolvido para a escola, você poderá enviar o complemento por aqui.</p>
+    </div>
+  </div>
+  <div id="acompanharResultado" class="acompanhar-resultado"></div>
+</div>
   </template>
 
   <template id="tpl-configuracoes">
@@ -1007,6 +1056,7 @@
   <script src="js/alertas.js"></script>
   <script src="js/relatorios.js"></script>
   <script src="js/acompanhar.js"></script>
+  <script src="js/escola-dashboard.js"></script>
   <script src="js/configuracoes-ui.js"></script>
   <script src="js/triagem-fila-inline.js"></script>
   <script src="js/fila-secretaria.js"></script>

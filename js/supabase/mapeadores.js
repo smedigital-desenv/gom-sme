@@ -78,7 +78,7 @@ window.GomMap = (function () {
     'Aguardando visita': '#14b8a6', 'Visita agendada': '#00e5ff', 'Em atendimento': '#00e5ff', 'Atendimento Emergencial': '#ec4899',
     'OS emitida': '#22d3ee', 'Serviço Realizado': '#10b981', 'Garantia de Obra': '#d97706', 'Garantia de Serviço': '#a855f7',
     'Visita Técnica': '#14b8a6', 'Devolvido para a escola': '#64748b', 'Concluído': '#39FF14',
-    'Encaminhado para outra gerência ou Unidade escolar.': '#6366f1', 'A cargo da unidade escolar': '#84cc16', 'Duplicado': '#475569'
+    'Encaminhado para outra gerência ou Unidade escolar.': '#6366f1', 'A cargo da unidade escolar': '#84cc16', 'Duplicado': '#475569', 'Unificado': '#475569'
   };
   const TODOS = Object.keys(CORES).concat(['Serviço Realizado']).filter((v, i, a) => a.indexOf(v) === i);
   const ALIASES = {
@@ -107,7 +107,8 @@ window.GomMap = (function () {
     'Concluído': { tela: 'memorial', finalizado: true, proximos: [] },
     'Encaminhado para outra gerência ou Unidade escolar.': { tela: 'memorial', finalizado: true, proximos: [] },
     'A cargo da unidade escolar': { tela: 'memorial', finalizado: true, proximos: [] },
-    'Duplicado': { tela: 'memorial', finalizado: true, proximos: [] }
+    'Duplicado': { tela: 'memorial', finalizado: true, proximos: [] },
+    'Unificado': { tela: 'memorial', finalizado: true, proximos: [] }
   };
   function _norm(s) { return String(s || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
   function normalizarStatus(status) {

@@ -18,22 +18,22 @@ var GOM_PERFIS_ACESSO = window.GOM_PERFIS_ACESSO || {
   ADMIN_GOM: [
     'dashboard', 'triagem', 'fila', 'aprovacao', 'empresa', 'campo',
     'alertas', 'obras', 'historico', 'relatorios', 'cadastro', 'equipes',
-    'acompanhar', 'configuracoes'
+    'acompanhar', 'configuracoes', 'escola'
   ],
   SECRETARIA: [
     'dashboard', 'triagem', 'fila', 'aprovacao', 'empresa', 'campo',
-    'alertas', 'obras', 'historico', 'relatorios', 'cadastro', 'acompanhar'
+    'alertas', 'obras', 'historico', 'relatorios', 'cadastro', 'acompanhar', 'escola'
   ],
   // Compatibilidade: perfis antigos GOM são tratados como SECRETARIA.
   GOM: [
     'dashboard', 'triagem', 'fila', 'aprovacao', 'empresa', 'campo',
-    'alertas', 'obras', 'historico', 'relatorios', 'cadastro', 'acompanhar'
+    'alertas', 'obras', 'historico', 'relatorios', 'cadastro', 'acompanhar', 'escola'
   ],
   EMPRESA: [
     'empresa'
   ],
   ESCOLA: [
-    'acompanhar', 'cadastro'
+    'escola', 'cadastro'
   ]
 };
 
@@ -50,7 +50,7 @@ var GOM_PERFIS_INICIAL = window.GOM_PERFIS_INICIAL || {
   SECRETARIA: 'dashboard',
   GOM: 'dashboard',
   EMPRESA: 'empresa',
-  ESCOLA: 'acompanhar'
+  ESCOLA: 'escola'
 };
 
 var GOM_ROTAS_ALIAS = window.GOM_ROTAS_ALIAS || {
@@ -215,6 +215,17 @@ function aplicarPermissoesInterface() {
     if (!permitido) el.setAttribute('aria-hidden', 'true');
     else el.removeAttribute('aria-hidden');
   });
+
+  // A ESCOLA continua com a tela 'cadastro' acessível (para travar a unidade),
+  // mas o acesso é pelo botão "Abrir chamado" dentro de "Minha Escola": por isso
+  // escondemos os botões de Cadastro da navegação (topo, mobile e "Mais").
+  if (perfil === 'ESCOLA') {
+    document.querySelectorAll('[data-page="cadastro"]').forEach(function(el) {
+      el.classList.add('gom-permissao-oculto');
+      el.disabled = true;
+      el.setAttribute('aria-hidden', 'true');
+    });
+  }
 
   // Topo: EMPRESA deve ver apenas área da Empresa e sair.
   var topSecretaria = document.getElementById('btn-secretaria');

@@ -51,7 +51,8 @@ window.GomDados = (function () {
     ['OS_PC_NUMERO','0290/2024','Ordem de Serviço','Número do PC usado na Ordem de Serviço.',true],
     ['OS_PREGAO_ELETRONICO','0157/2024','Ordem de Serviço','Número do Pregão Eletrônico usado na Ordem de Serviço.',true],
     ['OS_ATA_REGISTRO_PRECOS','177-01/2024','Ordem de Serviço','Ata de Registro de Preços usada na Ordem de Serviço.',true],
-    ['OS_PRAZO_EXECUCAO','45 DIAS','Ordem de Serviço','Prazo de execução padrão exibido na Ordem de Serviço.',true]
+    ['OS_PRAZO_EXECUCAO','45 DIAS','Ordem de Serviço','Prazo de execução padrão exibido na Ordem de Serviço.',true],
+    ['EMAIL_ENVIO_ATIVO','SIM','E-mail','Interruptor mestre do envio automático de e-mails (visitas às escolas e alertas de SLA). Com NÃO, nada é enfileirado nem enviado; ao reativar, só novos eventos geram e-mail.',true]
   ];
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -291,11 +292,11 @@ window.GomDados = (function () {
 
   async function getDadosIniciais() {
     const [esc, eqSec, eqEmp] = await Promise.all([
-      window.SB.from('escolas').select('nome,tipo,endereco,telefone,email').order('nome'),
+      window.SB.from('escolas').select('id,nome,tipo,endereco,telefone,email').order('nome'),
       window.SB.from('equipes').select('nome').eq('tipo', 'secretaria').eq('ativo', true).order('nome'),
       window.SB.from('equipes').select('nome').eq('tipo', 'empresa').eq('ativo', true).order('nome')
     ]);
-    const escolas = (esc.data || []).map(e => ({ nome: e.nome, tipo: e.tipo || '', endereco: e.endereco || '', telefone: e.telefone || '', email: e.email || '' }));
+    const escolas = (esc.data || []).map(e => ({ id: e.id, nome: e.nome, tipo: e.tipo || '', endereco: e.endereco || '', telefone: e.telefone || '', email: e.email || '' }));
     const equipes = (eqSec.data || []).map(e => e.nome);
     const equipesEmpresa = (eqEmp.data || []).map(e => e.nome);
     return { escolas, equipes, equipesEmpresa, fluxo: M.getRegrasPublicas() };
@@ -489,12 +490,18 @@ window.GomDados = (function () {
     const id = String(p.id || '').trim();
     const unidade = String(p.unidade || '').trim();
     const email = String(p.email || '').trim();
+    // escolaId: caminho preciso usado pela tela da escola (identidade já resolvida
+    // no login). Filtra direto por escola_id, sem depender do nome da unidade.
+    const escolaId = (p.escolaId != null && p.escolaId !== '') ? p.escolaId
+      : ((p.escola_id != null && p.escola_id !== '') ? p.escola_id : '');
 
-    let query = window.SB.from('solicitacoes').select(SEL_CHAMADO).order('data_abertura', { ascending: false }).limit(50);
+    let query = window.SB.from('solicitacoes').select(SEL_CHAMADO).order('data_abertura', { ascending: false }).limit(300);
     let unidadeLabel = unidade;
 
     if (id) {
       query = query.eq('id', id).limit(1);
+    } else if (escolaId !== '') {
+      query = query.eq('escola_id', escolaId);
     } else if (unidade) {
       const esc = await _escolaIdPorNome(unidade);
       if (!esc) return JSON.stringify({ ok: false, erro: 'Unidade escolar não localizada.' });
@@ -674,18 +681,55 @@ window.GomDados = (function () {
 
   async function criarSolicitacaoEscola(p) {
     const esc = await _escolaIdPorNome(p.unidade);
-    const detalhe = [
-      ['Responsável', p.nome_responsavel], ['Cargo/Função', p.cargo], ['Telefone/WhatsApp', p.telefone],
-      ['Tipo principal', p.tipo_solicitacao], ['Local da ocorrência', p.local_ocorrencia], ['Descrição', p.descricao],
-      ['Urgente', p.urgente], ['Risco', p.risco], ['Observações adicionais', p.observacoes_adicionais]
-    ].filter(x => x[1]).map(x => `${x[0]}: ${x[1]}`).join('\n');
+
+    // Itens (blocos "+" do formulário). Compat: formato antigo (campos soltos) = 1 item.
+    let itens = Array.isArray(p.itens) ? p.itens : [];
+    if (!itens.length && (p.tipo_solicitacao || p.descricao)) {
+      itens = [{ tipo_solicitacao: p.tipo_solicitacao, local_ocorrencia: p.local_ocorrencia, tempo_problema: p.tempo_problema, descricao: p.descricao, urgente: p.urgente, anexos: p.anexos || [] }];
+    }
+
+    const linha = (rotulo, valor) => (valor != null && String(valor).trim() !== '') ? (rotulo + ': ' + String(valor).trim()) : '';
+    const partes = [];
+    [linha('Responsável', p.nome_responsavel), linha('Cargo/Função', p.cargo), linha('Telefone/WhatsApp', p.telefone)]
+      .filter(Boolean).forEach(l => partes.push(l));
+    itens.forEach((it, i) => {
+      const bloco = [
+        '— Problema ' + (i + 1) + (itens.length > 1 ? ' de ' + itens.length : '') + ' —',
+        linha('Tipo principal', it.tipo_solicitacao),
+        linha('Local da ocorrência', it.local_ocorrencia),
+        linha('Há quanto tempo', it.tempo_problema),
+        linha('Descrição', it.descricao),
+        linha('Intervenção urgente', it.urgente)
+      ].filter(Boolean).join('\n');
+      if (bloco) partes.push('\n' + bloco);
+    });
+    const rodape = [
+      linha('Afeta turma/serviço essencial', p.afeta_turma),
+      linha('Risco à segurança', p.risco),
+      linha('Impacto no funcionamento', p.funcionamento),
+      linha('Precisa isolamento imediato', p.isolamento),
+      linha('Observações adicionais', p.observacoes_adicionais)
+    ].filter(Boolean).join('\n');
+    if (rodape) partes.push('\n' + rodape);
+    const detalhe = partes.join('\n');
+
     const ins = await window.SB.from('solicitacoes').insert({
       data_abertura: _nowISO(), origem: 'Formulário Escola', escola_id: esc ? esc.id : null, tipo: esc ? esc.tipo : '',
       detalhamento: detalhe, situacao: 'Em análise', observacoes: M.appendObservacao('', p.observacoes_adicionais, 'Cadastro da escola'), data_hora_ultima_acao: _nowISO()
     }).select('id').single();
     if (ins.error) _err('Criar solicitação (escola)', ins.error);
     const id = ins.data.id;
-    if (Array.isArray(p.anexos) && p.anexos.length) await window.GomAnexos.upload(id, 'solicitacao', p.anexos);
+
+    // Anexos de cada item, atrelados ao LOCAL e TIPO do bloco (pasta de
+    // arquivamento: <escola>/chamado-<id>/<local>/<tipo>/arquivo).
+    const escNome = p.unidade || '';
+    for (const it of itens) {
+      if (Array.isArray(it.anexos) && it.anexos.length) {
+        try {
+          await window.GomAnexos.upload(id, 'solicitacao', it.anexos, escNome, { local: it.local_ocorrencia || '', tipo: it.tipo_solicitacao || '' });
+        } catch (e) { window.gomWarn && window.gomWarn('[GOM] anexos escola:', (e && e.message) || e); }
+      }
+    }
     await _log({ solicitacao_id: id, acao: 'Chamado criado pela escola', status_novo: 'Em análise', origem: 'cadastro escola' });
     return { ok: true, id };
   }
@@ -980,6 +1024,79 @@ window.GomDados = (function () {
     return JSON.stringify({ ok: true, id, status: 'Em análise' });
   }
 
+  // ── Unificar chamados de uma unidade: o mais antigo vira o principal e os
+  // demais viram "Unificado", vinculados a ele (chamado_principal_id). ──────────
+  async function unificarChamados(p) {
+    p = p || {};
+    let ids = Array.isArray(p.ids) ? p.ids.slice() : [];
+    ids = ids.filter(function (v, i, a) { return v != null && v !== '' && a.indexOf(v) === i; });
+    if (ids.length < 2) return JSON.stringify({ ok: false, erro: 'Selecione ao menos 2 chamados para unificar.' });
+
+    const r = await window.SB.from('solicitacoes')
+      .select('id,data_abertura,situacao,detalhamento,observacoes,escola_id,tipo,origem,classificacao,numero_os,valor_orcamento,equipe_responsavel,data_prevista_conclusao')
+      .in('id', ids);
+    if (r.error) return JSON.stringify({ ok: false, erro: r.error.message });
+    const rows = r.data || [];
+    if (rows.length < 2) return JSON.stringify({ ok: false, erro: 'Chamados não encontrados para unificar.' });
+
+    // Principal = mais antigo (data_abertura; empate → menor id).
+    rows.sort(function (a, b) {
+      const da = String(a.data_abertura || ''), db = String(b.data_abertura || '');
+      if (da !== db) return da < db ? -1 : 1;
+      return Number(a.id) - Number(b.id);
+    });
+    const principal = rows[0];
+    const absorvidos = rows.slice(1);
+
+    for (const c of absorvidos) {
+      await _update(c.id, {
+        situacao: 'Unificado',
+        chamado_principal_id: principal.id,
+        observacoes: M.appendObservacao(c.observacoes, 'Unificado no chamado #' + principal.id + '.', 'Unificação'),
+        data_hora_ultima_acao: _nowISO()
+      });
+      await _log({ solicitacao_id: c.id, acao: 'Chamado unificado', status_anterior: M.normalizarStatus(c.situacao), status_novo: 'Unificado', observacao: 'Unificado no #' + principal.id });
+    }
+
+    // Move os anexos dos absorvidos para o PRINCIPAL: assim todos passam a
+    // aparecer na prévia (dentro dos detalhes) do chamado unificado, junto com
+    // os anexos que já eram dele.
+    const idsAbsorvidos = absorvidos.map(function (c) { return c.id; });
+    if (idsAbsorvidos.length) {
+      try {
+        const ax = await window.SB.from('anexos').update({ solicitacao_id: principal.id }).in('solicitacao_id', idsAbsorvidos);
+        if (ax && ax.error) window.gomWarn && window.gomWarn('[GOM] unificar anexos:', ax.error.message);
+      } catch (e) { window.gomWarn && window.gomWarn('[GOM] unificar anexos:', (e && e.message) || e); }
+    }
+
+    // Consolida no principal TODAS as informações de cada chamado absorvido
+    // (situação anterior, tipo, origem, descrição, OS, valor, equipe, prazo e as
+    // observações já registradas), para não perder nada.
+    const resumo = absorvidos.map(function (c) {
+      const linhas = ['• Chamado #' + c.id + (c.data_abertura ? ' (aberto em ' + String(c.data_abertura).slice(0, 10) + ')' : '')];
+      if (c.situacao) linhas.push('  Situação anterior: ' + c.situacao);
+      if (c.tipo) linhas.push('  Tipo: ' + c.tipo);
+      if (c.origem) linhas.push('  Origem: ' + c.origem);
+      if (c.classificacao) linhas.push('  Classificação: ' + c.classificacao);
+      const desc = String(c.detalhamento || '').replace(/\s+/g, ' ').trim();
+      if (desc) linhas.push('  Descrição: ' + desc);
+      if (c.numero_os) linhas.push('  Nº OS: ' + c.numero_os);
+      if (c.valor_orcamento != null && c.valor_orcamento !== '') linhas.push('  Valor do orçamento: ' + c.valor_orcamento);
+      if (c.equipe_responsavel) linhas.push('  Equipe: ' + c.equipe_responsavel);
+      if (c.data_prevista_conclusao) linhas.push('  Previsão de conclusão: ' + String(c.data_prevista_conclusao).slice(0, 10));
+      const obs = String(c.observacoes || '').trim();
+      if (obs) linhas.push('  Observações:\n    ' + obs.replace(/\n/g, '\n    '));
+      return linhas.join('\n');
+    }).join('\n\n');
+    await _update(principal.id, {
+      observacoes: M.appendObservacao(principal.observacoes, 'Absorveu ' + absorvidos.length + ' chamado(s) da unidade (anexos movidos para este chamado):\n\n' + resumo, 'Unificação'),
+      data_hora_ultima_acao: _nowISO()
+    });
+    await _log({ solicitacao_id: principal.id, acao: 'Chamados unificados', status_anterior: M.normalizarStatus(principal.situacao), status_novo: M.normalizarStatus(principal.situacao), observacao: 'Absorveu ' + absorvidos.map(function (c) { return '#' + c.id; }).join(', ') });
+
+    return JSON.stringify({ ok: true, principal: principal.id, unificados: absorvidos.length });
+  }
+
   // ── Fila de e-mails: o frontend grava aqui; o GAS processa a cada 15min ──
   async function gravarFilaEmail(entrada) {
     // entrada: { tipo, para, cc, assunto, corpoHtml, dadosRef }
@@ -1012,6 +1129,6 @@ window.GomDados = (function () {
     salvarRespostaOrcamentoEmpresa, salvarServicoRealizadoEmpresa, aprovarOrcamento, salvarDecisaoAprovacao,
     atualizarPrevisaoOsEmpresa, finalizarOsEmpresa, salvarNovaEquipe,
     listarEquipesGerencial, salvarEquipeGerencial, salvarMembroEquipeGerencial, alterarStatusEquipeGerencial, alterarStatusMembroEquipeGerencial,
-    atualizarObra, salvarConfiguracoes, registrarComplementoEscola, gravarFilaEmail
+    atualizarObra, salvarConfiguracoes, registrarComplementoEscola, gravarFilaEmail, unificarChamados
   };
 })();

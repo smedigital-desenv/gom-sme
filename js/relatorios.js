@@ -304,7 +304,7 @@ function renderRelatoriosKpis(chamados, obras) {
 
   const concluidos = (chamados || []).filter(function(c) {
     const st = normalizarSituacaoSistema(c.situacao || c.status);
-    return ['Concluído','A cargo da unidade escolar','Devolvido para a escola','Duplicado','Encaminhado para outra gerência ou Unidade escolar.'].indexOf(st) >= 0;
+    return ['Concluído','A cargo da unidade escolar','Devolvido para a escola','Duplicado','Unificado','Encaminhado para outra gerência ou Unidade escolar.'].indexOf(st) >= 0;
   });
 
   const comOs = (chamados || []).filter(c => String(c.numeroOs || '').trim()).length;
@@ -333,7 +333,7 @@ function renderRelatoriosKpis(chamados, obras) {
 }
 
 function renderRelatorioStatusBars(chamados) {
-  const ordem = ['Em análise','Aguardando visita','Solicitado Orçamento','Orçamento Realizado','OS emitida','Atendimento Emergencial','Garantia de Obra','Garantia de Serviço','Serviço Realizado','Concluído','Devolvido para a escola','A cargo da unidade escolar','Duplicado'];
+  const ordem = ['Em análise','Aguardando visita','Solicitado Orçamento','Orçamento Realizado','OS emitida','Atendimento Emergencial','Garantia de Obra','Garantia de Serviço','Serviço Realizado','Concluído','Devolvido para a escola','A cargo da unidade escolar','Duplicado','Unificado'];
   renderBarrasRelatorio('relatorioStatusBars', contarPorRelatorio(chamados, c => normalizarSituacaoSistema(c.situacao || c.status)), ordem, getCorStatus);
 }
 

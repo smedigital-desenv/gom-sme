@@ -439,11 +439,51 @@
         + '</div>';
     }).join('');
     return '<div class="cfg-email-compositor">'
+      + renderEmailMestreCard_()
       + '<div class="cfg-email-compositor-head"><i class="bi bi-stars me-2"></i>'
         + 'Edite cada e-mail num só lugar — assunto, quem recebe e o corpo da mensagem.</div>'
       + cards
       + '</div>';
   }
+
+  // Interruptor mestre do disparo de e-mails (Ativo/Suspenso). Sobrepõe os
+  // toggles individuais: com SUSPENSO, nada é enfileirado nem enviado.
+  function renderEmailMestreCard_() {
+    var it = procurarConfig_('EMAIL_ENVIO_ATIVO');
+    var ligado = !it || String(it.valor == null ? 'SIM' : it.valor).trim().toUpperCase().indexOf('N') !== 0;
+    return '<div class="cfg-email-card cfg-email-card-mestre' + (ligado ? '' : ' cfg-email-card-suspenso') + '"'
+        + ' style="border-left:6px solid ' + (ligado ? '#16a34a' : '#dc2626') + ';">'
+      + '<div class="cfg-email-card-icon"><i class="bi ' + (ligado ? 'bi-broadcast' : 'bi-pause-circle-fill') + '"></i></div>'
+      + '<div class="cfg-email-card-body">'
+        + '<div class="cfg-email-card-titulo">Disparo de e-mails às escolas'
+          + '<span class="cfg-email-card-status ' + (ligado ? 'on' : 'off') + '">'
+            + '<i class="bi ' + (ligado ? 'bi-broadcast' : 'bi-slash-circle') + '"></i>'
+            + (ligado ? 'ATIVO' : 'SUSPENSO') + '</span>'
+        + '</div>'
+        + '<div class="cfg-email-card-desc">' + (ligado
+            ? 'O sistema está enviando os e-mails automáticos normalmente. Suspender interrompe <strong>todos</strong> os envios — visitas às escolas e alertas de SLA.'
+            : 'Envio <strong>suspenso</strong>: nenhum e-mail automático sai e nada fica acumulado. Ao reativar, só <strong>novos</strong> eventos geram e-mail.') + '</div>'
+      + '</div>'
+      + '<button type="button" class="btn fw-bold cfg-email-card-btn ' + (ligado ? 'btn-outline-danger' : 'btn-success') + '" onclick="gomToggleEnvioMestre(this)">'
+        + '<i class="bi ' + (ligado ? 'bi-pause-circle' : 'bi-play-circle') + ' me-1"></i>'
+        + (ligado ? 'Suspender envio' : 'Reativar envio') + '</button>'
+      + '</div>';
+  }
+
+  // Liga/desliga o interruptor mestre e salva imediatamente.
+  window.gomToggleEnvioMestre = function(btn) {
+    var it = procurarConfig_('EMAIL_ENVIO_ATIVO');
+    var ligadoAtual = !it || String(it.valor == null ? 'SIM' : it.valor).trim().toUpperCase().indexOf('N') !== 0;
+    if (ligadoAtual && !confirm('Suspender o envio automático de e-mails?\n\nEnquanto suspenso, NENHUM e-mail é enviado às escolas (visitas) nem os alertas de SLA, e nada fica acumulado. Ao reativar, só novos eventos geram e-mail.')) return;
+    var row = {
+      chave: 'EMAIL_ENVIO_ATIVO',
+      valor: ligadoAtual ? 'NÃO' : 'SIM',
+      grupo: 'E-mail',
+      descricao: 'Interruptor mestre do envio automático de e-mails (visitas às escolas e alertas de SLA). Com NÃO, nada é enfileirado nem enviado; ao reativar, só novos eventos geram e-mail.',
+      ativo: 'SIM'
+    };
+    salvarConfiguracoesPayload_([row], function() { window.configuracoesAlteradas = {}; }, btn);
+  };
 
   // Switch SIM/NÃO ligado a um cfg_valor_<id> oculto (lido pelo fluxo de salvar).
   function renderEmailAtivoSwitch_(chave, valorTela) {

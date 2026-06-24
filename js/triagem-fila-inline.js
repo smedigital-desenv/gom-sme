@@ -327,18 +327,50 @@
         if (s && !vistos[s]) { vistos[s] = true; statuses.push(s); }
       });
     });
-    if (!statuses.length) return '';
     var selId = 'gomAgrupSel_' + grupoKey;
     var out = ['<div class="fila-visita-lote">'];
-    out.push('<span class="fila-visita-lote-label"><i class="bi bi-stack me-1"></i>Aplicar a todos:</span>');
-    out.push('<select class="form-select form-select-sm" id="' + selId + '">');
-    out.push('<option value="">Encaminhamento da visita…</option>');
-    statuses.forEach(function(s) { out.push('<option value="' + gomHtml_(s) + '">' + gomHtml_(s) + '</option>'); });
-    out.push('</select>');
-    out.push('<button type="button" class="btn btn-primary btn-sm fw-bold" onclick="gomAgrupAplicarTriagem_(\'' + gomJs_(grupoKey) + '\',\'' + gomJs_(contexto) + '\',this)">Aplicar</button>');
+    if (statuses.length) {
+      out.push('<span class="fila-visita-lote-label"><i class="bi bi-stack me-1"></i>Aplicar a todos:</span>');
+      out.push('<select class="form-select form-select-sm" id="' + selId + '">');
+      out.push('<option value="">Encaminhamento da visita…</option>');
+      statuses.forEach(function(s) { out.push('<option value="' + gomHtml_(s) + '">' + gomHtml_(s) + '</option>'); });
+      out.push('</select>');
+      out.push('<button type="button" class="btn btn-primary btn-sm fw-bold" onclick="gomAgrupAplicarTriagem_(\'' + gomJs_(grupoKey) + '\',\'' + gomJs_(contexto) + '\',this)">Aplicar</button>');
+    }
+    // Unificar: trata todos os chamados da unidade como um só (o mais antigo vira
+    // o principal; os demais viram "Unificado" e vão para o Memorial).
+    out.push('<button type="button" class="btn btn-outline-dark btn-sm fw-bold" onclick="gomUnificarChamadosGrupo_(\'' + gomJs_(grupoKey) + '\',this)" title="Unifica todos os chamados desta unidade em um único chamado principal"><i class="bi bi-collection me-1"></i>Unificar chamados</button>');
     out.push('</div>');
     return out.join('');
   }
+
+  window.gomUnificarChamadosGrupo_ = function(grupoKey, btn) {
+    var grupo = typeof window.gomAgrupGrupo === 'function' ? window.gomAgrupGrupo(grupoKey) : null;
+    var ids = (grupo && Array.isArray(grupo.ids)) ? grupo.ids.slice() : [];
+    if (ids.length < 2) { alert('A unidade precisa ter pelo menos 2 chamados agrupados para unificar.'); return; }
+    var nome = (grupo && grupo.escola) || 'a unidade';
+    if (!confirm('Unificar os ' + ids.length + ' chamados de "' + nome + '" em um único chamado?\n\nO mais antigo vira o chamado PRINCIPAL; os demais viram "Unificado", vinculados a ele, e vão para o Memorial.\n\nEsta ação NÃO pode ser desfeita.')) return;
+    if (typeof gomSetButtonLoading === 'function') gomSetButtonLoading(btn, 'Unificando...');
+    else if (btn) btn.disabled = true;
+    google.script.run
+      .withSuccessHandler(function(res) {
+        var r = (typeof res === 'string') ? (function(){ try { return JSON.parse(res); } catch (e) { return { ok:false, erro:'Resposta inválida do servidor.' }; } })() : (res || { ok:false });
+        if (!r.ok) {
+          if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(btn); else if (btn) btn.disabled = false;
+          alert('Não foi possível unificar: ' + (r.erro || 'erro desconhecido'));
+          return;
+        }
+        if (typeof gomMostrarSucessoBotao === 'function') gomMostrarSucessoBotao(btn, 'Unificado no #' + r.principal);
+        alert('Chamados unificados no chamado principal #' + r.principal + ' (' + r.unificados + ' absorvido' + (r.unificados === 1 ? '' : 's') + ').');
+        if (typeof refreshChamados === 'function') refreshChamados();
+      })
+      .withFailureHandler(function(err) {
+        if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(btn); else if (btn) btn.disabled = false;
+        if (typeof gomMostrarErroAcao === 'function') gomMostrarErroAcao(err, 'Não foi possível unificar os chamados.');
+        else alert((err && err.message) || err);
+      })
+      .gomUnificarChamadosV1Json({ ids: ids });
+  };
 
   window.gomAgrupAplicarTriagem_ = function(grupoKey, contexto, btn) {
     var grupo = typeof window.gomAgrupGrupo === 'function' ? window.gomAgrupGrupo(grupoKey) : null;
@@ -842,6 +874,9 @@
       var it = cfgs.find(function(c) { return c.chave === chave; });
       return (it && it.valor) ? String(it.valor) : (fb || '');
     }
+    // Interruptor mestre do disparo: com EMAIL_ENVIO_ATIVO=NÃO nada é enfileirado
+    // (descarta). Ao reativar, só novos eventos geram e-mail.
+    if (cfg('EMAIL_ENVIO_ATIVO', 'SIM').toUpperCase() !== 'SIM') return;
     if (cfg('EMAIL_VISITA_ATIVO', 'SIM').toUpperCase() !== 'SIM') return;
 
     var assuntoTpl = cfg('EMAIL_VISITA_ASSUNTO', 'Visita técnica agendada — {{escola}} em {{data_visita}}');

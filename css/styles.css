@@ -6705,6 +6705,16 @@ body.gom-area-secretaria .gom-secretaria-sidebar {
   display: flex;
 }
 
+/* Sidebar da Escola: aparece só na área da escola; some na área da secretaria.
+   Como o elemento compartilha a classe .gom-secretaria-sidebar (para herdar o
+   estilo), o controle de exibição é por ID (#gomEscolaSidebar), que vence as
+   regras !important da sidebar da secretaria. No mobile some, igual à dela. */
+body.gom-area-escola #gomEscolaSidebar { display: flex !important; }
+body.gom-area-secretaria #gomEscolaSidebar { display: none !important; }
+@media (max-width: 991.98px) {
+  body.gom-area-escola #gomEscolaSidebar { display: none !important; }
+}
+
 .gom-secretaria-sidebar {
   position: fixed;
   left: 0;
@@ -6813,7 +6823,8 @@ body.gom-area-secretaria .gom-secretaria-sidebar {
   filter: brightness(1.03);
 }
 
-body.gom-area-secretaria main.container-fluid {
+body.gom-area-secretaria main.container-fluid,
+body.gom-area-escola main.container-fluid {
   padding-left: 82px !important;
 }
 
@@ -6831,7 +6842,8 @@ body.gom-auth-gate .gom-secretaria-sidebar {
   .gom-secretaria-sidebar {
     display: none !important;
   }
-  body.gom-area-secretaria main.container-fluid {
+  body.gom-area-secretaria main.container-fluid,
+  body.gom-area-escola main.container-fluid {
     padding-left: 12px !important;
   }
 }
@@ -8191,7 +8203,10 @@ body.gom-modal-open { overflow: hidden; }
 
   body.gom-area-secretaria main.container-fluid,
   body.gom-area-secretaria .main-content,
-  body.gom-area-secretaria #main-content {
+  body.gom-area-secretaria #main-content,
+  body.gom-area-escola main.container-fluid,
+  body.gom-area-escola .main-content,
+  body.gom-area-escola #main-content {
     padding-left: 12px !important;
     margin-left: 0 !important;
   }

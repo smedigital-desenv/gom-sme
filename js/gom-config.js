@@ -116,7 +116,7 @@ var STATUS_EMPRESA_DIARIO = window.STATUS_EMPRESA_DIARIO = ['OS emitida', 'Atend
 var STATUS_EMPRESA_ORCAMENTO = window.STATUS_EMPRESA_ORCAMENTO = ['Solicitado Orçamento'];
 var STATUS_EMPRESA_GERENCIAL = window.STATUS_EMPRESA_GERENCIAL = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'];
 var STATUS_CAMPO = window.STATUS_CAMPO = ['Aguardando visita', 'Visita agendada', 'OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'];
-var STATUS_MEMORIAL = window.STATUS_MEMORIAL = ['Concluído', 'Encaminhado para outra gerência ou Unidade escolar.', 'A cargo da unidade escolar', 'Duplicado', 'Devolvido para a escola'];
+var STATUS_MEMORIAL = window.STATUS_MEMORIAL = ['Concluído', 'Encaminhado para outra gerência ou Unidade escolar.', 'A cargo da unidade escolar', 'Duplicado', 'Unificado', 'Devolvido para a escola'];
 
 var STATUS_TODOS = window.STATUS_TODOS = [
   'Em análise',
@@ -133,7 +133,8 @@ var STATUS_TODOS = window.STATUS_TODOS = [
   'Concluído',
   'Encaminhado para outra gerência ou Unidade escolar.',
   'A cargo da unidade escolar',
-  'Duplicado'
+  'Duplicado',
+  'Unificado'
 ];
 
 var configKPIs = window.configKPIs = [
@@ -151,7 +152,8 @@ var configKPIs = window.configKPIs = [
   { key: 'Concluído', title: 'Concluído', cor: 'var(--concluido)' },
   { key: 'Encaminhado para outra gerência ou Unidade escolar.', title: 'Encaminhado', cor: 'var(--encaminhado)' },
   { key: 'A cargo da unidade escolar', title: 'Cargo unidade', cor: 'var(--unidade)' },
-  { key: 'Duplicado', title: 'Duplicado', cor: 'var(--duplicado)' }
+  { key: 'Duplicado', title: 'Duplicado', cor: 'var(--duplicado)' },
+  { key: 'Unificado', title: 'Unificado', cor: 'var(--duplicado)' }
 ];
 
 var configObrasKPIs = window.configObrasKPIs = [
@@ -181,7 +183,8 @@ var CORES_STATUS = window.CORES_STATUS = {
   'Concluído': '#39FF14',
   'Encaminhado para outra gerência ou Unidade escolar.': '#6366f1',
   'A cargo da unidade escolar': '#84cc16',
-  'Duplicado': '#475569'
+  'Duplicado': '#475569',
+  'Unificado': '#475569'
 };
 
 var STATUS_OBRAS = window.STATUS_OBRAS = ['Aguardando','Em projeto','Em licitação','Em execução','Suspensa','Concluída','Arquivada'];

@@ -65,6 +65,8 @@
         // cada item é um payload de atualizarChamado
         return (async () => { let ok = 0; const erros = []; for (const it of lista) { try { await D.atualizarChamado(it); ok++; } catch (e) { erros.push({ id: it.id, erro: e.message }); } } return JSON.stringify({ ok: erros.length === 0, total: lista.length, sucessos: ok, erros }); })();
       }
+      case 'gomUnificarChamadosV1Json':
+      case 'unificarChamados': return D.unificarChamados(p);
       case 'salvarNovaSolicitacao': return D.criarSolicitacao(p);
       case 'salvarSolicitacaoEscola': return D.criarSolicitacaoEscola(p);
       case 'salvarEquipeDiaEmpresa': return D.salvarEquipeDiaEmpresa(p);

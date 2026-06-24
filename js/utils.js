@@ -57,7 +57,8 @@ function getClasseStatus(st) {
     'Concluído': 'st-concluido',
     'Encaminhado para outra gerência ou Unidade escolar.': 'st-encaminhado',
     'A cargo da unidade escolar': 'st-unidade',
-    'Duplicado': 'st-duplicado'
+    'Duplicado': 'st-duplicado',
+    'Unificado': 'st-duplicado'
   };
   return mapaClasses[status] || 'st-default';
 }
@@ -86,6 +87,7 @@ function getKpiIcon(key) {
     'Encaminhado para outra gerência ou Unidade escolar.': 'bi-send-fill',
     'A cargo da unidade escolar': 'bi-building-fill-gear',
     'Duplicado': 'bi-copy',
+    'Unificado': 'bi-collection',
     'Todas as obras': 'bi-buildings-fill',
     'Aguardando': 'bi-hourglass-split',
     'Em projeto': 'bi-pencil-square',
@@ -132,6 +134,7 @@ const KPI_DESCRICOES_GOM = {
   'Encaminhado para outra gerência ou Unidade escolar.': 'Chamados direcionados para outro setor ou unidade responsável.',
   'A cargo da unidade escolar': 'Chamados cuja solução ficou sob responsabilidade da unidade escolar.',
   'Duplicado': 'Chamados identificados como repetidos.',
+  'Unificado': 'Chamados unificados em um único chamado principal da unidade.',
   'Todas as obras': 'Total de obras, ampliações e intervenções estruturais cadastradas.',
   'Aguardando': 'Obras ainda sem avanço definido ou aguardando próxima ação.',
   'Em projeto': 'Obras em fase de projeto, estudo técnico ou definição inicial.',
@@ -412,34 +415,14 @@ function renderMiniaturasAnexosChamado(item, limite) {
   const anexos = coletarAnexosChamado(item);
   if (!anexos.length) return '';
 
-  limite = Number(limite || 4);
-  const visiveis = anexos.slice(0, limite);
-  const restantes = anexos.length - visiveis.length;
-
-  const thumbs = visiveis.map(function(anexo, idx) {
-    const imagem = isImagemAnexo(anexo);
-    const preview = getPreviewUrlAnexo(anexo, 420);
-    const nome = anexo.nome || ('Anexo ' + (idx + 1));
-    const grupo = anexo.grupo || 'Anexo';
-    const title = grupo + ': ' + nome + (imagem ? ' — clique para ampliar' : ' — clique para abrir');
-
-    if (imagem && preview) {
-      return '<button type="button" class="card-anexo-thumb is-image" title="' + escapeHtml(title) + '" aria-label="' + escapeHtml(title) + '" data-url="' + escapeHtml(anexo.url) + '" data-preview="' + escapeHtml(getPreviewUrlAnexo(anexo, 1200) || preview) + '" data-nome="' + escapeHtml(nome) + '" data-grupo="' + escapeHtml(grupo) + '" data-imagem="SIM" onclick="abrirPreviewAnexoCard(event,this)">' +
-        '<img class="card-anexo-thumb-img" src="' + escapeHtml(preview) + '" alt="' + escapeHtml(nome) + '" loading="lazy" onerror="this.closest(\'.card-anexo-thumb\').classList.add(\'sem-preview\')">' +
-        '<span class="card-anexo-thumb-fallback"><i class="bi bi-image"></i></span>' +
-        '<span class="card-anexo-thumb-badge">' + escapeHtml(grupo) + '</span>' +
-      '</button>';
-    }
-
-    return '<button type="button" class="card-anexo-thumb is-file" title="' + escapeHtml(title) + '" aria-label="' + escapeHtml(title) + '" data-url="' + escapeHtml(anexo.url) + '" data-nome="' + escapeHtml(nome) + '" data-grupo="' + escapeHtml(grupo) + '" data-imagem="NAO" onclick="abrirPreviewAnexoCard(event,this)">' +
-      '<span class="card-anexo-file-icon"><i class="bi ' + getIconeAnexoCard_(anexo) + '"></i></span>' +
-      '<span class="card-anexo-file-label">' + escapeHtml(resumirNomeAnexoCard_(nome)) + '</span>' +
-    '</button>';
-  }).join('');
-
-  return '<div class="card-anexos-preview" onclick="event.stopPropagation()">' +
-    '<div class="card-anexos-preview-head"><span><i class="bi bi-paperclip me-1"></i>Anexos</span><strong>' + anexos.length + '</strong></div>' +
-    '<div class="card-anexos-thumbs">' + thumbs + (restantes > 0 ? '<button type="button" class="card-anexo-thumb card-anexo-thumb-more" title="Abrir detalhes do chamado" onclick="event.stopPropagation(); abrirModalAnalise(\'' + escapeJsAttr(item && item.id) + '\')"><span>+' + restantes + '</span><small>mais</small></button>' : '') + '</div>' +
+  // Na lista/card mostramos APENAS a quantidade de anexos — sem renderizar a
+  // imagem (em formatos como .tif o navegador exibiria um quadro vazio em
+  // tamanho cheio). A pré-visualização que amplia ao clicar fica somente dentro
+  // dos detalhes do chamado (modal). Clicar no contador abre os detalhes.
+  const n = anexos.length;
+  const idJs = escapeJsAttr(item && item.id);
+  return '<div class="card-anexos-preview card-anexos-preview-contador" title="Abra os detalhes do chamado para ver os anexos" onclick="event.stopPropagation(); if (typeof abrirModalAnalise===\'function\') abrirModalAnalise(\'' + idJs + '\')" style="cursor:pointer;">' +
+    '<div class="card-anexos-preview-head"><span><i class="bi bi-paperclip me-1"></i>' + n + ' anexo' + (n === 1 ? '' : 's') + '</span></div>' +
   '</div>';
 }
 
@@ -611,7 +594,8 @@ function gomProximosStatusFluxo(status, contexto) {
     'Concluído': [],
     'Encaminhado para outra gerência ou Unidade escolar.': [],
     'A cargo da unidade escolar': [],
-    'Duplicado': []
+    'Duplicado': [],
+    'Unificado': []
   };
   let lista = mapa[st] || [];
 

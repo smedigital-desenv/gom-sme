@@ -415,6 +415,11 @@ function gomProcessarFilaEmail() {
     Logger.log('gomProcessarFilaEmail: SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY não configurados.');
     return;
   }
+  // Interruptor mestre: com EMAIL_ENVIO_ATIVO != SIM, não envia nada (envio suspenso).
+  if (String(_lerConfigEmail_(cfg, 'EMAIL_ENVIO_ATIVO', 'SIM')).trim().toUpperCase() !== 'SIM') {
+    Logger.log('gomProcessarFilaEmail: EMAIL_ENVIO_ATIVO != SIM — envio suspenso, nada enviado.');
+    return;
+  }
   ['email_fila', 'hml_email_fila'].forEach(function(tabela) {
     try { _processarUmaFila_(cfg, tabela); }
     catch (e) { Logger.log('gomProcessarFilaEmail: erro na tabela ' + tabela + ' — ' + e); }
@@ -479,9 +484,15 @@ function gomDispararAlertasSLA() {
   var conf = _lerConfigs_(cfg, [
     'SLA_ANALISE_DIAS','SLA_VISITA_DIAS','SLA_ORCAMENTO_DIAS',
     'SLA_APROVACAO_DIAS','SLA_FINALIZACAO_DIAS',
-    'EMAIL_SLA_ATIVO','EMAIL_SLA_ASSUNTO','EMAIL_SLA_CORPO',
+    'EMAIL_ENVIO_ATIVO','EMAIL_SLA_ATIVO','EMAIL_SLA_ASSUNTO','EMAIL_SLA_CORPO',
     'EMAIL_SLA_DESTINATARIOS','EMAIL_RESPONSAVEL_GOM'
   ]);
+
+  // Interruptor mestre: suspende também a geração dos alertas de SLA.
+  if (String(conf['EMAIL_ENVIO_ATIVO'] || 'SIM').toUpperCase() !== 'SIM') {
+    Logger.log('gomDispararAlertasSLA: EMAIL_ENVIO_ATIVO != SIM — envio suspenso, abortando.');
+    return;
+  }
 
   if (String(conf['EMAIL_SLA_ATIVO'] || 'SIM').toUpperCase() !== 'SIM') {
     Logger.log('gomDispararAlertasSLA: EMAIL_SLA_ATIVO = NÃO — abortando.');
