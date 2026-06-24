@@ -1021,9 +1021,20 @@ window.GomDados = (function () {
       await _log({ solicitacao_id: c.id, acao: 'Chamado unificado', status_anterior: M.normalizarStatus(c.situacao), status_novo: 'Unificado', observacao: 'Unificado no #' + principal.id });
     }
 
-    // Consolida no principal um resumo do que foi absorvido.
+    // Move os anexos dos absorvidos para o PRINCIPAL: assim todos passam a
+    // aparecer na prévia (dentro dos detalhes) do chamado unificado, junto com
+    // os anexos que já eram dele.
+    const idsAbsorvidos = absorvidos.map(function (c) { return c.id; });
+    if (idsAbsorvidos.length) {
+      try {
+        const ax = await window.SB.from('anexos').update({ solicitacao_id: principal.id }).in('solicitacao_id', idsAbsorvidos);
+        if (ax && ax.error) window.gomWarn && window.gomWarn('[GOM] unificar anexos:', ax.error.message);
+      } catch (e) { window.gomWarn && window.gomWarn('[GOM] unificar anexos:', (e && e.message) || e); }
+    }
+
+    // Consolida no principal a descrição completa do que foi absorvido.
     const resumo = absorvidos.map(function (c) {
-      const desc = String(c.detalhamento || '').replace(/\s+/g, ' ').trim().slice(0, 180);
+      const desc = String(c.detalhamento || '').replace(/\s+/g, ' ').trim();
       return '#' + c.id + (desc ? ' — ' + desc : '');
     }).join('\n');
     await _update(principal.id, {
