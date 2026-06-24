@@ -472,14 +472,6 @@ function abrirPreviewAnexoCard(event, elemento) {
     return false;
   }
 
-  // Se já houver um modal aberto (ex.: o do chamado), abre a imagem em NOVA ABA
-  // em vez de empilhar um segundo modal — evita a imagem aparecer por cima/atrás
-  // do chamado. O lightbox em modal só é usado fora de outro modal (ex.: cards).
-  if (document.querySelector('.modal.show')) {
-    window.open(url, '_blank', 'noopener');
-    return false;
-  }
-
   const modalId = 'modalPreviewAnexoCard';
   const existente = document.getElementById(modalId);
   if (existente) existente.remove();
