@@ -62,9 +62,6 @@
       <button id="btn-escola" class="btn-nav gom-top-escola" data-page="escola" onclick="loadPage('escola')">
         <i class="bi bi-building"></i><span>Minha Escola</span>
       </button>
-      <button id="btn-cadastro" class="btn-nav gom-top-cadastro" data-page="cadastro" onclick="loadPage('cadastro')">
-        <i class="bi bi-plus-circle"></i><span>Cadastro</span>
-      </button>
     </nav>
   </header>
 
@@ -116,7 +113,6 @@
         <button class="mobile-more-item" data-page="obras" onclick="loadPage('obras')"><i class="bi bi-buildings"></i><span>Obras</span></button>
         <button class="mobile-more-item" data-page="historico" onclick="loadPage('historico')"><i class="bi bi-archive"></i><span>Memorial</span></button>
         <button class="mobile-more-item" data-page="relatorios" onclick="loadPage('relatorios')"><i class="bi bi-bar-chart-line"></i><span>Relatórios</span></button>
-        <button class="mobile-more-item" data-page="cadastro" onclick="loadPage('cadastro')"><i class="bi bi-plus-circle"></i><span>Cadastro</span></button>
         <button class="mobile-more-item" data-page="equipes" onclick="loadPage('equipes')"><i class="bi bi-diagram-3"></i><span>Gerenciar Equipes</span></button>
         <button class="mobile-more-item" data-page="acompanhar" onclick="loadPage('acompanhar')"><i class="bi bi-search-heart"></i><span>Acompanhar</span></button>
         <button class="mobile-more-item" data-page="configuracoes" onclick="loadPage('configuracoes')"><i class="bi bi-sliders"></i><span>Configurações</span></button>
@@ -128,7 +124,6 @@
     <button class="mobile-nav-item active" data-page="dashboard" onclick="loadSecretariaHome()"><i class="bi bi-layout-sidebar-inset"></i><span>Secretaria</span></button>
     <button class="mobile-nav-item" data-page="empresa" onclick="loadPage('empresa')"><i class="bi bi-building-check"></i><span>Empresa</span></button>
     <button class="mobile-nav-item" data-page="escola" onclick="loadPage('escola')"><i class="bi bi-building"></i><span>Minha Escola</span></button>
-    <button class="mobile-nav-item" data-page="cadastro" onclick="loadPage('cadastro')"><i class="bi bi-plus-circle"></i><span>Cadastro</span></button>
     <button class="mobile-nav-item mobile-nav-more" data-page="mais" onclick="abrirMobileMais()"><i class="bi bi-grid-3x3-gap"></i><span>Mais</span></button>
   </nav>
 
@@ -220,6 +215,7 @@
       <p>Visão rápida para gestão acompanhar chamados novos, fila, orçamentos, OS, campo, pendências e produtividade do mês.</p>
     </div>
     <div class="dashboard-hero-actions">
+      <button class="btn btn-success fw-bold" onclick="loadPage('cadastro')"><i class="bi bi-plus-circle me-1"></i>Novo chamado</button>
       <button class="btn btn-light border fw-bold" onclick="refreshDashboard()"><i class="bi bi-arrow-clockwise me-1"></i>Atualizar</button>
       <button class="btn btn-primary fw-bold" onclick="loadPage('alertas')"><i class="bi bi-exclamation-diamond me-1"></i>Ver alertas</button>
     </div>

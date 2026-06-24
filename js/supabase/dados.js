@@ -996,7 +996,7 @@ window.GomDados = (function () {
     if (ids.length < 2) return JSON.stringify({ ok: false, erro: 'Selecione ao menos 2 chamados para unificar.' });
 
     const r = await window.SB.from('solicitacoes')
-      .select('id,data_abertura,situacao,detalhamento,observacoes,escola_id')
+      .select('id,data_abertura,situacao,detalhamento,observacoes,escola_id,tipo,origem,classificacao,numero_os,valor_orcamento,equipe_responsavel,data_prevista_conclusao')
       .in('id', ids);
     if (r.error) return JSON.stringify({ ok: false, erro: r.error.message });
     const rows = r.data || [];
@@ -1032,13 +1032,27 @@ window.GomDados = (function () {
       } catch (e) { window.gomWarn && window.gomWarn('[GOM] unificar anexos:', (e && e.message) || e); }
     }
 
-    // Consolida no principal a descrição completa do que foi absorvido.
+    // Consolida no principal TODAS as informações de cada chamado absorvido
+    // (situação anterior, tipo, origem, descrição, OS, valor, equipe, prazo e as
+    // observações já registradas), para não perder nada.
     const resumo = absorvidos.map(function (c) {
+      const linhas = ['• Chamado #' + c.id + (c.data_abertura ? ' (aberto em ' + String(c.data_abertura).slice(0, 10) + ')' : '')];
+      if (c.situacao) linhas.push('  Situação anterior: ' + c.situacao);
+      if (c.tipo) linhas.push('  Tipo: ' + c.tipo);
+      if (c.origem) linhas.push('  Origem: ' + c.origem);
+      if (c.classificacao) linhas.push('  Classificação: ' + c.classificacao);
       const desc = String(c.detalhamento || '').replace(/\s+/g, ' ').trim();
-      return '#' + c.id + (desc ? ' — ' + desc : '');
-    }).join('\n');
+      if (desc) linhas.push('  Descrição: ' + desc);
+      if (c.numero_os) linhas.push('  Nº OS: ' + c.numero_os);
+      if (c.valor_orcamento != null && c.valor_orcamento !== '') linhas.push('  Valor do orçamento: ' + c.valor_orcamento);
+      if (c.equipe_responsavel) linhas.push('  Equipe: ' + c.equipe_responsavel);
+      if (c.data_prevista_conclusao) linhas.push('  Previsão de conclusão: ' + String(c.data_prevista_conclusao).slice(0, 10));
+      const obs = String(c.observacoes || '').trim();
+      if (obs) linhas.push('  Observações:\n    ' + obs.replace(/\n/g, '\n    '));
+      return linhas.join('\n');
+    }).join('\n\n');
     await _update(principal.id, {
-      observacoes: M.appendObservacao(principal.observacoes, 'Absorveu ' + absorvidos.length + ' chamado(s) da unidade:\n' + resumo, 'Unificação'),
+      observacoes: M.appendObservacao(principal.observacoes, 'Absorveu ' + absorvidos.length + ' chamado(s) da unidade (anexos movidos para este chamado):\n\n' + resumo, 'Unificação'),
       data_hora_ultima_acao: _nowISO()
     });
     await _log({ solicitacao_id: principal.id, acao: 'Chamados unificados', status_anterior: M.normalizarStatus(principal.situacao), status_novo: M.normalizarStatus(principal.situacao), observacao: 'Absorveu ' + absorvidos.map(function (c) { return '#' + c.id; }).join(', ') });
