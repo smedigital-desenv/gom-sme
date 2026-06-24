@@ -987,6 +987,54 @@ window.GomDados = (function () {
     return JSON.stringify({ ok: true, id, status: 'Em análise' });
   }
 
+  // ── Unificar chamados de uma unidade: o mais antigo vira o principal e os
+  // demais viram "Unificado", vinculados a ele (chamado_principal_id). ──────────
+  async function unificarChamados(p) {
+    p = p || {};
+    let ids = Array.isArray(p.ids) ? p.ids.slice() : [];
+    ids = ids.filter(function (v, i, a) { return v != null && v !== '' && a.indexOf(v) === i; });
+    if (ids.length < 2) return JSON.stringify({ ok: false, erro: 'Selecione ao menos 2 chamados para unificar.' });
+
+    const r = await window.SB.from('solicitacoes')
+      .select('id,data_abertura,situacao,detalhamento,observacoes,escola_id')
+      .in('id', ids);
+    if (r.error) return JSON.stringify({ ok: false, erro: r.error.message });
+    const rows = r.data || [];
+    if (rows.length < 2) return JSON.stringify({ ok: false, erro: 'Chamados não encontrados para unificar.' });
+
+    // Principal = mais antigo (data_abertura; empate → menor id).
+    rows.sort(function (a, b) {
+      const da = String(a.data_abertura || ''), db = String(b.data_abertura || '');
+      if (da !== db) return da < db ? -1 : 1;
+      return Number(a.id) - Number(b.id);
+    });
+    const principal = rows[0];
+    const absorvidos = rows.slice(1);
+
+    for (const c of absorvidos) {
+      await _update(c.id, {
+        situacao: 'Unificado',
+        chamado_principal_id: principal.id,
+        observacoes: M.appendObservacao(c.observacoes, 'Unificado no chamado #' + principal.id + '.', 'Unificação'),
+        data_hora_ultima_acao: _nowISO()
+      });
+      await _log({ solicitacao_id: c.id, acao: 'Chamado unificado', status_anterior: M.normalizarStatus(c.situacao), status_novo: 'Unificado', observacao: 'Unificado no #' + principal.id });
+    }
+
+    // Consolida no principal um resumo do que foi absorvido.
+    const resumo = absorvidos.map(function (c) {
+      const desc = String(c.detalhamento || '').replace(/\s+/g, ' ').trim().slice(0, 180);
+      return '#' + c.id + (desc ? ' — ' + desc : '');
+    }).join('\n');
+    await _update(principal.id, {
+      observacoes: M.appendObservacao(principal.observacoes, 'Absorveu ' + absorvidos.length + ' chamado(s) da unidade:\n' + resumo, 'Unificação'),
+      data_hora_ultima_acao: _nowISO()
+    });
+    await _log({ solicitacao_id: principal.id, acao: 'Chamados unificados', status_anterior: M.normalizarStatus(principal.situacao), status_novo: M.normalizarStatus(principal.situacao), observacao: 'Absorveu ' + absorvidos.map(function (c) { return '#' + c.id; }).join(', ') });
+
+    return JSON.stringify({ ok: true, principal: principal.id, unificados: absorvidos.length });
+  }
+
   // ── Fila de e-mails: o frontend grava aqui; o GAS processa a cada 15min ──
   async function gravarFilaEmail(entrada) {
     // entrada: { tipo, para, cc, assunto, corpoHtml, dadosRef }
@@ -1019,6 +1067,6 @@ window.GomDados = (function () {
     salvarRespostaOrcamentoEmpresa, salvarServicoRealizadoEmpresa, aprovarOrcamento, salvarDecisaoAprovacao,
     atualizarPrevisaoOsEmpresa, finalizarOsEmpresa, salvarNovaEquipe,
     listarEquipesGerencial, salvarEquipeGerencial, salvarMembroEquipeGerencial, alterarStatusEquipeGerencial, alterarStatusMembroEquipeGerencial,
-    atualizarObra, salvarConfiguracoes, registrarComplementoEscola, gravarFilaEmail
+    atualizarObra, salvarConfiguracoes, registrarComplementoEscola, gravarFilaEmail, unificarChamados
   };
 })();

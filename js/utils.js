@@ -57,7 +57,8 @@ function getClasseStatus(st) {
     'Concluído': 'st-concluido',
     'Encaminhado para outra gerência ou Unidade escolar.': 'st-encaminhado',
     'A cargo da unidade escolar': 'st-unidade',
-    'Duplicado': 'st-duplicado'
+    'Duplicado': 'st-duplicado',
+    'Unificado': 'st-duplicado'
   };
   return mapaClasses[status] || 'st-default';
 }
@@ -86,6 +87,7 @@ function getKpiIcon(key) {
     'Encaminhado para outra gerência ou Unidade escolar.': 'bi-send-fill',
     'A cargo da unidade escolar': 'bi-building-fill-gear',
     'Duplicado': 'bi-copy',
+    'Unificado': 'bi-collection',
     'Todas as obras': 'bi-buildings-fill',
     'Aguardando': 'bi-hourglass-split',
     'Em projeto': 'bi-pencil-square',
@@ -132,6 +134,7 @@ const KPI_DESCRICOES_GOM = {
   'Encaminhado para outra gerência ou Unidade escolar.': 'Chamados direcionados para outro setor ou unidade responsável.',
   'A cargo da unidade escolar': 'Chamados cuja solução ficou sob responsabilidade da unidade escolar.',
   'Duplicado': 'Chamados identificados como repetidos.',
+  'Unificado': 'Chamados unificados em um único chamado principal da unidade.',
   'Todas as obras': 'Total de obras, ampliações e intervenções estruturais cadastradas.',
   'Aguardando': 'Obras ainda sem avanço definido ou aguardando próxima ação.',
   'Em projeto': 'Obras em fase de projeto, estudo técnico ou definição inicial.',
@@ -648,7 +651,8 @@ function gomProximosStatusFluxo(status, contexto) {
     'Concluído': [],
     'Encaminhado para outra gerência ou Unidade escolar.': [],
     'A cargo da unidade escolar': [],
-    'Duplicado': []
+    'Duplicado': [],
+    'Unificado': []
   };
   let lista = mapa[st] || [];
 

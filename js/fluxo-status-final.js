@@ -86,7 +86,8 @@
       'Concluído': [],
       'Encaminhado para outra gerência ou Unidade escolar.': [],
       'A cargo da unidade escolar': [],
-      'Duplicado': []
+      'Duplicado': [],
+      'Unificado': []
     };
     var lista = (mapa[st] || []).slice();
     if (contexto === 'empresa') {
