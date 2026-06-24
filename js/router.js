@@ -90,11 +90,16 @@ function atualizarNavegacaoAtiva(pageName) {
 }
 
 function atualizarAreaVisual(pageName) {
-  var ehSecretaria = paginaEhSecretariaGom(pageName);
+  // A tela da escola (e o cadastro no modo escola) usa a sidebar da ESCOLA;
+  // as demais telas operacionais usam a sidebar da Secretaria.
+  var modoEscola = (pageName === 'escola') || (pageName === 'cadastro' && window.__cadastroModo === 'escola');
+  var ehSecretaria = paginaEhSecretariaGom(pageName) && !modoEscola;
   document.body.classList.toggle('gom-area-secretaria', ehSecretaria);
+  document.body.classList.toggle('gom-area-escola', modoEscola);
   document.body.classList.toggle('gom-area-empresa', pageName === 'empresa');
   document.body.classList.toggle('gom-area-cadastro', pageName === 'cadastro');
   if (!ehSecretaria) fecharMenuSecretaria();
+  if (!modoEscola && typeof fecharMenuEscola === 'function') fecharMenuEscola();
 }
 
 function abrirMenuSecretaria(event) {
@@ -130,6 +135,35 @@ function loadSecretariaPage(pageName) {
   fecharMenuSecretaria();
 }
 
+// ── Menu lateral da Escola (espelha o da Secretaria) ────────────────────────
+function abrirMenuEscola(event) {
+  if (event && event.stopPropagation) event.stopPropagation();
+  const sidebar = document.getElementById('gomEscolaSidebar');
+  if (sidebar) { sidebar.classList.add('is-open'); document.body.classList.add('gom-secretaria-menu-open'); }
+}
+function fecharMenuEscola(event) {
+  if (event && event.target && event.currentTarget && event.target !== event.currentTarget) return;
+  const sidebar = document.getElementById('gomEscolaSidebar');
+  if (sidebar) sidebar.classList.remove('is-open');
+  document.body.classList.remove('gom-secretaria-menu-open');
+}
+function toggleMenuEscola(event) {
+  if (event && event.stopPropagation) event.stopPropagation();
+  const sidebar = document.getElementById('gomEscolaSidebar');
+  if (sidebar && sidebar.classList.contains('is-open')) fecharMenuEscola();
+  else abrirMenuEscola(event);
+}
+function loadEscolaPage(pageName) {
+  loadPage(pageName);
+  fecharMenuEscola();
+}
+document.addEventListener('click', function (event) {
+  const sidebar = document.getElementById('gomEscolaSidebar');
+  if (!sidebar || !sidebar.classList.contains('is-open')) return;
+  if (sidebar.contains(event.target)) return;
+  fecharMenuEscola();
+});
+
 document.addEventListener('click', function (event) {
   const sidebar = document.getElementById('gomSecretariaSidebar');
   if (!sidebar || !sidebar.classList.contains('is-open')) return;
@@ -161,6 +195,10 @@ window.fecharMenuSecretaria = fecharMenuSecretaria;
 window.toggleMenuSecretaria = toggleMenuSecretaria;
 window.loadSecretariaHome = loadSecretariaHome;
 window.loadSecretariaPage = loadSecretariaPage;
+window.abrirMenuEscola = abrirMenuEscola;
+window.fecharMenuEscola = fecharMenuEscola;
+window.toggleMenuEscola = toggleMenuEscola;
+window.loadEscolaPage = loadEscolaPage;
 window.abrirMobileMais = abrirMobileMais;
 window.fecharMobileMais = fecharMobileMais;
 

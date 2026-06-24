@@ -6705,6 +6705,16 @@ body.gom-area-secretaria .gom-secretaria-sidebar {
   display: flex;
 }
 
+/* Sidebar da Escola: aparece só na área da escola; some na área da secretaria.
+   Como o elemento compartilha a classe .gom-secretaria-sidebar (para herdar o
+   estilo), o controle de exibição é por ID (#gomEscolaSidebar), que vence as
+   regras !important da sidebar da secretaria. No mobile some, igual à dela. */
+body.gom-area-escola #gomEscolaSidebar { display: flex !important; }
+body.gom-area-secretaria #gomEscolaSidebar { display: none !important; }
+@media (max-width: 991.98px) {
+  body.gom-area-escola #gomEscolaSidebar { display: none !important; }
+}
+
 .gom-secretaria-sidebar {
   position: fixed;
   left: 0;

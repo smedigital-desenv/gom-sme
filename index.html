@@ -87,6 +87,17 @@
     </div>
   </aside>
 
+  <aside class="gom-secretaria-sidebar gom-escola-sidebar" id="gomEscolaSidebar" aria-label="Menu da escola" onmouseleave="fecharMenuEscola()">
+    <button type="button" class="gom-secretaria-hamb" onclick="toggleMenuEscola(event)" aria-label="Abrir menu da escola" title="Menu da escola">
+      <i class="bi bi-list gom-secretaria-hamb-icon" aria-hidden="true"></i>
+      <span class="gom-secretaria-label">Minha Escola</span>
+    </button>
+    <div class="gom-secretaria-sidebar-items">
+      <button type="button" class="gom-secretaria-iconbtn active" data-page="escola" onclick="loadEscolaPage('escola')" title="Minha Escola"><i class="bi bi-building"></i><span>Minha Escola</span></button>
+      <button type="button" class="gom-secretaria-iconbtn" onclick="fecharMenuEscola(); gomAbrirCadastroEscola_()" title="Abrir chamado — preenchimento da escola"><i class="bi bi-journal-plus"></i><span>Cadastro</span></button>
+    </div>
+  </aside>
+
   <header class="mobile-topbar">
     <div class="mobile-brand">
       <i class="bi bi-gear-wide-connected"></i>
@@ -926,7 +937,6 @@
     <div id="escolaSeletorWrap" class="mt-2"></div>
   </div>
   <div class="dashboard-hero-actions">
-    <button id="escolaBtnAbrir" class="btn btn-success fw-bold btn-lg" onclick="gomAbrirCadastroEscola_()"><i class="bi bi-plus-circle me-1"></i>Abrir chamado</button>
     <button class="btn btn-light border fw-bold" onclick="refreshEscolaDashboard()"><i class="bi bi-arrow-clockwise me-1"></i>Atualizar</button>
   </div>
 </div>
