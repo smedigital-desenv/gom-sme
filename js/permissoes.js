@@ -18,16 +18,16 @@ var GOM_PERFIS_ACESSO = window.GOM_PERFIS_ACESSO || {
   ADMIN_GOM: [
     'dashboard', 'triagem', 'fila', 'aprovacao', 'empresa', 'campo',
     'alertas', 'obras', 'historico', 'relatorios', 'cadastro', 'equipes',
-    'acompanhar', 'configuracoes'
+    'acompanhar', 'configuracoes', 'escola'
   ],
   SECRETARIA: [
     'dashboard', 'triagem', 'fila', 'aprovacao', 'empresa', 'campo',
-    'alertas', 'obras', 'historico', 'relatorios', 'cadastro', 'acompanhar'
+    'alertas', 'obras', 'historico', 'relatorios', 'cadastro', 'acompanhar', 'escola'
   ],
   // Compatibilidade: perfis antigos GOM são tratados como SECRETARIA.
   GOM: [
     'dashboard', 'triagem', 'fila', 'aprovacao', 'empresa', 'campo',
-    'alertas', 'obras', 'historico', 'relatorios', 'cadastro', 'acompanhar'
+    'alertas', 'obras', 'historico', 'relatorios', 'cadastro', 'acompanhar', 'escola'
   ],
   EMPRESA: [
     'empresa'
