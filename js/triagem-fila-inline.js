@@ -842,6 +842,9 @@
       var it = cfgs.find(function(c) { return c.chave === chave; });
       return (it && it.valor) ? String(it.valor) : (fb || '');
     }
+    // Interruptor mestre do disparo: com EMAIL_ENVIO_ATIVO=NÃO nada é enfileirado
+    // (descarta). Ao reativar, só novos eventos geram e-mail.
+    if (cfg('EMAIL_ENVIO_ATIVO', 'SIM').toUpperCase() !== 'SIM') return;
     if (cfg('EMAIL_VISITA_ATIVO', 'SIM').toUpperCase() !== 'SIM') return;
 
     var assuntoTpl = cfg('EMAIL_VISITA_ASSUNTO', 'Visita técnica agendada — {{escola}} em {{data_visita}}');

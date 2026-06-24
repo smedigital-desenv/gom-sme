@@ -51,7 +51,8 @@ window.GomDados = (function () {
     ['OS_PC_NUMERO','0290/2024','Ordem de Serviço','Número do PC usado na Ordem de Serviço.',true],
     ['OS_PREGAO_ELETRONICO','0157/2024','Ordem de Serviço','Número do Pregão Eletrônico usado na Ordem de Serviço.',true],
     ['OS_ATA_REGISTRO_PRECOS','177-01/2024','Ordem de Serviço','Ata de Registro de Preços usada na Ordem de Serviço.',true],
-    ['OS_PRAZO_EXECUCAO','45 DIAS','Ordem de Serviço','Prazo de execução padrão exibido na Ordem de Serviço.',true]
+    ['OS_PRAZO_EXECUCAO','45 DIAS','Ordem de Serviço','Prazo de execução padrão exibido na Ordem de Serviço.',true],
+    ['EMAIL_ENVIO_ATIVO','SIM','E-mail','Interruptor mestre do envio automático de e-mails (visitas às escolas e alertas de SLA). Com NÃO, nada é enfileirado nem enviado; ao reativar, só novos eventos geram e-mail.',true]
   ];
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
