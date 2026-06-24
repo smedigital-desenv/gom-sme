@@ -72,6 +72,7 @@
     </button>
     <div class="gom-secretaria-sidebar-items">
       <button type="button" class="gom-secretaria-iconbtn active" data-page="dashboard" onclick="loadSecretariaPage('dashboard')" title="Dashboard"><i class="bi bi-speedometer2"></i><span>Dashboard</span></button>
+      <button type="button" class="gom-secretaria-iconbtn" data-page="cadastro" onclick="window.__cadastroModo='interno'; loadSecretariaPage('cadastro')" title="Cadastro interno"><i class="bi bi-journal-plus"></i><span>Cadastro</span></button>
       <button type="button" class="gom-secretaria-iconbtn" data-page="triagem" onclick="loadSecretariaPage('triagem')" title="Triagem"><i class="bi bi-funnel"></i><span>Triagem</span></button>
       <button type="button" class="gom-secretaria-iconbtn" data-page="fila" onclick="loadSecretariaPage('fila')" title="Fila"><i class="bi bi-list-check"></i><span>Fila</span></button>
       <button type="button" class="gom-secretaria-iconbtn" data-page="aprovacao" onclick="loadSecretariaPage('aprovacao')" title="Aprovação"><i class="bi bi-clipboard2-check"></i><span>Aprovação</span></button>
@@ -215,7 +216,7 @@
       <p>Visão rápida para gestão acompanhar chamados novos, fila, orçamentos, OS, campo, pendências e produtividade do mês.</p>
     </div>
     <div class="dashboard-hero-actions">
-      <button class="btn btn-success fw-bold" onclick="loadPage('cadastro')"><i class="bi bi-plus-circle me-1"></i>Novo chamado</button>
+      <button class="btn btn-success fw-bold" onclick="window.__cadastroModo='interno'; loadPage('cadastro')"><i class="bi bi-plus-circle me-1"></i>Novo chamado</button>
       <button class="btn btn-light border fw-bold" onclick="refreshDashboard()"><i class="bi bi-arrow-clockwise me-1"></i>Atualizar</button>
       <button class="btn btn-primary fw-bold" onclick="loadPage('alertas')"><i class="bi bi-exclamation-diamond me-1"></i>Ver alertas</button>
     </div>
@@ -909,7 +910,7 @@
     <div id="escolaSeletorWrap" class="mt-2"></div>
   </div>
   <div class="dashboard-hero-actions">
-    <button id="escolaBtnAbrir" class="btn btn-primary fw-bold" onclick="loadPage('cadastro')"><i class="bi bi-plus-circle me-1"></i>Abrir chamado</button>
+    <button id="escolaBtnAbrir" class="btn btn-success fw-bold btn-lg" onclick="gomAbrirCadastroEscola_()"><i class="bi bi-plus-circle me-1"></i>Abrir chamado</button>
     <button class="btn btn-light border fw-bold" onclick="refreshEscolaDashboard()"><i class="bi bi-arrow-clockwise me-1"></i>Atualizar</button>
   </div>
 </div>

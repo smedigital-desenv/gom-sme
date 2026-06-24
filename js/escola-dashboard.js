@@ -70,7 +70,9 @@ function filtrarEscolaPara(bucket) {
 function gomMontarSeletorEscolaGestao_(mostrar) {
   var wrap = document.getElementById('escolaSeletorWrap');
   var btnAbrir = document.getElementById('escolaBtnAbrir');
-  if (btnAbrir) btnAbrir.style.display = mostrar ? 'none' : '';
+  // "Abrir chamado" sempre visível (escola e gestão). Para a gestão, exige uma
+  // escola selecionada no seletor (validado em gomAbrirCadastroEscola_).
+  if (btnAbrir) btnAbrir.style.display = '';
   if (!wrap) return;
   if (!mostrar) { wrap.innerHTML = ''; return; }
 
@@ -176,6 +178,22 @@ function inicializarEscolaDashboard() {
 function refreshEscolaDashboard() {
   inicializarEscolaDashboard();
 }
+
+// Abre o formulário DA ESCOLA (preenchimento da unidade), travado na unidade
+// certa: a escola logada usa a própria; a gestão usa a escola selecionada.
+window.gomAbrirCadastroEscola_ = function () {
+  var ehEscola = _escolaEhPerfilEscola_();
+  var alvo = ehEscola
+    ? ((window.GomAuth && window.GomAuth.escola) || null)
+    : (window.__escolaSelecionada || window.__escolaAlvoAtual || null);
+  if (!ehEscola && (!alvo || !alvo.nome)) {
+    alert('Selecione uma escola no seletor acima para abrir um chamado para ela.');
+    return;
+  }
+  window.__cadastroModo = 'escola';
+  window.__cadastroEscolaNome = (alvo && alvo.nome) ? alvo.nome : '';
+  if (typeof loadPage === 'function') loadPage('cadastro');
+};
 
 window.inicializarEscolaDashboard = inicializarEscolaDashboard;
 window.refreshEscolaDashboard = refreshEscolaDashboard;

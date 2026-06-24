@@ -12,7 +12,13 @@ function gomPerfilAtualCad_() {
 // na própria escola); a Secretaria/GOM vê só o cadastro interno. O seletor de
 // abas fica oculto — cada perfil enxerga um formulário só.
 function gomAjustarCadastroPorPerfil_() {
-  var ehEscola = gomPerfilAtualCad_() === 'ESCOLA';
+  // O formulário mostrado depende do PONTO DE ENTRADA (modo), não do perfil:
+  // "Abrir chamado" (Minha Escola) => formulário da escola; "Novo chamado"
+  // (Secretaria) => cadastro interno. Sem modo definido (ex.: rota restaurada),
+  // cai no padrão do perfil. O seletor de abas fica sempre oculto.
+  var modo = window.__cadastroModo || (gomPerfilAtualCad_() === 'ESCOLA' ? 'escola' : 'interno');
+  var ehFormEscola = (modo === 'escola');
+
   var tabs = document.getElementById('cadTabs');
   if (tabs) tabs.style.display = 'none';
 
@@ -22,21 +28,23 @@ function gomAjustarCadastroPorPerfil_() {
     el.classList.toggle('show', on);
     el.classList.toggle('active', on);
   }
-  mostrarPane(document.getElementById('cad-escola'), ehEscola);
-  mostrarPane(document.getElementById('cad-interno'), !ehEscola);
+  mostrarPane(document.getElementById('cad-escola'), ehFormEscola);
+  mostrarPane(document.getElementById('cad-interno'), !ehFormEscola);
 
   var titulo = document.querySelector('#main-content .page-title');
 
-  if (ehEscola) {
-    var esc = (window.GomAuth && window.GomAuth.escola) || null;
+  if (ehFormEscola) {
+    // Unidade travada: a escola logada usa a própria; a gestão usa a escola
+    // selecionada em "Minha Escola" (passada em __cadastroEscolaNome).
+    var nomeEscola = window.__cadastroEscolaNome
+      || ((window.GomAuth && window.GomAuth.escola && window.GomAuth.escola.nome) || '');
     var sel = document.getElementById('selectUnidadeEscola');
     if (sel) {
-      if (esc && esc.nome) {
-        sel.innerHTML = '<option value="' + escapeHtml(esc.nome) + '" selected>' + escapeHtml(esc.nome) + '</option>';
+      if (nomeEscola) {
+        sel.innerHTML = '<option value="' + escapeHtml(nomeEscola) + '" selected>' + escapeHtml(nomeEscola) + '</option>';
       } else {
-        sel.innerHTML = '<option value="">Unidade não vinculada — avise a Secretaria/GOM</option>';
+        sel.innerHTML = '<option value="">Unidade não definida</option>';
       }
-      // Trava a unidade na escola do usuário (a opção única já garante o valor).
       sel.style.pointerEvents = 'none';
       sel.style.background = '#f1f5f9';
       sel.setAttribute('aria-readonly', 'true');
@@ -44,12 +52,14 @@ function gomAjustarCadastroPorPerfil_() {
     if (titulo) {
       titulo.innerHTML = '<div class="d-flex align-items-center gap-2 flex-wrap">'
         + '<button type="button" class="btn btn-light border fw-bold btn-sm" onclick="loadPage(\'escola\')"><i class="bi bi-arrow-left me-1"></i>Voltar</button>'
-        + '<div><h4 class="mb-0"><i class="bi bi-journal-plus me-2"></i>Abrir chamado</h4>'
-        + '<p class="mb-0">Descreva o problema da sua unidade. A solicitação vai direto para a análise da GOM.</p></div></div>';
+        + '<div><h4 class="mb-0"><i class="bi bi-journal-plus me-2"></i>Abrir chamado' + (nomeEscola ? ' — ' + escapeHtml(nomeEscola) : '') + '</h4>'
+        + '<p class="mb-0">Descreva o problema da unidade. A solicitação vai direto para a análise da GOM.</p></div></div>';
     }
   } else if (titulo) {
-    titulo.innerHTML = '<div><h4><i class="bi bi-journal-plus me-2"></i>Cadastro interno</h4>'
-      + '<p>Registro de solicitações pela equipe GOM/Secretaria. Escolha a unidade e detalhe o chamado.</p></div>';
+    titulo.innerHTML = '<div class="d-flex align-items-center gap-2 flex-wrap">'
+      + '<button type="button" class="btn btn-light border fw-bold btn-sm" onclick="loadPage(\'dashboard\')"><i class="bi bi-arrow-left me-1"></i>Voltar</button>'
+      + '<div><h4 class="mb-0"><i class="bi bi-journal-plus me-2"></i>Cadastro interno</h4>'
+      + '<p class="mb-0">Registro de solicitações pela equipe GOM/Secretaria. Escolha a unidade e detalhe o chamado.</p></div></div>';
   }
 }
 function preencherSelectEscolas(id) {
@@ -116,9 +126,9 @@ async function enviarCadastroEscola(e) {
         if (typeof gomMostrarSucessoBotao === 'function') gomMostrarSucessoBotao(botao, 'Solicitação enviada');
         else if (botao) botao.disabled = false;
         alert('Solicitação enviada com ID #' + res.id);
-        // ESCOLA: volta para "Minha Escola" (recarrega só os chamados da unidade,
-        // sem disparar o carregamento geral de todos os chamados).
-        if (gomPerfilAtualCad_() === 'ESCOLA' && typeof loadPage === 'function') {
+        // Veio de "Minha Escola" (form da escola): volta para lá (recarrega só os
+        // chamados da unidade, sem o carregamento geral de todos os chamados).
+        if (window.__cadastroModo === 'escola' && typeof loadPage === 'function') {
           loadPage('escola');
         } else {
           refreshChamados();
