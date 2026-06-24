@@ -37,10 +37,21 @@ window.GomAnexos = (function () {
     return new Blob(chunks, { type: mime || 'application/octet-stream' });
   }
 
-  function _path(chamadoId, categoria, nome) {
+  function _path(chamadoId, categoria, nome, escolaNome, meta) {
     const dt = new Date();
     const stamp = dt.getFullYear() + String(dt.getMonth() + 1).padStart(2, '0') + String(dt.getDate()).padStart(2, '0') + '_' + String(dt.getHours()).padStart(2, '0') + String(dt.getMinutes()).padStart(2, '0') + String(dt.getSeconds()).padStart(2, '0') + '_' + Math.random().toString(36).slice(2, 8);
-    return [String(categoria || 'solicitacao'), 'chamado-' + String(chamadoId), stamp + '_' + _slug(nome)].join('/');
+    const arquivo = stamp + '_' + _slug(nome);
+    // Estrutura de arquivamento por unidade: <escola>/chamado-<id>/<local>/<tipo>/arquivo.
+    // Usada quando há local/tipo (formulário da escola). Caso contrário, mantém
+    // o caminho antigo <categoria>/chamado-<id>/arquivo (empresa, cadastro interno).
+    if (meta && (meta.local || meta.tipo)) {
+      const segs = [_slug(escolaNome || 'escola'), 'chamado-' + String(chamadoId)];
+      if (meta.local) segs.push(_slug(meta.local));
+      if (meta.tipo) segs.push(_slug(meta.tipo));
+      segs.push(arquivo);
+      return segs.join('/');
+    }
+    return [String(categoria || 'solicitacao'), 'chamado-' + String(chamadoId), arquivo].join('/');
   }
 
   async function _urlAssinada(path) {
@@ -53,7 +64,7 @@ window.GomAnexos = (function () {
     }
   }
 
-  async function upload(chamadoId, categoria, arquivos, escolaNome) {
+  async function upload(chamadoId, categoria, arquivos, escolaNome, meta) {
     const lista = Array.isArray(arquivos) ? arquivos.filter(a => a && a.base64) : [];
     if (!lista.length) return [];
     if (lista.length > LIMITE) throw new Error(`Limite de ${LIMITE} anexos por envio.`);
@@ -67,7 +78,7 @@ window.GomAnexos = (function () {
       if (tamanhoEstimado > MAX_MB * 1024 * 1024) throw new Error(`Arquivo ${nomeOriginal} excede ${MAX_MB} MB.`);
 
       const blob = _base64ToBlob(arq.base64, mime);
-      const storagePath = _path(chamadoId, categoria, nomeOriginal);
+      const storagePath = _path(chamadoId, categoria, nomeOriginal, escolaNome, meta);
 
       const up = await window.SB.storage.from(_bucket()).upload(storagePath, blob, {
         contentType: mime,
@@ -75,7 +86,7 @@ window.GomAnexos = (function () {
       });
       if (up.error) throw new Error('Falha ao salvar arquivo no Supabase Storage: ' + up.error.message);
 
-      const ins = await window.SB.from('anexos').insert({
+      const insObj = {
         solicitacao_id: chamadoId,
         categoria: categoria || 'solicitacao',
         nome: nomeOriginal,
@@ -85,7 +96,15 @@ window.GomAnexos = (function () {
         tamanho_bytes: blob.size || tamanhoEstimado,
         origem_storage: 'supabase',
         migracao_status: 'pendente'
-      }).select('id,solicitacao_id,categoria,nome,storage_path,url,migracao_status').single();
+      };
+      // local/tipo só quando informados (formulário da escola) — exigem as colunas
+      // criadas em sql/26. Uploads sem meta não referenciam as colunas novas.
+      if (meta && (meta.local || meta.tipo)) {
+        insObj.local = meta.local || null;
+        insObj.tipo = meta.tipo || null;
+      }
+      const ins = await window.SB.from('anexos').insert(insObj)
+        .select('id,solicitacao_id,categoria,nome,storage_path,url,migracao_status').single();
 
       if (ins.error) {
         // Se o metadado falhar, tenta remover o arquivo para não deixar órfão.

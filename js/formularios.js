@@ -55,6 +55,7 @@ function gomAjustarCadastroPorPerfil_() {
         + '<div><h4 class="mb-0"><i class="bi bi-journal-plus me-2"></i>Abrir chamado' + (nomeEscola ? ' — ' + escapeHtml(nomeEscola) : '') + '</h4>'
         + '<p class="mb-0">Descreva o problema da unidade. A solicitação vai direto para a análise da GOM.</p></div></div>';
     }
+    gomCadEscolaGarantirItem_(); // garante pelo menos um bloco de problema
   } else if (titulo) {
     titulo.innerHTML = '<div class="d-flex align-items-center gap-2 flex-wrap">'
       + '<button type="button" class="btn btn-light border fw-bold btn-sm" onclick="loadPage(\'dashboard\')"><i class="bi bi-arrow-left me-1"></i>Voltar</button>'
@@ -110,6 +111,50 @@ async function enviarFormularioInterno(e) {
     else alert(erro.message || erro);
   }
 }
+// Blocos de problema do formulário da escola ("+"): cada bloco vira um ITEM do
+// mesmo chamado, com seus próprios anexos (atrelados ao tipo/local do bloco).
+function gomCadEscolaAddItem() {
+  var cont = document.getElementById('cadEscolaItens');
+  var tpl = document.getElementById('tplCadEscolaItem');
+  if (!cont || !tpl) return;
+  if (tpl.content && tpl.content.firstElementChild) {
+    cont.appendChild(tpl.content.cloneNode(true));
+  } else {
+    var d = document.createElement('div'); d.innerHTML = tpl.innerHTML;
+    if (d.firstElementChild) cont.appendChild(d.firstElementChild);
+  }
+  gomCadEscolaRenumerar_();
+}
+
+function gomCadEscolaRemoveItem(btn) {
+  var item = btn && btn.closest ? btn.closest('.cad-escola-item') : null;
+  if (!item) return;
+  var cont = document.getElementById('cadEscolaItens');
+  if (cont && cont.querySelectorAll('.cad-escola-item').length <= 1) {
+    alert('É preciso ter pelo menos um problema no chamado.');
+    return;
+  }
+  item.parentNode.removeChild(item);
+  gomCadEscolaRenumerar_();
+}
+
+function gomCadEscolaRenumerar_() {
+  var itens = document.querySelectorAll('#cadEscolaItens .cad-escola-item');
+  Array.prototype.forEach.call(itens, function (it, i) {
+    var t = it.querySelector('.cad-escola-item-titulo');
+    if (t) t.textContent = 'Problema ' + (i + 1);
+    var rm = it.querySelector('.cad-escola-item-rm');
+    if (rm) rm.style.display = (itens.length > 1) ? '' : 'none';
+  });
+}
+
+function gomCadEscolaGarantirItem_() {
+  var cont = document.getElementById('cadEscolaItens');
+  if (!cont) return;
+  if (!cont.querySelector('.cad-escola-item')) gomCadEscolaAddItem();
+  else gomCadEscolaRenumerar_();
+}
+
 async function enviarCadastroEscola(e) {
   e.preventDefault();
   const form = e.target;
@@ -118,8 +163,31 @@ async function enviarCadastroEscola(e) {
   else if (botao) botao.disabled = true;
 
   try {
+    // Cabeçalho (unidade, telefone, responsável, cargo) + rodapé (afeta turma,
+    // risco, impacto, isolamento, observações) — todos têm name=.
     const payload = formToObject(form);
-    payload.anexos = await arquivosInputParaBase64(form.querySelector('[name="anexos"]'));
+    // Cada bloco de problema vira um item, com seus anexos.
+    const blocos = Array.prototype.slice.call(form.querySelectorAll('.cad-escola-item'));
+    const itens = [];
+    for (const bloco of blocos) {
+      const get = function (campo) { var el = bloco.querySelector('[data-campo="' + campo + '"]'); return el ? String(el.value || '').trim() : ''; };
+      const anexos = await arquivosInputParaBase64(bloco.querySelector('[data-campo="anexos"]'));
+      itens.push({
+        tipo_solicitacao: get('tipo_solicitacao'),
+        local_ocorrencia: get('local_ocorrencia'),
+        tempo_problema: get('tempo_problema'),
+        descricao: get('descricao'),
+        urgente: get('urgente'),
+        anexos: anexos
+      });
+    }
+    if (!itens.length || !itens.some(function (it) { return it.tipo_solicitacao || it.descricao; })) {
+      if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(botao); else if (botao) botao.disabled = false;
+      alert('Adicione ao menos um problema (tipo e descrição) antes de enviar.');
+      return;
+    }
+    payload.itens = itens;
+    delete payload.anexos;
     google.script.run
       .withSuccessHandler(res=>{
         form.reset();
@@ -154,6 +222,8 @@ window.inicializarTelaCadastro = window.inicializarTelaCadastro || inicializarTe
 window.enviarFormularioInterno = window.enviarFormularioInterno || enviarFormularioInterno;
 window.enviarFormulario = window.enviarFormulario || enviarFormularioInterno;
 window.enviarCadastroEscola = window.enviarCadastroEscola || enviarCadastroEscola;
+window.gomCadEscolaAddItem = window.gomCadEscolaAddItem || gomCadEscolaAddItem;
+window.gomCadEscolaRemoveItem = window.gomCadEscolaRemoveItem || gomCadEscolaRemoveItem;
 window.enviarSolicitacaoEscola = window.enviarSolicitacaoEscola || enviarCadastroEscola;
 window.setTipoEscola = window.setTipoEscola || setTipoEscola;
 window.setTipoEscolaWeb = window.setTipoEscola;

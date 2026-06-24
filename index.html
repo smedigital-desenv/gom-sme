@@ -768,33 +768,50 @@
 <div class="tab-content">
   <div class="tab-pane fade show active" id="cad-escola">
     <form class="form-card" id="formCadastroEscola" onsubmit="enviarCadastroEscola(event)">
+      <!-- Cabeçalho da unidade (preenchido uma vez) -->
       <div class="row g-3">
         <div class="col-md-8"><label class="form-label">Unidade escolar</label><select class="form-select" name="unidade" id="selectUnidadeEscola" required></select></div>
         <div class="col-md-4"><label class="form-label">Telefone / WhatsApp</label><input class="form-control" name="telefone" required></div>
         <div class="col-md-8"><label class="form-label">Nome do responsável pelo preenchimento</label><input class="form-control" name="nome_responsavel" required></div>
         <div class="col-md-4"><label class="form-label">Cargo/Função</label><select class="form-select" name="cargo" required><option>Diretor(a)</option><option>Vice-diretor(a)</option><option>Secretário(a) escolar</option><option>Coordenador(a)</option><option>Outro</option></select></div>
-        <div class="col-md-4"><label class="form-label">Tipo principal da solicitação</label><select class="form-select" name="tipo_solicitacao" required><option>Elétrica</option><option>Hidráulica</option><option>Telhado / cobertura</option><option>Estrutura / alvenaria</option><option>Pintura / acabamento</option><option>Esquadrias / portas / janelas</option><option>Banheiros / sanitários</option><option>Cozinha / refeitório</option><option>Acessibilidade</option><option>Segurança</option><option>Área externa</option><option>Outro</option></select></div>
-        <div class="col-md-4"><label class="form-label">Local da ocorrência</label><select class="form-select" name="local_ocorrencia" required><option>Sala de aula</option><option>Banheiro</option><option>Cozinha</option><option>Refeitório</option><option>Pátio</option><option>Cobertura / telhado</option><option>Área externa</option><option>Corredor</option><option>Secretaria</option><option>Muro / portão</option><option>Outro</option></select></div>
-        <div class="col-md-4"><label class="form-label">Há quanto tempo?</label><select class="form-select" name="tempo_problema" required><option>Hoje</option><option>Nos últimos 3 dias</option><option>Há cerca de 1 semana</option><option>Há mais de 1 semana</option><option>Há mais de 1 mês</option></select></div>
-        <div class="col-12"><label class="form-label">Descreva detalhadamente o problema</label><textarea class="form-control" name="descricao" rows="4" required></textarea></div>
-        <div class="col-md-4"><label class="form-label">Intervenção urgente?</label><select class="form-select" name="urgente"><option>Sim</option><option>Não</option></select></div>
-        <div class="col-md-4"><label class="form-label">Risco à segurança</label><select class="form-select" name="risco"><option>Sim, risco elevado</option><option>Sim, risco moderado</option><option>Não</option></select></div>
-        <div class="col-md-4"><label class="form-label">Impacto no funcionamento</label><select class="form-select" name="funcionamento"><option>Sim, totalmente</option><option>Sim, parcialmente</option><option>Não</option></select></div>
+      </div>
+
+      <!-- Problemas (blocos repetíveis com "+") -->
+      <hr class="my-4">
+      <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+        <h6 class="fw-bold mb-0"><i class="bi bi-list-check me-1"></i>Problemas a relatar</h6>
+        <button type="button" class="btn btn-success btn-sm fw-bold" onclick="gomCadEscolaAddItem()"><i class="bi bi-plus-lg me-1"></i>Adicionar problema</button>
+      </div>
+      <div id="cadEscolaItens"></div>
+
+      <!-- Informações gerais (preenchidas uma vez) -->
+      <hr class="my-4">
+      <div class="row g-3">
         <div class="col-md-6"><label class="form-label">Afeta turma/serviço essencial?</label><select class="form-select" name="afeta_turma"><option>Sim</option><option>Não</option></select></div>
+        <div class="col-md-6"><label class="form-label">Risco à segurança</label><select class="form-select" name="risco"><option>Sim, risco elevado</option><option>Sim, risco moderado</option><option>Não</option></select></div>
+        <div class="col-md-6"><label class="form-label">Impacto no funcionamento</label><select class="form-select" name="funcionamento"><option>Sim, totalmente</option><option>Sim, parcialmente</option><option>Não</option></select></div>
         <div class="col-md-6"><label class="form-label">Precisa isolamento imediato?</label><select class="form-select" name="isolamento"><option>Sim</option><option>Não</option></select></div>
-        <div class="col-md-6"><label class="form-label">Possui recursos da subvenção?</label><select class="form-select" name="recursos"><option>Sim</option><option>Não</option><option>Parcialmente</option><option>Não sei informar</option></select></div>
-        <div class="col-md-6"><label class="form-label">Poderia ser executada com recursos próprios?</label><select class="form-select" name="execucao_propria"><option>Sim</option><option>Não</option><option>Depende de avaliação técnica</option></select></div>
-        <div class="col-md-6"><label class="form-label">Prestador já avaliou?</label><select class="form-select" name="prestador_avaliou"><option>Sim</option><option>Não</option></select></div>
-        <div class="col-md-6"><label class="form-label">Foi elaborado orçamento?</label><select class="form-select" name="orcamento_elaborado"><option>Sim</option><option>Não</option></select></div>
-        <div class="col-md-4"><label class="form-label">Valor estimado</label><input class="form-control" name="valor_estimado"></div>
-        <div class="col-md-8"><label class="form-label">Nome do prestador/empresa</label><input class="form-control" name="prestador_nome"></div>
-        <div class="col-12"><label class="form-label">Observações sobre a avaliação</label><textarea class="form-control" name="observacoes_avaliacao" rows="2"></textarea></div>
-        <div class="col-md-8"><label class="form-label">Ambientes/serviços afetados</label><input class="form-control" name="ambientes_afetados" placeholder="Ex: sala de aula, banheiro, cobertura..."></div>
-        <div class="col-md-4"><label class="form-label">Quantidade afetada</label><select class="form-select" name="qtd_afetada"><option>1</option><option>2 a 3</option><option>4 ou mais</option><option>Não se aplica</option></select></div>
         <div class="col-12"><label class="form-label">Observações adicionais</label><textarea class="form-control" name="observacoes_adicionais" rows="3"></textarea></div>
-        <div class="col-12"><label class="form-label">Anexos da solicitação</label><input type="file" class="form-control" name="anexos" multiple></div>
         <div class="col-12 text-end"><button class="btn btn-primary px-5 fw-bold">ENVIAR SOLICITAÇÃO</button></div>
       </div>
+
+      <!-- Modelo de um bloco de problema -->
+      <template id="tplCadEscolaItem">
+        <div class="cad-escola-item border rounded p-3 mb-3" style="background:#f8fafc;">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <strong class="cad-escola-item-titulo">Problema</strong>
+            <button type="button" class="btn btn-outline-danger btn-sm cad-escola-item-rm" onclick="gomCadEscolaRemoveItem(this)" title="Remover este problema"><i class="bi bi-x-lg"></i></button>
+          </div>
+          <div class="row g-3">
+            <div class="col-md-4"><label class="form-label">Tipo principal da solicitação</label><select class="form-select" data-campo="tipo_solicitacao" required><option value="">Selecione…</option><option>Elétrica</option><option>Hidráulica</option><option>Telhado / cobertura</option><option>Estrutura / alvenaria</option><option>Pintura / acabamento</option><option>Esquadrias / portas / janelas</option><option>Banheiros / sanitários</option><option>Cozinha / refeitório</option><option>Acessibilidade</option><option>Segurança</option><option>Área externa</option><option>Outro</option></select></div>
+            <div class="col-md-4"><label class="form-label">Local da ocorrência</label><select class="form-select" data-campo="local_ocorrencia" required><option value="">Selecione…</option><option>Sala de aula</option><option>Banheiro</option><option>Cozinha</option><option>Refeitório</option><option>Pátio</option><option>Cobertura / telhado</option><option>Área externa</option><option>Corredor</option><option>Secretaria</option><option>Muro / portão</option><option>Outro</option></select></div>
+            <div class="col-md-4"><label class="form-label">Há quanto tempo?</label><select class="form-select" data-campo="tempo_problema" required><option value="">Selecione…</option><option>Hoje</option><option>Nos últimos 3 dias</option><option>Há cerca de 1 semana</option><option>Há mais de 1 semana</option><option>Há mais de 1 mês</option></select></div>
+            <div class="col-12"><label class="form-label">Descreva detalhadamente o problema</label><textarea class="form-control" data-campo="descricao" rows="3" required></textarea></div>
+            <div class="col-md-4"><label class="form-label">Intervenção urgente?</label><select class="form-select" data-campo="urgente"><option>Sim</option><option>Não</option></select></div>
+            <div class="col-md-8"><label class="form-label">Anexos deste problema</label><input type="file" class="form-control" data-campo="anexos" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"></div>
+          </div>
+        </div>
+      </template>
     </form>
   </div>
 

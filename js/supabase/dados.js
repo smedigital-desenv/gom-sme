@@ -681,18 +681,55 @@ window.GomDados = (function () {
 
   async function criarSolicitacaoEscola(p) {
     const esc = await _escolaIdPorNome(p.unidade);
-    const detalhe = [
-      ['Responsável', p.nome_responsavel], ['Cargo/Função', p.cargo], ['Telefone/WhatsApp', p.telefone],
-      ['Tipo principal', p.tipo_solicitacao], ['Local da ocorrência', p.local_ocorrencia], ['Descrição', p.descricao],
-      ['Urgente', p.urgente], ['Risco', p.risco], ['Observações adicionais', p.observacoes_adicionais]
-    ].filter(x => x[1]).map(x => `${x[0]}: ${x[1]}`).join('\n');
+
+    // Itens (blocos "+" do formulário). Compat: formato antigo (campos soltos) = 1 item.
+    let itens = Array.isArray(p.itens) ? p.itens : [];
+    if (!itens.length && (p.tipo_solicitacao || p.descricao)) {
+      itens = [{ tipo_solicitacao: p.tipo_solicitacao, local_ocorrencia: p.local_ocorrencia, tempo_problema: p.tempo_problema, descricao: p.descricao, urgente: p.urgente, anexos: p.anexos || [] }];
+    }
+
+    const linha = (rotulo, valor) => (valor != null && String(valor).trim() !== '') ? (rotulo + ': ' + String(valor).trim()) : '';
+    const partes = [];
+    [linha('Responsável', p.nome_responsavel), linha('Cargo/Função', p.cargo), linha('Telefone/WhatsApp', p.telefone)]
+      .filter(Boolean).forEach(l => partes.push(l));
+    itens.forEach((it, i) => {
+      const bloco = [
+        '— Problema ' + (i + 1) + (itens.length > 1 ? ' de ' + itens.length : '') + ' —',
+        linha('Tipo principal', it.tipo_solicitacao),
+        linha('Local da ocorrência', it.local_ocorrencia),
+        linha('Há quanto tempo', it.tempo_problema),
+        linha('Descrição', it.descricao),
+        linha('Intervenção urgente', it.urgente)
+      ].filter(Boolean).join('\n');
+      if (bloco) partes.push('\n' + bloco);
+    });
+    const rodape = [
+      linha('Afeta turma/serviço essencial', p.afeta_turma),
+      linha('Risco à segurança', p.risco),
+      linha('Impacto no funcionamento', p.funcionamento),
+      linha('Precisa isolamento imediato', p.isolamento),
+      linha('Observações adicionais', p.observacoes_adicionais)
+    ].filter(Boolean).join('\n');
+    if (rodape) partes.push('\n' + rodape);
+    const detalhe = partes.join('\n');
+
     const ins = await window.SB.from('solicitacoes').insert({
       data_abertura: _nowISO(), origem: 'Formulário Escola', escola_id: esc ? esc.id : null, tipo: esc ? esc.tipo : '',
       detalhamento: detalhe, situacao: 'Em análise', observacoes: M.appendObservacao('', p.observacoes_adicionais, 'Cadastro da escola'), data_hora_ultima_acao: _nowISO()
     }).select('id').single();
     if (ins.error) _err('Criar solicitação (escola)', ins.error);
     const id = ins.data.id;
-    if (Array.isArray(p.anexos) && p.anexos.length) await window.GomAnexos.upload(id, 'solicitacao', p.anexos);
+
+    // Anexos de cada item, atrelados ao LOCAL e TIPO do bloco (pasta de
+    // arquivamento: <escola>/chamado-<id>/<local>/<tipo>/arquivo).
+    const escNome = p.unidade || '';
+    for (const it of itens) {
+      if (Array.isArray(it.anexos) && it.anexos.length) {
+        try {
+          await window.GomAnexos.upload(id, 'solicitacao', it.anexos, escNome, { local: it.local_ocorrencia || '', tipo: it.tipo_solicitacao || '' });
+        } catch (e) { window.gomWarn && window.gomWarn('[GOM] anexos escola:', (e && e.message) || e); }
+      }
+    }
     await _log({ solicitacao_id: id, acao: 'Chamado criado pela escola', status_novo: 'Em análise', origem: 'cadastro escola' });
     return { ok: true, id };
   }
