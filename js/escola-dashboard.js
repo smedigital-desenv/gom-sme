@@ -92,18 +92,26 @@ window.gomSelecionarEscolaGestao = function (sel) {
   if (!sel) return;
   var id = sel.value;
   var nome = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].textContent : '';
-  if (!id) { window.__escolaSelecionada = null; return; }
-  window.__escolaSelecionada = { id: id, nome: nome };
+  // Sem escola escolhida (opção em branco): volta ao estado inicial.
+  if (!id && !nome) { window.__escolaSelecionada = null; var b0 = document.getElementById('acompanharResultado'); if (b0) carregarEscolaDashboard_(null); return; }
+  window.__escolaSelecionada = { id: (id || null), nome: nome };
   var titulo = document.getElementById('escolaDashTitulo');
   if (titulo) titulo.textContent = nome;
   carregarEscolaDashboard_(window.__escolaSelecionada);
 };
 
+function _escolaAlvoVazio_(alvo) {
+  if (!alvo) return true;
+  var temId = alvo.id != null && alvo.id !== '';
+  var temNome = !!(alvo.nome && String(alvo.nome).trim());
+  return !temId && !temNome;
+}
+
 function carregarEscolaDashboard_(alvo) {
   var box = document.getElementById('acompanharResultado');
   window.__escolaAlvoAtual = alvo || null;
 
-  if (!alvo || alvo.id == null || alvo.id === '') {
+  if (_escolaAlvoVazio_(alvo)) {
     renderEscolaKpis_([]);
     window.__escolaChamados = [];
     if (box) {
@@ -146,7 +154,9 @@ function carregarEscolaDashboard_(alvo) {
       if (box) box.innerHTML = '<div class="acompanhar-alerta erro"><i class="bi bi-exclamation-triangle"></i>'
         + '<div><strong>Não foi possível carregar</strong><span>' + _escolaEsc_((err && err.message) || String(err)) + '</span></div></div>';
     })
-    .gomConsultarProtocoloEscolaV1Json({ escolaId: alvo.id });
+    .gomConsultarProtocoloEscolaV1Json(
+      (alvo.id != null && alvo.id !== '') ? { escolaId: alvo.id } : { unidade: alvo.nome }
+    );
 }
 
 function inicializarEscolaDashboard() {

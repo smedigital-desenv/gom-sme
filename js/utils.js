@@ -472,6 +472,14 @@ function abrirPreviewAnexoCard(event, elemento) {
     return false;
   }
 
+  // Se já houver um modal aberto (ex.: o do chamado), abre a imagem em NOVA ABA
+  // em vez de empilhar um segundo modal — evita a imagem aparecer por cima/atrás
+  // do chamado. O lightbox em modal só é usado fora de outro modal (ex.: cards).
+  if (document.querySelector('.modal.show')) {
+    window.open(url, '_blank', 'noopener');
+    return false;
+  }
+
   const modalId = 'modalPreviewAnexoCard';
   const existente = document.getElementById(modalId);
   if (existente) existente.remove();
@@ -496,44 +504,7 @@ function abrirPreviewAnexoCard(event, elemento) {
 
   document.body.insertAdjacentHTML('beforeend', html);
   const modalEl = document.getElementById(modalId);
-  modalEl.addEventListener('hidden.bs.modal', function() {
-    modalEl.remove();
-    // Modais empilhados: ao fechar a pré-visualização, se o modal do chamado
-    // continua aberto, restaura o estado de "modal aberto" do body (o Bootstrap
-    // remove ao fechar qualquer modal), evitando travar a rolagem/fundo.
-    if (document.querySelector('.modal.show')) document.body.classList.add('modal-open');
-  });
-
-  // Empilhamento de z-index: se já houver um modal aberto (ex.: o do chamado),
-  // coloca a pré-visualização ACIMA dele e do seu backdrop — senão a imagem
-  // aparece "por trás" do chamado.
-  modalEl.addEventListener('show.bs.modal', function() {
-    var maiorZ = 1055;
-    document.querySelectorAll('.modal').forEach(function(m) {
-      if (m === modalEl) return;
-      var z = parseInt(window.getComputedStyle(m).zIndex, 10);
-      if (!isNaN(z)) maiorZ = Math.max(maiorZ, z);
-    });
-    var z = maiorZ + 20;
-    modalEl.style.zIndex = z;
-    setTimeout(function() {
-      var bds = document.querySelectorAll('.modal-backdrop');
-      var ultimo = bds[bds.length - 1];
-      if (ultimo) ultimo.style.zIndex = z - 10;
-    }, 0);
-  });
-
-  // Arquivos que o navegador não pré-visualiza (ex.: .tif): em vez de imagem
-  // quebrada, mostra um aviso com o link para abrir/baixar o original.
-  var imgEl = modalEl.querySelector('.gom-anexo-preview-img');
-  if (imgEl) imgEl.addEventListener('error', function() {
-    var corpo = modalEl.querySelector('.modal-body');
-    if (corpo) corpo.innerHTML = '<div class="p-4 text-muted text-center">'
-      + '<i class="bi bi-image-alt d-block mb-2" style="font-size:2.4rem;"></i>'
-      + 'Não foi possível pré-visualizar este arquivo aqui (formato não suportado pelo navegador).<br>'
-      + 'Use <strong>“Abrir arquivo original”</strong> abaixo para visualizar ou baixar.</div>';
-  });
-
+  modalEl.addEventListener('hidden.bs.modal', function() { modalEl.remove(); });
   if (window.bootstrap && bootstrap.Modal) new bootstrap.Modal(modalEl).show();
   else window.open(url, '_blank', 'noopener');
   return false;

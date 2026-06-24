@@ -292,11 +292,11 @@ window.GomDados = (function () {
 
   async function getDadosIniciais() {
     const [esc, eqSec, eqEmp] = await Promise.all([
-      window.SB.from('escolas').select('nome,tipo,endereco,telefone,email').order('nome'),
+      window.SB.from('escolas').select('id,nome,tipo,endereco,telefone,email').order('nome'),
       window.SB.from('equipes').select('nome').eq('tipo', 'secretaria').eq('ativo', true).order('nome'),
       window.SB.from('equipes').select('nome').eq('tipo', 'empresa').eq('ativo', true).order('nome')
     ]);
-    const escolas = (esc.data || []).map(e => ({ nome: e.nome, tipo: e.tipo || '', endereco: e.endereco || '', telefone: e.telefone || '', email: e.email || '' }));
+    const escolas = (esc.data || []).map(e => ({ id: e.id, nome: e.nome, tipo: e.tipo || '', endereco: e.endereco || '', telefone: e.telefone || '', email: e.email || '' }));
     const equipes = (eqSec.data || []).map(e => e.nome);
     const equipesEmpresa = (eqEmp.data || []).map(e => e.nome);
     return { escolas, equipes, equipesEmpresa, fluxo: M.getRegrasPublicas() };
