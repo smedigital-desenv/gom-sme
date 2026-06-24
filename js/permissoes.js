@@ -216,6 +216,17 @@ function aplicarPermissoesInterface() {
     else el.removeAttribute('aria-hidden');
   });
 
+  // A ESCOLA continua com a tela 'cadastro' acessível (para travar a unidade),
+  // mas o acesso é pelo botão "Abrir chamado" dentro de "Minha Escola": por isso
+  // escondemos os botões de Cadastro da navegação (topo, mobile e "Mais").
+  if (perfil === 'ESCOLA') {
+    document.querySelectorAll('[data-page="cadastro"]').forEach(function(el) {
+      el.classList.add('gom-permissao-oculto');
+      el.disabled = true;
+      el.setAttribute('aria-hidden', 'true');
+    });
+  }
+
   // Topo: EMPRESA deve ver apenas área da Empresa e sair.
   var topSecretaria = document.getElementById('btn-secretaria');
   if (topSecretaria) topSecretaria.classList.toggle('gom-permissao-oculto', restrito && telas.indexOf('dashboard') < 0 && perfil === 'EMPRESA');

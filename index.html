@@ -764,7 +764,7 @@
   </div>
 </div>
 
-<ul class="nav nav-pills mb-4 bg-white shadow-sm p-2 rounded-pill d-inline-flex" role="tablist">
+<ul class="nav nav-pills mb-4 bg-white shadow-sm p-2 rounded-pill d-inline-flex" role="tablist" id="cadTabs">
   <li class="nav-item"><button class="nav-link active rounded-pill px-4 fw-bold" data-bs-toggle="pill" data-bs-target="#cad-escola" type="button">Preenchimento da escola</button></li>
   <li class="nav-item"><button class="nav-link rounded-pill px-4 fw-bold" data-bs-toggle="pill" data-bs-target="#cad-interno" type="button">Cadastro interno</button></li>
 </ul>
@@ -912,6 +912,7 @@
     <p>Acompanhe aqui, em um só lugar, todos os chamados da sua unidade.</p>
   </div>
   <div class="dashboard-hero-actions">
+    <button class="btn btn-primary fw-bold" onclick="loadPage('cadastro')"><i class="bi bi-plus-circle me-1"></i>Abrir chamado</button>
     <button class="btn btn-light border fw-bold" onclick="refreshEscolaDashboard()"><i class="bi bi-arrow-clockwise me-1"></i>Atualizar</button>
   </div>
 </div>
