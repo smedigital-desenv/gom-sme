@@ -59,6 +59,9 @@
       <button id="btn-empresa" class="btn-nav gom-top-empresa" data-page="empresa" onclick="loadPage('empresa')">
         <i class="bi bi-building-check"></i><span>Empresa</span>
       </button>
+      <button id="btn-escola" class="btn-nav gom-top-escola" data-page="escola" onclick="loadPage('escola')">
+        <i class="bi bi-building"></i><span>Minha Escola</span>
+      </button>
       <button id="btn-cadastro" class="btn-nav gom-top-cadastro" data-page="cadastro" onclick="loadPage('cadastro')">
         <i class="bi bi-plus-circle"></i><span>Cadastro</span>
       </button>
@@ -124,6 +127,7 @@
   <nav class="mobile-bottom-nav" aria-label="Menu mobile">
     <button class="mobile-nav-item active" data-page="dashboard" onclick="loadSecretariaHome()"><i class="bi bi-layout-sidebar-inset"></i><span>Secretaria</span></button>
     <button class="mobile-nav-item" data-page="empresa" onclick="loadPage('empresa')"><i class="bi bi-building-check"></i><span>Empresa</span></button>
+    <button class="mobile-nav-item" data-page="escola" onclick="loadPage('escola')"><i class="bi bi-building"></i><span>Minha Escola</span></button>
     <button class="mobile-nav-item" data-page="cadastro" onclick="loadPage('cadastro')"><i class="bi bi-plus-circle"></i><span>Cadastro</span></button>
     <button class="mobile-nav-item mobile-nav-more" data-page="mais" onclick="abrirMobileMais()"><i class="bi bi-grid-3x3-gap"></i><span>Mais</span></button>
   </nav>
@@ -900,6 +904,31 @@
 <div id="acompanharResultado" class="acompanhar-resultado"></div>
   </template>
 
+  <template id="tpl-escola">
+<div class="dashboard-hero mb-3">
+  <div>
+    <span class="dashboard-eyebrow"><i class="bi bi-building me-1"></i>Painel da escola</span>
+    <h4 id="escolaDashTitulo">Minha Escola</h4>
+    <p>Acompanhe aqui, em um só lugar, todos os chamados da sua unidade.</p>
+  </div>
+  <div class="dashboard-hero-actions">
+    <button class="btn btn-light border fw-bold" onclick="refreshEscolaDashboard()"><i class="bi bi-arrow-clockwise me-1"></i>Atualizar</button>
+  </div>
+</div>
+
+<div id="escolaKpis" class="dashboard-kpi-grid"></div>
+
+<div class="dashboard-card mt-1">
+  <div class="dashboard-card-head">
+    <div>
+      <h5><i class="bi bi-list-check me-2"></i>Chamados da sua unidade</h5>
+      <p>Clique em um chamado para ver o andamento completo. Quando um chamado for devolvido para a escola, você poderá enviar o complemento por aqui.</p>
+    </div>
+  </div>
+  <div id="acompanharResultado" class="acompanhar-resultado"></div>
+</div>
+  </template>
+
   <template id="tpl-configuracoes">
 <div class="page-title configuracoes-head d-flex justify-content-between align-items-start gap-3 mb-3">
   <div>
@@ -1007,6 +1036,7 @@
   <script src="js/alertas.js"></script>
   <script src="js/relatorios.js"></script>
   <script src="js/acompanhar.js"></script>
+  <script src="js/escola-dashboard.js"></script>
   <script src="js/configuracoes-ui.js"></script>
   <script src="js/triagem-fila-inline.js"></script>
   <script src="js/fila-secretaria.js"></script>

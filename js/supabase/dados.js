@@ -490,12 +490,18 @@ window.GomDados = (function () {
     const id = String(p.id || '').trim();
     const unidade = String(p.unidade || '').trim();
     const email = String(p.email || '').trim();
+    // escolaId: caminho preciso usado pela tela da escola (identidade já resolvida
+    // no login). Filtra direto por escola_id, sem depender do nome da unidade.
+    const escolaId = (p.escolaId != null && p.escolaId !== '') ? p.escolaId
+      : ((p.escola_id != null && p.escola_id !== '') ? p.escola_id : '');
 
-    let query = window.SB.from('solicitacoes').select(SEL_CHAMADO).order('data_abertura', { ascending: false }).limit(50);
+    let query = window.SB.from('solicitacoes').select(SEL_CHAMADO).order('data_abertura', { ascending: false }).limit(300);
     let unidadeLabel = unidade;
 
     if (id) {
       query = query.eq('id', id).limit(1);
+    } else if (escolaId !== '') {
+      query = query.eq('escola_id', escolaId);
     } else if (unidade) {
       const esc = await _escolaIdPorNome(unidade);
       if (!esc) return JSON.stringify({ ok: false, erro: 'Unidade escolar não localizada.' });

@@ -12,7 +12,8 @@ const ROTULOS_PAGINAS_GOM = {
   cadastro: 'Cadastro',
   equipes: 'Gerenciar Equipes',
   acompanhar: 'Acompanhar',
-  configuracoes: 'Configurações'
+  configuracoes: 'Configurações',
+  escola: 'Minha Escola'
 };
 
 const PAGINAS_SECRETARIA_GOM = [
@@ -204,6 +205,11 @@ function loadPage(pageName, inicial=false) {
 
   if (pageName === 'acompanhar') {
     if (typeof inicializarAcompanhar === 'function') inicializarAcompanhar();
+    return;
+  }
+
+  if (pageName === 'escola') {
+    if (typeof inicializarEscolaDashboard === 'function') inicializarEscolaDashboard();
     return;
   }
 

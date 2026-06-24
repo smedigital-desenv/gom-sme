@@ -33,7 +33,7 @@ var GOM_PERFIS_ACESSO = window.GOM_PERFIS_ACESSO || {
     'empresa'
   ],
   ESCOLA: [
-    'acompanhar', 'cadastro'
+    'escola', 'cadastro'
   ]
 };
 
@@ -50,7 +50,7 @@ var GOM_PERFIS_INICIAL = window.GOM_PERFIS_INICIAL || {
   SECRETARIA: 'dashboard',
   GOM: 'dashboard',
   EMPRESA: 'empresa',
-  ESCOLA: 'acompanhar'
+  ESCOLA: 'escola'
 };
 
 var GOM_ROTAS_ALIAS = window.GOM_ROTAS_ALIAS || {
