@@ -69,6 +69,9 @@
     perfil: null,
     email: null,
     session: null,
+    // Escola vinculada ao usuário logado (perfil ESCOLA). { id, nome } ou null.
+    // Preenchida por _resolverEscolaDoUsuario_ a partir do e-mail (escolas.email).
+    escola: null,
     podeVerTela: function (tela) {
       return (TELAS[this.perfil] || []).indexOf(tela) >= 0;
     },
@@ -294,6 +297,32 @@
     });
   }
 
+  // Vincula o usuário logado à sua escola (perfil ESCOLA), casando o e-mail com
+  // escolas.email. Centraliza a resolução "e-mail → escola": hoje 1 e-mail por
+  // escola; se no futuro for preciso vários e-mails por unidade, basta mudar aqui
+  // (ou apontar para uma tabela de vínculo). Guarda em sessionStorage para
+  // resistir a timeouts. Em caso de falha, restaura do cache.
+  async function _resolverEscolaDoUsuario_(email) {
+    GomAuth.escola = null;
+    if (email) {
+      try {
+        var consulta = window.SB.from('escolas').select('id,nome,email').ilike('email', email).limit(1).maybeSingle();
+        var r = await _comTimeout(consulta, PERFIL_QUERY_TIMEOUT_MS, { gomTimeout: true });
+        if (r && !r.gomTimeout && r.data && r.data.id != null) {
+          GomAuth.escola = { id: r.data.id, nome: r.data.nome || '' };
+          try { sessionStorage.setItem('gomEscolaVinc', JSON.stringify(GomAuth.escola)); } catch (e) {}
+          return GomAuth.escola;
+        }
+      } catch (e) {}
+    }
+    // Falha/timeout: tenta restaurar do cache da sessão.
+    try {
+      var cache = JSON.parse(sessionStorage.getItem('gomEscolaVinc') || 'null');
+      if (cache && cache.id != null) { GomAuth.escola = cache; return cache; }
+    } catch (e) {}
+    return null;
+  }
+
   // Retorna o perfil do e-mail; ou null quando o e-mail NÃO está cadastrado/ativo
   // em public.perfis (acesso negado); ou '__INDET__' quando não foi possível
   // verificar a tempo (timeout/erro) e não há cache válido.
@@ -309,7 +338,7 @@
 
       var r = await _comTimeout(consulta, PERFIL_QUERY_TIMEOUT_MS, { gomTimeout: true });
       if (r && r.gomTimeout) {
-        if (cache) { GomAuth.perfil = cache; return cache; }
+        if (cache) { GomAuth.perfil = cache; if (cache === 'ESCOLA') await _resolverEscolaDoUsuario_(email); return cache; }
         GomAuth.perfil = null;
         return '__INDET__';
       }
@@ -317,6 +346,7 @@
       if (r && r.data && r.data.ativo) {
         GomAuth.perfil = _normalizarPerfilLogin(r.data.perfil);
         if (email) _salvarPerfilCache(email, GomAuth.perfil);
+        if (GomAuth.perfil === 'ESCOLA') await _resolverEscolaDoUsuario_(email);
         return GomAuth.perfil;
       }
 
@@ -325,7 +355,7 @@
       GomAuth.perfil = null;
       return null;
     } catch (e) {
-      if (cache) { GomAuth.perfil = cache; return cache; }
+      if (cache) { GomAuth.perfil = cache; if (cache === 'ESCOLA') await _resolverEscolaDoUsuario_(email); return cache; }
       GomAuth.perfil = null;
       return '__INDET__';
     }
@@ -337,9 +367,11 @@
     acessoFoiNegado = true;
     var emailNegado = email || GomAuth.email || '';
     try { sessionStorage.removeItem('gomPinPerfil'); } catch (e) {}
+    try { sessionStorage.removeItem('gomEscolaVinc'); } catch (e) {}
     GomAuth.perfil = null;
     GomAuth.session = null;
     GomAuth.email = null;
+    GomAuth.escola = null;
     if (email) { try { _limparPerfilCache(email); } catch (e) {} }
     try {
       if (window.SB && window.SB.auth) {
