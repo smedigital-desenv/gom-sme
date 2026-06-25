@@ -600,6 +600,13 @@ async function salvarStatusDoModal(botao) {
   const statusAtual = normalizarSituacaoSistema(chamadoAtual.situacao || chamadoAtual.status);
   const statusMudou = status && status !== statusAtual;
 
+  // "Devolvido para a escola": o MOTIVO (observação) é obrigatório — ele vai por
+  // e-mail à escola. Depois o chamado segue para o Memorial (status terminal).
+  if (statusMudou && normalizarSituacaoSistema(status) === 'Devolvido para a escola' && !String(obs || '').trim()) {
+    alert('Para devolver o chamado à escola, informe o MOTIVO da devolução no campo "Nova observação". Ele será enviado por e-mail à escola.');
+    return;
+  }
+
   // Só inclui situacao no payload se realmente mudou — evita transição indesejada
   const payload = { id: idChamadoAberto, observacoes: obs };
   if (statusMudou) payload.situacao = status;
