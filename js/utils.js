@@ -321,6 +321,61 @@ function gomMoedaFormatar(valor) {
 window.gomMoedaMascara = gomMoedaMascara;
 window.gomMoedaFormatar = gomMoedaFormatar;
 
+/* ── Anexos: ACUMULAR seleções num <input type=file multiple> ────────────────
+ * Por padrão, cada nova seleção SUBSTITUI a anterior. Com onchange="gomAnexoAcumular(this)"
+ * as seleções se SOMAM (via DataTransfer) e aparece uma lista com remover. Como
+ * mantemos input.files atualizado, os envios existentes (arquivosInputParaBase64)
+ * continuam funcionando sem mudança. Limite de 5 por anexo (igual ao backend).
+ */
+function gomAnexoAcumular(input) {
+  if (!input) return;
+  if (typeof DataTransfer === 'undefined') { gomAnexoRenderLista_(input); return; } // navegador antigo: comportamento nativo
+  if (!input.id) input.id = 'gomAnx_' + Math.random().toString(36).slice(2, 9);
+  var dt = input.__gomDT || (input.__gomDT = new DataTransfer());
+  var LIM = 5, estourou = false;
+  Array.prototype.forEach.call(input.files, function (f) {
+    var dup = Array.prototype.some.call(dt.files, function (x) { return x.name === f.name && x.size === f.size && x.lastModified === f.lastModified; });
+    if (dup) return;
+    if (dt.files.length >= LIM) { estourou = true; return; }
+    dt.items.add(f);
+  });
+  input.files = dt.files;
+  if (estourou) alert('Máximo de ' + LIM + ' arquivos por anexo. Os excedentes foram ignorados.');
+  gomAnexoRenderLista_(input);
+}
+function gomAnexoRemover(inputId, idx) {
+  var input = document.getElementById(inputId);
+  if (!input || !input.__gomDT || typeof DataTransfer === 'undefined') return;
+  var novo = new DataTransfer();
+  Array.prototype.forEach.call(input.__gomDT.files, function (f, i) { if (i !== idx) novo.items.add(f); });
+  input.__gomDT = novo;
+  input.files = novo.files;
+  gomAnexoRenderLista_(input);
+}
+function gomAnexoLimpar(input) {
+  if (typeof input === 'string') input = document.getElementById(input);
+  if (!input) return;
+  try { if (typeof DataTransfer !== 'undefined') { input.__gomDT = new DataTransfer(); input.files = input.__gomDT.files; } } catch (e) {}
+  try { input.value = ''; } catch (e) {}
+  if (input.__gomBox) input.__gomBox.innerHTML = '';
+}
+function gomAnexoRenderLista_(input) {
+  var box = input.__gomBox;
+  if (!box) { box = document.createElement('div'); box.className = 'gom-anexo-acum'; input.insertAdjacentElement('afterend', box); input.__gomBox = box; }
+  var files = input.files || [];
+  if (!files.length) { box.innerHTML = ''; return; }
+  var chips = '';
+  Array.prototype.forEach.call(files, function (f, i) {
+    chips += '<span class="gom-anexo-chip"><i class="bi bi-paperclip"></i> ' + escapeHtml(f.name)
+      + '<button type="button" class="gom-anexo-x" title="Remover" onclick="gomAnexoRemover(\'' + input.id + '\',' + i + ')">&times;</button></span>';
+  });
+  box.innerHTML = '<div class="gom-anexo-acum-head">' + files.length + ' arquivo(s) anexado(s) — escolha arquivos de novo para adicionar mais.</div>'
+    + '<div class="gom-anexo-chips">' + chips + '</div>';
+}
+window.gomAnexoAcumular = gomAnexoAcumular;
+window.gomAnexoRemover = gomAnexoRemover;
+window.gomAnexoLimpar = gomAnexoLimpar;
+
 function arquivosInputParaBase64(input) {
   const files = Array.from(input?.files || []);
   const limiteArquivos = 5;

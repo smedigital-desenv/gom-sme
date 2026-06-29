@@ -6705,6 +6705,15 @@ body.gom-area-secretaria .gom-secretaria-sidebar {
   display: flex;
 }
 
+/* Lista de anexos acumulados (uploader que soma seleções). */
+.gom-anexo-acum { margin-top: 6px; }
+.gom-anexo-acum-head { font-size: .72rem; color: #64748b; font-weight: 700; margin-bottom: 4px; }
+.gom-anexo-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.gom-anexo-chip { display: inline-flex; align-items: center; gap: 6px; background: #eef2ff; border: 1px solid #c7d2fe; color: #1e293b; border-radius: 999px; padding: 3px 6px 3px 10px; font-size: .76rem; font-weight: 600; max-width: 280px; overflow: hidden; }
+.gom-anexo-chip > i { color: #4f46e5; }
+.gom-anexo-x { border: 0; background: #c7d2fe; color: #1e293b; border-radius: 50%; width: 18px; height: 18px; line-height: 1; font-weight: 900; cursor: pointer; flex: 0 0 auto; }
+.gom-anexo-x:hover { background: #fca5a5; }
+
 /* Sidebar da Escola: aparece só na área da escola; some na área da secretaria.
    Como o elemento compartilha a classe .gom-secretaria-sidebar (para herdar o
    estilo), o controle de exibição é por ID (#gomEscolaSidebar), que vence as

@@ -72,6 +72,7 @@ function atualizarCamposModalAprovacao() {
 }
 
 function limparAnexosModalAtualizacao_() {
+  if (typeof gomAnexoLimpar === 'function') { gomAnexoLimpar('mdlAnexosAtualizacao'); return; }
   var input = document.getElementById('mdlAnexosAtualizacao');
   if (input) input.value = '';
 }
