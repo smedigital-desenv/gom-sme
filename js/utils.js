@@ -293,6 +293,34 @@ function formatarInputDate(valor) {
 }
 
 
+/* ── Máscara de moeda (BRL) baseada em centavos ──────────────────────────────
+ * Digitar "8535967" vira "R$ 85.359,67". Use oninput="gomMoedaMascara(this)".
+ * gomMoedaFormatar(n) formata um número/valor já em reais para exibição.
+ * O _num() da camada de dados desfaz a máscara corretamente ao salvar.
+ */
+function gomMoedaDeDigitos_(digitos) {
+  var d = String(digitos == null ? '' : digitos).replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+  if (!d) return '';
+  while (d.length < 3) d = '0' + d;
+  var cents = d.slice(-2);
+  var reais = d.slice(0, -2).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return 'R$ ' + reais + ',' + cents;
+}
+function gomMoedaMascara(input) {
+  if (!input) return;
+  input.value = gomMoedaDeDigitos_(input.value);
+}
+function gomMoedaFormatar(valor) {
+  if (valor === '' || valor === null || typeof valor === 'undefined') return '';
+  var n = (typeof valor === 'number')
+    ? valor
+    : parseFloat(String(valor).replace(/[^\d.,-]/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.'));
+  if (isNaN(n)) return '';
+  return gomMoedaDeDigitos_(String(Math.round(n * 100)));
+}
+window.gomMoedaMascara = gomMoedaMascara;
+window.gomMoedaFormatar = gomMoedaFormatar;
+
 function arquivosInputParaBase64(input) {
   const files = Array.from(input?.files || []);
   const limiteArquivos = 5;

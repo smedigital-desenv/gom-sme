@@ -1379,7 +1379,7 @@ function renderCardOrcamentoEmpresa(item) {
   var unidade = escapeHtml(item.unidade || 'Unidade não informada');
   var detalhe = escapeHtml(item.detalhamento || 'Sem detalhamento informado.');
   var obs = escapeHtml(item.observacoes || '');
-  var valor = escapeHtml(item.valorOrcamento || '');
+  var valor = escapeHtml(typeof gomMoedaFormatar === 'function' ? gomMoedaFormatar(item.valorOrcamento) : (item.valorOrcamento || ''));
   var dataPrevInput = escapeHtml(formatarInputDateEmpresa(item.dataPrevistaConclusao || item.dataPrevistaConclusaoRaw));
   var miniaturasAnexos = typeof renderMiniaturasAnexosChamado === 'function' ? renderMiniaturasAnexosChamado(item, 4) : '';
   return [
@@ -1389,7 +1389,7 @@ function renderCardOrcamentoEmpresa(item) {
       '<div class="card-detail">' + detalhe + '</div>',
       miniaturasAnexos,
       '<form onsubmit="enviarOrcamentoEmpresa(event,\'' + idJs + '\')" class="row g-2 mt-2 align-items-end">',
-        '<div class="col-md-4"><label class="form-label small fw-bold">Valor do orçamento</label><input class="form-control form-control-sm" name="valorOrcamento" value="' + valor + '" placeholder="R$ 0,00" required></div>',
+        '<div class="col-md-4"><label class="form-label small fw-bold">Valor do orçamento</label><input class="form-control form-control-sm" name="valorOrcamento" value="' + valor + '" placeholder="R$ 0,00" inputmode="numeric" oninput="gomMoedaMascara(this)" required></div>',
         '<div class="col-md-4"><label class="form-label small fw-bold">Previsão de conclusão</label><input class="form-control form-control-sm gom-date-br-input" type="date" name="dataPrevistaConclusao" value="' + dataPrevInput + '" onchange="gomNormalizarDataBrInput(this)"></div>',
         '<div class="col-md-4"><label class="form-label small fw-bold"><i class="bi bi-paperclip me-1"></i>Anexos do orçamento</label><input class="form-control form-control-sm" type="file" name="anexosOrcamento" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"></div>',
         '<div class="col-12"><label class="form-label small fw-bold">Observações da empresa <span class="text-muted fw-normal">(opcional)</span></label><textarea class="form-control form-control-sm" name="observacoes" rows="2">' + obs + '</textarea></div>',
@@ -1425,7 +1425,7 @@ function renderLinhaOrcamentoEmpresa(item) {
   var detalheCompleto = escapeHtml(item.detalhamento || 'Sem detalhamento informado.');
   var detalheCurto = escapeHtml(resumirTextoEmpresa(item.detalhamento || 'Sem detalhamento informado.', 135));
   var obs = escapeHtml(item.observacoes || '');
-  var valor = escapeHtml(item.valorOrcamento || '');
+  var valor = escapeHtml(typeof gomMoedaFormatar === 'function' ? gomMoedaFormatar(item.valorOrcamento) : (item.valorOrcamento || ''));
   var dataPrevInput = escapeHtml(formatarInputDateEmpresa(item.dataPrevistaConclusao || item.dataPrevistaConclusaoRaw));
   var cor = getCorStatus('Solicitado Orçamento');
   var miniaturasAnexos = typeof renderMiniaturasAnexosChamado === 'function' ? renderMiniaturasAnexosChamado(item, 3) : '';
@@ -1447,7 +1447,7 @@ function renderLinhaOrcamentoEmpresa(item) {
       '</div>',
       '<div class="empresa-os-info" data-label="Valor e previsão">',
         '<label class="empresa-field-label"><i class="bi bi-cash-coin me-1"></i>Valor do orçamento</label>',
-        '<input class="form-control form-control-sm fw-bold" name="valorOrcamento" form="' + formId + '" value="' + valor + '" placeholder="R$ 0,00" required>',
+        '<input class="form-control form-control-sm fw-bold" name="valorOrcamento" form="' + formId + '" value="' + valor + '" placeholder="R$ 0,00" inputmode="numeric" oninput="gomMoedaMascara(this)" required>',
         '<label class="empresa-field-label mt-2"><i class="bi bi-calendar-check me-1"></i>Previsão de conclusão</label>',
         '<input class="form-control form-control-sm gom-date-br-input" type="date" name="dataPrevistaConclusao" form="' + formId + '" value="' + dataPrevInput + '" onchange="gomNormalizarDataBrInput(this)">',
       '</div>',
@@ -1920,7 +1920,11 @@ async function enviarOrcamentoEmpresa(e, id) {
   if (payload.dataPrevistaConclusao && typeof gomDataParaISO === 'function') payload.dataPrevistaConclusao = gomDataParaISO(payload.dataPrevistaConclusao);
 
   try {
-    payload.anexosOrcamento = await arquivosInputParaBase64(form.querySelector('[name="anexosOrcamento"]'));
+    // O input de anexo do orçamento fica FORA do <form> (associado via form="id"),
+    // então form.querySelector não o encontra — use form.elements (que inclui os
+    // elementos associados pelo atributo form). Era por isso que o anexo do
+    // orçamento não estava sendo salvo.
+    payload.anexosOrcamento = await arquivosInputParaBase64((form.elements && form.elements['anexosOrcamento']) || form.querySelector('[name="anexosOrcamento"]'));
     google.script.run
       .withSuccessHandler(function() {
         if (typeof gomMostrarSucessoBotao === 'function') gomMostrarSucessoBotao(botao, 'Orçamento enviado');
