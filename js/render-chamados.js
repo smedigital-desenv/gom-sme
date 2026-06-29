@@ -949,7 +949,8 @@ function renderLinhaAprovacaoOrcamento(item) {
   const detalheCompleto = escapeHtml(item.detalhamento || 'Sem detalhamento informado.');
   const detalheCurto = escapeHtml(resumirTextoAprovacao(item.detalhamento || 'Sem detalhamento informado.', 180));
   const obsEmpresa = escapeHtml(item.observacoes || 'Sem observações registradas.');
-  const valor = escapeHtml(item.valorOrcamento || 'Valor não informado');
+  const valorFmt = (typeof gomMoedaFormatar === 'function') ? gomMoedaFormatar(item.valorOrcamento) : '';
+  const valor = escapeHtml(valorFmt || item.valorOrcamento || 'Valor não informado');
   const dataOrc = escapeHtml(item.dataHoraUltimaAcao || item.dataHora || item.data || '-');
   const dataPrevInput = escapeHtml(typeof formatarInputDate === 'function' ? formatarInputDate(item.dataPrevistaConclusaoRaw || item.dataPrevistaConclusao || '') : '');
   const formId = 'formAprovacao_' + id;

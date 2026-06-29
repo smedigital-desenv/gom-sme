@@ -598,6 +598,11 @@ function renderEmpresaView(listaRender) {
     try { sessionStorage.setItem('gom:empresaModoAtual', modo); localStorage.setItem('gom:empresaModoAtual', modo); } catch(e) {}
   }
   setTimeout(function() { gomEmpresaAtualizarVisibilidadeData_(); gomEmpresaPrePreencherDataHoje_(); gomEmpresaAplicarRestricaoModo_(); }, 0);
+  // No Gerencial OS e em Equipes a busca de topo (#pesquisa) é ignorada (a busca
+  // é feita pelo filtro próprio do gerencial). Esconde a toolbar de topo nesses
+  // modos para não exibir um campo de busca duplicado/inerte.
+  var toolbarBusca = document.getElementById('empresaToolbarBusca');
+  if (toolbarBusca) toolbarBusca.style.display = (modo === 'gerencial' || modo === 'equipes') ? 'none' : '';
   var listaBase = listaRender || [];
 
   if (modo === 'equipes') return renderGestaoEquipes({ origem: 'empresa' });
@@ -1823,8 +1828,14 @@ function valorCampoGerencial_(valor) {
 }
 
 function setEmpresaGerencialBusca(valor) {
+  // Guarda a posição do cursor e restaura o foco no campo após o re-render —
+  // senão o cursor "sai" do campo a cada letra digitada.
+  var el = (valor && valor.nodeType) ? valor : document.getElementById('empresaGerencialBusca');
+  var caret = (el && typeof el.selectionStart === 'number') ? el.selectionStart : null;
   window.empresaGerencialBusca = valorCampoGerencial_(valor);
   renderizarTela();
+  var novo = document.getElementById('empresaGerencialBusca');
+  if (novo) { try { novo.focus(); if (caret != null) novo.setSelectionRange(caret, caret); } catch (e) {} }
 }
 function setEmpresaGerencialStatus(valor) {
   window.empresaGerencialStatus = valorCampoGerencial_(valor) || 'Todos';

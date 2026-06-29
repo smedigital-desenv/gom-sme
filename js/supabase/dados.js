@@ -52,6 +52,7 @@ window.GomDados = (function () {
     ['OS_PREGAO_ELETRONICO','0157/2024','Ordem de Serviço','Número do Pregão Eletrônico usado na Ordem de Serviço.',true],
     ['OS_ATA_REGISTRO_PRECOS','177-01/2024','Ordem de Serviço','Ata de Registro de Preços usada na Ordem de Serviço.',true],
     ['OS_PRAZO_EXECUCAO','45 DIAS','Ordem de Serviço','Prazo de execução padrão exibido na Ordem de Serviço.',true],
+    ['OS_NUMERO_INICIAL','','Ordem de Serviço','Número mínimo para a geração automática de OS no ano (ex.: 229). Em branco, segue a partir do maior número já existente.',true],
     ['EMAIL_ENVIO_ATIVO','SIM','E-mail','Interruptor mestre do envio automático de e-mails (visitas às escolas e alertas de SLA). Com NÃO, nada é enfileirado nem enviado; ao reativar, só novos eventos geram e-mail.',true],
     ['EMAIL_DEVOLUCAO_ATIVO','SIM','E-mail','Envia um e-mail à escola quando um chamado é devolvido para a escola, com o motivo da devolução.',true],
     ['EMAIL_DEVOLUCAO_ASSUNTO','Chamado #{{numero}} devolvido — {{escola}}','E-mail','Assunto do e-mail de devolução à escola. Variáveis: {{numero}}, {{escola}}, {{motivo}}.',true],
@@ -795,7 +796,15 @@ window.GomDados = (function () {
         const m = String(row.numero_os || '').match(/^(\d+)\s*\/\s*(\d{4})$/);
         if (m && Number(m[2]) === ano) maior = Math.max(maior, Number(m[1]) || 0);
       });
-      return String(maior + 1) + '/' + ano;
+      // Piso configurável: a numeração nunca começa abaixo de OS_NUMERO_INICIAL.
+      let minimo = 0;
+      try {
+        const cfgs = (typeof window !== 'undefined' && window.configuracoesGlobal) || [];
+        const it = cfgs.find(c => c && c.chave === 'OS_NUMERO_INICIAL');
+        if (it) minimo = parseInt(String(it.valor || '').replace(/\D/g, ''), 10) || 0;
+      } catch (e) {}
+      const proximo = Math.max(maior + 1, minimo);
+      return String(proximo) + '/' + ano;
     } catch (e) {
       return '';
     }

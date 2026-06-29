@@ -434,6 +434,14 @@ function abrirModalAnalise(id) {
   limparAnexosModalAtualizacao_();
   const numeroOs = document.getElementById('mdlNumeroOs');
   if (numeroOs) numeroOs.value = c.numeroOs || '';
+  // Valor do orçamento aprovado — só aparece quando o chamado tem valor.
+  const valorOrcEl = document.getElementById('mdlValorOrcamento');
+  const valorOrcRow = document.getElementById('mdlValorOrcamentoRow');
+  if (valorOrcEl) {
+    var vOrc = (typeof gomMoedaFormatar === 'function') ? gomMoedaFormatar(c.valorOrcamento) : (c.valorOrcamento || '');
+    valorOrcEl.innerText = vOrc || '';
+    if (valorOrcRow) valorOrcRow.style.display = vOrc ? '' : 'none';
+  }
   const prev = document.getElementById('mdlDataPrevistaConclusao');
   if (prev) {
     const valorPrev = c.dataPrevistaConclusaoRaw || c.dataPrevistaConclusao || '';
