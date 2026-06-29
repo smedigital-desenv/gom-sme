@@ -133,6 +133,21 @@
     var d = new Date();
     return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
   }
+  // Quantidade de dias entre HOJE (data de início da OS) e a data prevista de
+  // conclusão do chamado. Retorna null se não houver data prevista válida.
+  function prazoDiasAteConclusao_(chamado) {
+    var ms = null;
+    if (chamado && chamado.dataPrevistaConclusaoRaw) ms = Number(chamado.dataPrevistaConclusaoRaw);
+    else if (chamado && chamado.data_prevista_conclusao) { var d1 = new Date(chamado.data_prevista_conclusao); if (!isNaN(d1.getTime())) ms = d1.getTime(); }
+    else if (chamado && chamado.dataPrevistaConclusao) {
+      var m = String(chamado.dataPrevistaConclusao).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (m) ms = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1])).getTime();
+    }
+    if (ms == null || isNaN(ms)) return null;
+    var fim = new Date(ms); fim.setHours(0, 0, 0, 0);
+    var ini = new Date(); ini.setHours(0, 0, 0, 0);
+    return Math.round((fim.getTime() - ini.getTime()) / 86400000);
+  }
   function extrairProcesso(origem) {
     var s = texto(origem);
     if (!s) return '';
@@ -267,7 +282,11 @@
     body += pxml(r('Processo Nº ' + (processo || '________________')), { after: 40 });
     body += pxml(r('PC Nº ' + (cfg.OS_PC_NUMERO || '________________') + '     Pregão Eletrônico Nº ' + (cfg.OS_PREGAO_ELETRONICO || '________________')), { after: 40 });
     body += pxml(r('Ata de Registro de Preços Nº ' + (cfg.OS_ATA_REGISTRO_PRECOS || '________________')), { after: 40 });
-    body += pxml(r('Prazo de execução: ' + (cfg.OS_PRAZO_EXECUCAO || '45 DIAS')), { after: 40 });
+    var diasPrazo = prazoDiasAteConclusao_(chamado);
+    var prazoTexto = (diasPrazo != null && diasPrazo > 0)
+      ? (diasPrazo + (diasPrazo === 1 ? ' DIA' : ' DIAS'))
+      : (cfg.OS_PRAZO_EXECUCAO || '45 DIAS');
+    body += pxml(r('Prazo de execução: ' + prazoTexto), { after: 40 });
     body += pxml(r('Data de início: ' + dataBRHoje_()), { after: 220 });
     body += pxml(r(dataAtualPorExtenso_()), { after: 300 });
     body += pxml(r('À ' + (cfg.OS_EMPRESA_NOME || CONFIG_PADRAO_OS.OS_EMPRESA_NOME), { bold: true }), { after: 40 });
