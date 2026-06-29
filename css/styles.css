@@ -2531,6 +2531,12 @@
 .empresa-gerencial-filtros-v7 .btn {
   white-space: nowrap;
 }
+/* Contador "X Resultados" do Gerencial OS: alinhado à direita, na linha dos botões. */
+.empresa-gerencial-contador {
+  justify-self: end;
+  align-self: center;
+  white-space: nowrap;
+}
 
 .empresa-gerencial-tabela-v7 {
   width: 100%;
