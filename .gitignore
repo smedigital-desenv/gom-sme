@@ -1,5 +1,0 @@
-# Arquivos temporários de teste/preview do Claude — NUNCA versionar.
-# Harnesses de verificação local (sempre nomeados _algo.html) e a config do
-# servidor de preview.
-_*.html
-.claude/launch.json
