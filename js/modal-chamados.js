@@ -450,7 +450,9 @@ function abrirModalAnalise(id) {
   atualizarBoxNumeroOsLegado_(c);
   // Botão "Salvar observação" — sempre visível quando não é aprovação
   const btnObs = document.getElementById('mdlBtnSalvarObs');
-  if (btnObs) btnObs.style.display = emAprovacaoModal ? 'none' : '';
+  // "Só atualizar" (observação + anexos, sem mudar o status) disponível em TODOS
+  // os fluxos — inclusive na aprovação (ex.: anexar fotos antes de emitir a OS).
+  if (btnObs) btnObs.style.display = '';
   if (typeof atualizarBotaoOrdemServicoModal === 'function') atualizarBotaoOrdemServicoModal(c);
   document.querySelectorAll('.modal-extra-aprovacao').forEach(el => { el.style.display = emAprovacaoModal ? '' : 'none'; });
   if (emAprovacaoModal) atualizarCamposModalAprovacao();
