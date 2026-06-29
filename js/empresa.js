@@ -1685,22 +1685,46 @@ function renderGerencialOsEmpresa(lista) {
       '</div>',
       '<div class="empresa-gerencial-tabela-v7">',
         '<div class="empresa-gerencial-lista' + (typeof window.gomAgrupAtivo === 'function' && window.gomAgrupAtivo('empresa-gerencial') ? ' gom-tf-lista-agrupada' : '') + '">',
-          '<div class="empresa-gerencial-head">',
-            '<div>Unidade / OS</div>',
-            '<div>Status e previsão</div>',
-            '<div>Datas e prazo</div>',
-            '<div>Equipe e histórico</div>',
-            '<div>Ações</div>',
-          '</div>',
-          listaFiltrada.length
-            ? (typeof window.gomAgrupRenderLista === 'function'
-                ? window.gomAgrupRenderLista(listaFiltrada, { tela: 'empresa-gerencial', chaveGrupo: gomEmpresaChaveEscola_, renderLinha: renderLinhaGerencialOsEmpresa })
-                : listaFiltrada.map(renderLinhaGerencialOsEmpresa).join(''))
-            : '<div class="empty-state"><h5>Nenhuma OS encontrada para os filtros atuais.</h5></div>',
+          gomGerencialListaInner_(listaFiltrada),
         '</div>',
       '</div>',
     '</div>'
   ].join('');
+}
+
+// Cabeçalho + linhas da lista do Gerencial OS. Extraído para permitir atualizar
+// SÓ a lista ao filtrar (sem recriar o campo de busca, igual à tela de Triagem).
+function gomGerencialListaInner_(listaFiltrada) {
+  listaFiltrada = listaFiltrada || [];
+  return [
+    '<div class="empresa-gerencial-head">',
+      '<div>Unidade / OS</div>',
+      '<div>Status e previsão</div>',
+      '<div>Datas e prazo</div>',
+      '<div>Equipe e histórico</div>',
+      '<div>Ações</div>',
+    '</div>',
+    listaFiltrada.length
+      ? (typeof window.gomAgrupRenderLista === 'function'
+          ? window.gomAgrupRenderLista(listaFiltrada, { tela: 'empresa-gerencial', chaveGrupo: gomEmpresaChaveEscola_, renderLinha: renderLinhaGerencialOsEmpresa })
+          : listaFiltrada.map(renderLinhaGerencialOsEmpresa).join(''))
+      : '<div class="empty-state"><h5>Nenhuma OS encontrada para os filtros atuais.</h5></div>'
+  ].join('');
+}
+
+// Reaplica os filtros do Gerencial OS atualizando APENAS a lista e o contador,
+// preservando o foco/cursor no campo de busca (mesmo comportamento da Triagem).
+function gomGerencialReaplicarFiltro_() {
+  var cont = document.querySelector('.empresa-gerencial-lista');
+  if (!cont) { renderizarTela(); return; }
+  var statusGerencial = gomEmpresaGerencialStatusPermitidos_();
+  var listaBase = (Array.isArray(window.listaChamadosGlobal) ? window.listaChamadosGlobal : []).filter(function(i) {
+    return statusGerencial.indexOf(normalizarSituacaoSistema(i.situacao || i.status)) !== -1;
+  });
+  var listaFiltrada = filtrarGerencialOsEmpresa(listaBase);
+  cont.innerHTML = gomGerencialListaInner_(listaFiltrada);
+  var badge = document.getElementById('empresaGerencialContador');
+  if (badge) badge.textContent = listaFiltrada.length + ' Resultados';
 }
 
 function montarOptionsGerencialEmpresa(opcoes, atual) {
@@ -1829,14 +1853,10 @@ function valorCampoGerencial_(valor) {
 }
 
 function setEmpresaGerencialBusca(valor) {
-  // Guarda a posição do cursor e restaura o foco no campo após o re-render —
-  // senão o cursor "sai" do campo a cada letra digitada.
-  var el = (valor && valor.nodeType) ? valor : document.getElementById('empresaGerencialBusca');
-  var caret = (el && typeof el.selectionStart === 'number') ? el.selectionStart : null;
+  // Igual à Triagem: ao digitar, atualiza SÓ a lista + o contador, sem recriar o
+  // campo de busca — assim o cursor não sai do input a cada letra.
   window.empresaGerencialBusca = valorCampoGerencial_(valor);
-  renderizarTela();
-  var novo = document.getElementById('empresaGerencialBusca');
-  if (novo) { try { novo.focus(); if (caret != null) novo.setSelectionRange(caret, caret); } catch (e) {} }
+  gomGerencialReaplicarFiltro_();
 }
 function setEmpresaGerencialStatus(valor) {
   window.empresaGerencialStatus = valorCampoGerencial_(valor) || 'Todos';
