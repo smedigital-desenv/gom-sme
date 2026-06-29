@@ -72,6 +72,7 @@ function atualizarCamposModalAprovacao() {
 }
 
 function limparAnexosModalAtualizacao_() {
+  if (typeof gomAnexoLimpar === 'function') { gomAnexoLimpar('mdlAnexosAtualizacao'); return; }
   var input = document.getElementById('mdlAnexosAtualizacao');
   if (input) input.value = '';
 }
@@ -450,7 +451,12 @@ function abrirModalAnalise(id) {
   atualizarBoxNumeroOsLegado_(c);
   // Botão "Salvar observação" — sempre visível quando não é aprovação
   const btnObs = document.getElementById('mdlBtnSalvarObs');
-  if (btnObs) btnObs.style.display = emAprovacaoModal ? 'none' : '';
+  // "Atualizar chamado" (observação + anexos, SEM mudar o status) só aparece na
+  // APROVAÇÃO — lá o botão principal exige uma decisão, então é preciso um jeito
+  // de só anexar/observar (ex.: fotos antes de emitir a OS). Nos demais fluxos o
+  // próprio "ATUALIZAR" já atualiza sem mudar o status (basta não trocar a
+  // situação), então o botão extra seria redundante (duplicado).
+  if (btnObs) btnObs.style.display = emAprovacaoModal ? '' : 'none';
   if (typeof atualizarBotaoOrdemServicoModal === 'function') atualizarBotaoOrdemServicoModal(c);
   document.querySelectorAll('.modal-extra-aprovacao').forEach(el => { el.style.display = emAprovacaoModal ? '' : 'none'; });
   if (emAprovacaoModal) atualizarCamposModalAprovacao();
@@ -599,6 +605,13 @@ async function salvarStatusDoModal(botao) {
   const chamadoAtual = (window.listaChamadosGlobal || []).find(function(x) { return String(x.id) === String(idChamadoAberto); }) || {};
   const statusAtual = normalizarSituacaoSistema(chamadoAtual.situacao || chamadoAtual.status);
   const statusMudou = status && status !== statusAtual;
+
+  // "Devolvido para a escola": o MOTIVO (observação) é obrigatório — ele vai por
+  // e-mail à escola. Depois o chamado segue para o Memorial (status terminal).
+  if (statusMudou && normalizarSituacaoSistema(status) === 'Devolvido para a escola' && !String(obs || '').trim()) {
+    alert('Para devolver o chamado à escola, informe o MOTIVO da devolução no campo "Nova observação". Ele será enviado por e-mail à escola.');
+    return;
+  }
 
   // Só inclui situacao no payload se realmente mudou — evita transição indesejada
   const payload = { id: idChamadoAberto, observacoes: obs };

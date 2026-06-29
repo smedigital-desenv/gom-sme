@@ -203,13 +203,13 @@
           <div class="col-12">
             <div class="modal-anexo-upload-box">
               <label class="modal-label text-primary" for="mdlAnexosAtualizacao"><i class="bi bi-paperclip me-1"></i>Adicionar anexos ao chamado</label>
-              <input class="form-control" type="file" id="mdlAnexosAtualizacao" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx">
+              <input class="form-control" type="file" id="mdlAnexosAtualizacao" onchange="gomAnexoAcumular(this)" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx">
               <small>Opcional: envie fotos, PDFs ou documentos para complementar esta atualização. Limite: até 5 arquivos de 8 MB cada.</small>
             </div>
           </div>
           <div class="col-12 text-end d-flex justify-content-end gap-2 flex-wrap">
             <button id="mdlBtnBaixarOS" class="btn btn-success fw-bold px-3" style="display:none;" onclick="baixarOrdemServicoChamadoModal(this)" title="Gera a Ordem de Serviço preenchida com os dados do chamado"><i class="bi bi-file-earmark-word me-1"></i>Baixar OS</button>
-            <button id="mdlBtnSalvarObs" class="btn btn-outline-primary fw-bold px-3" onclick="salvarApenasObservacao(this)" title="Salva a observação sem alterar o status do chamado"><i class="bi bi-chat-left-text me-1"></i>Salvar observação</button>
+            <button id="mdlBtnSalvarObs" class="btn btn-outline-primary fw-bold px-3" onclick="salvarApenasObservacao(this)" title="Salva observação e/ou anexos SEM alterar o status do chamado (apenas atualiza)"><i class="bi bi-arrow-repeat me-1"></i>Atualizar chamado</button>
             <button id="mdlBtnAtualizar" class="btn btn-primary fw-bold px-4" onclick="salvarStatusDoModal(this)">ATUALIZAR STATUS</button>
           </div>
         </div>
@@ -814,7 +814,7 @@
             <div class="col-md-4"><label class="form-label">Há quanto tempo?</label><select class="form-select" data-campo="tempo_problema" required><option value="">Selecione…</option><option>Hoje</option><option>Nos últimos 3 dias</option><option>Há cerca de 1 semana</option><option>Há mais de 1 semana</option><option>Há mais de 1 mês</option></select></div>
             <div class="col-12"><label class="form-label">Descreva detalhadamente o problema</label><textarea class="form-control" data-campo="descricao" rows="3" required></textarea></div>
             <div class="col-md-4"><label class="form-label">Intervenção urgente?</label><select class="form-select" data-campo="urgente"><option>Sim</option><option>Não</option></select></div>
-            <div class="col-md-8"><label class="form-label">Anexos deste problema</label><input type="file" class="form-control" data-campo="anexos" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"></div>
+            <div class="col-md-8"><label class="form-label">Anexos deste problema</label><input type="file" class="form-control" data-campo="anexos" onchange="gomAnexoAcumular(this)" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"></div>
           </div>
         </div>
       </template>
@@ -832,7 +832,7 @@
         <div class="col-md-3"><label class="form-label">Tipo</label><input type="text" class="form-control bg-light text-center fw-bold" name="tipo" id="inputTipo" readonly></div>
         <div class="col-12"><label class="form-label">Detalhamento</label><textarea class="form-control" name="detalhamento" rows="4" required></textarea></div>
         <div class="col-12"><label class="form-label">Observações</label><textarea class="form-control" name="observacoes" rows="2"></textarea></div>
-        <div class="col-12"><label class="form-label">Anexos da solicitação</label><input type="file" class="form-control" name="anexos" multiple></div>
+        <div class="col-12"><label class="form-label">Anexos da solicitação</label><input type="file" class="form-control" name="anexos" onchange="gomAnexoAcumular(this)" multiple></div>
         <div class="col-12 text-end mt-4"><button type="submit" class="btn btn-primary px-5 fw-bold shadow-sm">GRAVAR SOLICITAÇÃO</button></div>
       </div>
     </form>

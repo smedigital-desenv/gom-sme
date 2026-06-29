@@ -52,7 +52,10 @@ window.GomDados = (function () {
     ['OS_PREGAO_ELETRONICO','0157/2024','Ordem de Serviço','Número do Pregão Eletrônico usado na Ordem de Serviço.',true],
     ['OS_ATA_REGISTRO_PRECOS','177-01/2024','Ordem de Serviço','Ata de Registro de Preços usada na Ordem de Serviço.',true],
     ['OS_PRAZO_EXECUCAO','45 DIAS','Ordem de Serviço','Prazo de execução padrão exibido na Ordem de Serviço.',true],
-    ['EMAIL_ENVIO_ATIVO','SIM','E-mail','Interruptor mestre do envio automático de e-mails (visitas às escolas e alertas de SLA). Com NÃO, nada é enfileirado nem enviado; ao reativar, só novos eventos geram e-mail.',true]
+    ['EMAIL_ENVIO_ATIVO','SIM','E-mail','Interruptor mestre do envio automático de e-mails (visitas às escolas e alertas de SLA). Com NÃO, nada é enfileirado nem enviado; ao reativar, só novos eventos geram e-mail.',true],
+    ['EMAIL_DEVOLUCAO_ATIVO','SIM','E-mail','Envia um e-mail à escola quando um chamado é devolvido para a escola, com o motivo da devolução.',true],
+    ['EMAIL_DEVOLUCAO_ASSUNTO','Chamado #{{numero}} devolvido — {{escola}}','E-mail','Assunto do e-mail de devolução à escola. Variáveis: {{numero}}, {{escola}}, {{motivo}}.',true],
+    ['EMAIL_DEVOLUCAO_CORPO','<p>Prezados responsáveis da <strong>{{escola}}</strong>,</p><p>O chamado <strong>#{{numero}}</strong> foi <strong>devolvido para a escola</strong> pela GOM.</p><p><strong>Motivo da devolução:</strong><br>{{motivo}}</p><p>Atenciosamente,<br><strong>GOM · SME Ribeirão Preto</strong></p>','E-mail','Corpo do e-mail de devolução à escola. Variáveis: {{numero}}, {{escola}}, {{motivo}}.',true]
   ];
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -658,6 +661,11 @@ window.GomDados = (function () {
     }
 
     await _update(id, u);
+    // Devolvido para a escola: envia e-mail à escola com o MOTIVO da devolução.
+    // (O chamado já fica no Memorial, pois é um status terminal.)
+    if (stNovo === 'Devolvido para a escola' && mudou) {
+      try { await _enfileirarEmailDevolucao_(atual, p.observacoes); } catch (e) {}
+    }
     if (p.dataAgendamentoVisita) await _atendimento({ solicitacao_id: id, status: stNovo, numero_os: atual.numero_os || '', equipe: p.equipe || atual.equipe_responsavel || '', observacoes_dia: p.observacoes || '', data_atendimento: _date(p.dataAgendamentoVisita), tipo_registro: 'Agendamento de visita' });
     await _log({ solicitacao_id: id, acao: 'Chamado atualizado', status_anterior: mudou ? stAnt : '', status_novo: mudou ? stNovo : stAnt, observacao: p.observacoes || '', valor_orcamento: _num(p.valorOrcamento), equipe: p.equipe || '' });
     return { ok: true, id, status: stNovo };
@@ -1097,9 +1105,57 @@ window.GomDados = (function () {
     return JSON.stringify({ ok: true, principal: principal.id, unificados: absorvidos.length });
   }
 
+  // Monta e enfileira o e-mail de "Devolvido para a escola" com o motivo.
+  async function _enfileirarEmailDevolucao_(chamado, motivo) {
+    const esc = (chamado && chamado.escola) || {};
+    const para = String(esc.email || '').trim();
+    if (!para) return; // sem e-mail da escola cadastrado: não envia
+    const escNome = esc.nome || chamado.unidade_escolar || '';
+    const cfgs = (typeof window !== 'undefined' && window.configuracoesGlobal) || [];
+    const getCfg = function (ch, fb) {
+      const it = cfgs.find(function (c) { return c && c.chave === ch; });
+      return (it && it.valor) ? String(it.valor) : (fb || '');
+    };
+    // Toggle próprio do e-mail de devolução (além do interruptor mestre).
+    if (getCfg('EMAIL_DEVOLUCAO_ATIVO', 'SIM').toUpperCase() !== 'SIM') return;
+
+    const assuntoTpl = getCfg('EMAIL_DEVOLUCAO_ASSUNTO', 'Chamado #{{numero}} devolvido — {{escola}}');
+    const corpoTpl = getCfg('EMAIL_DEVOLUCAO_CORPO',
+      '<p>Prezados responsáveis da <strong>{{escola}}</strong>,</p>'
+      + '<p>O chamado <strong>#{{numero}}</strong> foi <strong>devolvido para a escola</strong> pela GOM.</p>'
+      + '<p><strong>Motivo da devolução:</strong><br>{{motivo}}</p>'
+      + '<p>Em caso de dúvidas, entre em contato com a Gerência de Obras e Manutenção.</p>'
+      + '<p>Atenciosamente,<br><strong>GOM · SME Ribeirão Preto</strong></p>');
+    const vars = {
+      '{{numero}}': String(chamado.id || ''),
+      '{{escola}}': escNome,
+      '{{motivo}}': String(motivo || '').trim() || '(motivo não informado)'
+    };
+    const apVar = function (t) {
+      let s = String(t || '');
+      Object.keys(vars).forEach(function (k) { s = s.split(k).join(vars[k]); });
+      return s;
+    };
+    await gravarFilaEmail({
+      tipo: 'devolucao_escola',
+      para: para,
+      assunto: apVar(assuntoTpl),
+      corpoHtml: apVar(corpoTpl),
+      dadosRef: { chamado_id: chamado.id, escola_id: chamado.escola_id }
+    });
+  }
+
   // ── Fila de e-mails: o frontend grava aqui; o GAS processa a cada 15min ──
   async function gravarFilaEmail(entrada) {
     // entrada: { tipo, para, cc, assunto, corpoHtml, dadosRef }
+    // Interruptor mestre: com EMAIL_ENVIO_ATIVO != SIM, NÃO enfileira (suspenso).
+    try {
+      const cfgsMaster = (typeof window !== 'undefined' && window.configuracoesGlobal) || [];
+      const itMaster = cfgsMaster.find(function (c) { return c && c.chave === 'EMAIL_ENVIO_ATIVO'; });
+      if (itMaster && String(itMaster.valor || 'SIM').trim().toUpperCase() !== 'SIM') {
+        return { ok: false, erro: 'Disparo de e-mail suspenso (EMAIL_ENVIO_ATIVO).', suspenso: true };
+      }
+    } catch (e) {}
     try {
       const row = {
         tipo:       String(entrada.tipo       || 'aviso'),

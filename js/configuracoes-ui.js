@@ -40,20 +40,24 @@
   // ── Chaves de template de e-mail (editor rico) ────────────────────────────
   const CONFIG_EMAIL_TEMPLATE_CORPO_KEYS = [
     'EMAIL_VISITA_CORPO',
-    'EMAIL_SLA_CORPO'
+    'EMAIL_SLA_CORPO',
+    'EMAIL_DEVOLUCAO_CORPO'
   ];
 
   const CONFIG_EMAIL_TEMPLATE_ASSUNTO_KEYS = [
     'EMAIL_VISITA_ASSUNTO',
-    'EMAIL_SLA_ASSUNTO'
+    'EMAIL_SLA_ASSUNTO',
+    'EMAIL_DEVOLUCAO_ASSUNTO'
   ];
 
   // Mapa de variáveis disponíveis por template de corpo
   const CONFIG_EMAIL_VARIAVEIS = {
-    'EMAIL_VISITA_CORPO':   ['{{escola}}','{{data_visita}}','{{equipe}}','{{lista_chamados}}','{{numero}}'],
-    'EMAIL_SLA_CORPO':      ['{{numero}}','{{escola}}','{{etapa}}','{{dias_atraso}}','{{status}}','{{link}}'],
-    'EMAIL_VISITA_ASSUNTO': ['{{escola}}','{{data_visita}}','{{equipe}}','{{numero}}'],
-    'EMAIL_SLA_ASSUNTO':    ['{{numero}}','{{escola}}','{{etapa}}','{{dias_atraso}}','{{status}}']
+    'EMAIL_VISITA_CORPO':      ['{{escola}}','{{data_visita}}','{{equipe}}','{{lista_chamados}}','{{numero}}'],
+    'EMAIL_SLA_CORPO':         ['{{numero}}','{{escola}}','{{etapa}}','{{dias_atraso}}','{{status}}','{{link}}'],
+    'EMAIL_DEVOLUCAO_CORPO':   ['{{numero}}','{{escola}}','{{motivo}}'],
+    'EMAIL_VISITA_ASSUNTO':    ['{{escola}}','{{data_visita}}','{{equipe}}','{{numero}}'],
+    'EMAIL_SLA_ASSUNTO':       ['{{numero}}','{{escola}}','{{etapa}}','{{dias_atraso}}','{{status}}'],
+    'EMAIL_DEVOLUCAO_ASSUNTO': ['{{numero}}','{{escola}}','{{motivo}}']
   };
 
   // ── Editor de e-mail em pop-up: agrupa assunto + destinatários + corpo ──────
