@@ -434,14 +434,19 @@ function abrirModalAnalise(id) {
   limparAnexosModalAtualizacao_();
   const numeroOs = document.getElementById('mdlNumeroOs');
   if (numeroOs) numeroOs.value = c.numeroOs || '';
-  // Valor do orçamento aprovado — só aparece quando o chamado tem valor.
-  const valorOrcEl = document.getElementById('mdlValorOrcamento');
+  // Valor do orçamento e previsão de conclusão — cada um só aparece quando há dado.
   const valorOrcRow = document.getElementById('mdlValorOrcamentoRow');
-  if (valorOrcEl) {
-    var vOrc = (typeof gomMoedaFormatar === 'function') ? gomMoedaFormatar(c.valorOrcamento) : (c.valorOrcamento || '');
-    valorOrcEl.innerText = vOrc || '';
-    if (valorOrcRow) valorOrcRow.style.display = vOrc ? '' : 'none';
-  }
+  const valorOrcEl = document.getElementById('mdlValorOrcamento');
+  const valorOrcCol = document.getElementById('mdlValorOrcamentoCol');
+  var vOrc = (typeof gomMoedaFormatar === 'function') ? gomMoedaFormatar(c.valorOrcamento) : (c.valorOrcamento || '');
+  if (valorOrcEl) valorOrcEl.innerText = vOrc || '';
+  if (valorOrcCol) valorOrcCol.style.display = vOrc ? '' : 'none';
+  const prevConclEl = document.getElementById('mdlPrevisaoConclusao');
+  const prevConclCol = document.getElementById('mdlPrevisaoCol');
+  var vPrev = c.dataPrevistaConclusao || '';
+  if (prevConclEl) prevConclEl.innerText = vPrev || '';
+  if (prevConclCol) prevConclCol.style.display = vPrev ? '' : 'none';
+  if (valorOrcRow) valorOrcRow.style.display = (vOrc || vPrev) ? '' : 'none';
   const prev = document.getElementById('mdlDataPrevistaConclusao');
   if (prev) {
     const valorPrev = c.dataPrevistaConclusaoRaw || c.dataPrevistaConclusao || '';
