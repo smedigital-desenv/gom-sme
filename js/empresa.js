@@ -598,6 +598,11 @@ function renderEmpresaView(listaRender) {
     try { sessionStorage.setItem('gom:empresaModoAtual', modo); localStorage.setItem('gom:empresaModoAtual', modo); } catch(e) {}
   }
   setTimeout(function() { gomEmpresaAtualizarVisibilidadeData_(); gomEmpresaPrePreencherDataHoje_(); gomEmpresaAplicarRestricaoModo_(); }, 0);
+  // No Gerencial OS e em Equipes a busca de topo (#pesquisa) é ignorada (a busca
+  // é feita pelo filtro próprio do gerencial). Esconde a toolbar de topo nesses
+  // modos para não exibir um campo de busca duplicado/inerte.
+  var toolbarBusca = document.getElementById('empresaToolbarBusca');
+  if (toolbarBusca) toolbarBusca.style.display = (modo === 'gerencial' || modo === 'equipes') ? 'none' : '';
   var listaBase = listaRender || [];
 
   if (modo === 'equipes') return renderGestaoEquipes({ origem: 'empresa' });
@@ -1670,12 +1675,13 @@ function renderGerencialOsEmpresa(lista) {
         resumo.vencidas > 0 ? '<div class="empresa-mini-kpi perigo"><span>Previsão vencida</span><strong>' + escapeHtml(resumo.vencidas) + '</strong><small>atendimentos fora do prazo</small></div>' : '',
       '</div>',
       '<div class="empresa-gerencial-filtros-v7">',
-        '<div class="input-group empresa-gerencial-busca"><span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span><input id="empresaGerencialBusca" type="text" class="form-control border-start-0" placeholder="Buscar unidade, OS, equipe ou descrição..." value="' + escapeHtml(buscaAtual) + '" oninput="setEmpresaGerencialBusca(this)"></div>',
+        '<div class="input-group empresa-gerencial-busca"><span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span><input id="empresaGerencialBusca" type="text" class="form-control border-start-0" placeholder="Buscar unidade, problema, OS, orçamento ou observação..." value="' + escapeHtml(buscaAtual) + '" oninput="setEmpresaGerencialBusca(this)"></div>',
         '<select class="form-select" id="empresaGerencialStatus" onchange="setEmpresaGerencialStatus(this)">' + montarOptionsGerencialEmpresa(['Todos','OS emitida','Atendimento Emergencial','Garantia de Obra'], window.empresaGerencialStatus || 'Todos') + '</select>',
         '<select class="form-select" id="empresaGerencialPrazo" onchange="setEmpresaGerencialPrazo(this)">' + montarOptionsGerencialEmpresa(['Todos','Vencidas','Sem previsão','No prazo'], window.empresaGerencialPrazo || 'Todos') + '</select>',
         (typeof window.gomAgrupBotaoHtml === 'function' ? window.gomAgrupBotaoHtml('empresa-gerencial') : ''),
         '<button type="button" class="btn btn-light border fw-bold" onclick="limparFiltrosGerencialEmpresa()"><i class="bi bi-x-circle me-1"></i>Limpar</button>',
         '<button type="button" class="btn btn-primary fw-bold" onclick="carregarGerencialOsEmpresaAtualizado_({forcar:true})"><i class="bi bi-arrow-clockwise me-1"></i>Atualizar</button>',
+        '<span class="badge bg-primary px-3 py-2 empresa-gerencial-contador" id="empresaGerencialContador">' + escapeHtml(listaFiltrada.length) + ' Resultados</span>',
       '</div>',
       '<div class="empresa-gerencial-tabela-v7">',
         '<div class="empresa-gerencial-lista' + (typeof window.gomAgrupAtivo === 'function' && window.gomAgrupAtivo('empresa-gerencial') ? ' gom-tf-lista-agrupada' : '') + '">',
@@ -1823,8 +1829,14 @@ function valorCampoGerencial_(valor) {
 }
 
 function setEmpresaGerencialBusca(valor) {
+  // Guarda a posição do cursor e restaura o foco no campo após o re-render —
+  // senão o cursor "sai" do campo a cada letra digitada.
+  var el = (valor && valor.nodeType) ? valor : document.getElementById('empresaGerencialBusca');
+  var caret = (el && typeof el.selectionStart === 'number') ? el.selectionStart : null;
   window.empresaGerencialBusca = valorCampoGerencial_(valor);
   renderizarTela();
+  var novo = document.getElementById('empresaGerencialBusca');
+  if (novo) { try { novo.focus(); if (caret != null) novo.setSelectionRange(caret, caret); } catch (e) {} }
 }
 function setEmpresaGerencialStatus(valor) {
   window.empresaGerencialStatus = valorCampoGerencial_(valor) || 'Todos';

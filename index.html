@@ -160,6 +160,9 @@
           <div class="col-md-4"><div class="modal-label">Abertura</div><div class="modal-data" id="mdlData"></div></div>
           <div class="col-md-4"><div class="modal-label"><i class="bi bi-clock-history me-1"></i>Última intervenção</div><div class="modal-data" id="mdlUltimaIntervencao"></div></div>
         </div>
+        <div class="row" id="mdlValorOrcamentoRow" style="display:none;">
+          <div class="col-md-4"><div class="modal-label"><i class="bi bi-cash-coin me-1"></i>Valor do orçamento</div><div class="modal-data fw-bold text-success" id="mdlValorOrcamento"></div></div>
+        </div>
         <div class="modal-label">Detalhamento</div>
         <div class="bg-white p-3 border rounded mb-3" id="mdlDetalhe" style="min-height:80px; white-space:pre-line;"></div>
         <div id="mdlAnexosBox"></div>
@@ -393,7 +396,7 @@
     <i class="bi bi-info-circle-fill"></i>
     <span>Em <strong>Execução diária</strong>, a empresa informa a equipe do dia. Em <strong>Orçamentos</strong>, devolve valor, observações e anexos. Em <strong>Gerencial OS</strong>, acompanha histórico e finaliza a OS. Em <strong>Agenda/Acompanhamento</strong>, visualiza apenas as responsabilidades da empresa.</span>
   </div>
-  <div class="gom-tela-toolbar p-3 bg-white rounded shadow-sm border-start border-4 border-info mb-3">
+  <div class="gom-tela-toolbar p-3 bg-white rounded shadow-sm border-start border-4 border-info mb-3" id="empresaToolbarBusca">
     <div class="d-flex align-items-center gap-3 flex-wrap flex-grow-1">
       <div class="input-group" style="max-width:440px;min-width:200px;">
         <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
