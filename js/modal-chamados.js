@@ -451,9 +451,12 @@ function abrirModalAnalise(id) {
   atualizarBoxNumeroOsLegado_(c);
   // Botão "Salvar observação" — sempre visível quando não é aprovação
   const btnObs = document.getElementById('mdlBtnSalvarObs');
-  // "Só atualizar" (observação + anexos, sem mudar o status) disponível em TODOS
-  // os fluxos — inclusive na aprovação (ex.: anexar fotos antes de emitir a OS).
-  if (btnObs) btnObs.style.display = '';
+  // "Atualizar chamado" (observação + anexos, SEM mudar o status) só aparece na
+  // APROVAÇÃO — lá o botão principal exige uma decisão, então é preciso um jeito
+  // de só anexar/observar (ex.: fotos antes de emitir a OS). Nos demais fluxos o
+  // próprio "ATUALIZAR" já atualiza sem mudar o status (basta não trocar a
+  // situação), então o botão extra seria redundante (duplicado).
+  if (btnObs) btnObs.style.display = emAprovacaoModal ? '' : 'none';
   if (typeof atualizarBotaoOrdemServicoModal === 'function') atualizarBotaoOrdemServicoModal(c);
   document.querySelectorAll('.modal-extra-aprovacao').forEach(el => { el.style.display = emAprovacaoModal ? '' : 'none'; });
   if (emAprovacaoModal) atualizarCamposModalAprovacao();
