@@ -1157,11 +1157,23 @@ window.GomDados = (function () {
   // ── Fila de e-mails: o frontend grava aqui; o GAS processa a cada 15min ──
   async function gravarFilaEmail(entrada) {
     // entrada: { tipo, para, cc, assunto, corpoHtml, dadosRef }
-    // Interruptor mestre: com EMAIL_ENVIO_ATIVO != SIM, NÃO enfileira (suspenso).
+    // Interruptor mestre (AUTORITATIVO): consulta o banco, pois window.configuracoesGlobal
+    // pode não estar carregado fora da tela de Configurações (numa sessão que não abriu
+    // Configurações o cache fica vazio e o e-mail "escaparia"). Com EMAIL_ENVIO_ATIVO != SIM,
+    // NÃO enfileira (suspenso).
     try {
-      const cfgsMaster = (typeof window !== 'undefined' && window.configuracoesGlobal) || [];
-      const itMaster = cfgsMaster.find(function (c) { return c && c.chave === 'EMAIL_ENVIO_ATIVO'; });
-      if (itMaster && String(itMaster.valor || 'SIM').trim().toUpperCase() !== 'SIM') {
+      let valorMaster = null;
+      try {
+        const rCfg = await window.SB.from('configuracoes').select('valor').eq('chave', 'EMAIL_ENVIO_ATIVO').maybeSingle();
+        if (!rCfg.error && rCfg.data) valorMaster = rCfg.data.valor;
+      } catch (e) {}
+      if (valorMaster == null) {
+        // Fallback para o cache em memória, caso o banco não responda (ex.: leitura sem permissão).
+        const cfgsMaster = (typeof window !== 'undefined' && window.configuracoesGlobal) || [];
+        const itMaster = cfgsMaster.find(function (c) { return c && c.chave === 'EMAIL_ENVIO_ATIVO'; });
+        if (itMaster) valorMaster = itMaster.valor;
+      }
+      if (valorMaster != null && String(valorMaster).trim().toUpperCase() !== 'SIM') {
         return { ok: false, erro: 'Disparo de e-mail suspenso (EMAIL_ENVIO_ATIVO).', suspenso: true };
       }
     } catch (e) {}
