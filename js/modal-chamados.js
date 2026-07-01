@@ -473,6 +473,7 @@ function abrirModalAnalise(id) {
   if (typeof atualizarBotaoOrdemServicoModal === 'function') atualizarBotaoOrdemServicoModal(c);
   document.querySelectorAll('.modal-extra-aprovacao').forEach(el => { el.style.display = emAprovacaoModal ? '' : 'none'; });
   if (emAprovacaoModal) atualizarCamposModalAprovacao();
+  gomConfigurarOverrideAdmin_(c);
 
   new bootstrap.Modal(document.getElementById('modalAnalise')).show();
 }
@@ -546,6 +547,74 @@ function preencherSelectStatusModal(chamado) {
     + opcoes.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
   select.value = aguardandoVisitaNaFila ? '' : atual;
 }
+
+// ── Override de status do Administrador GOM ──────────────────────────────────
+// O super admin pode forçar QUALQUER chamado para qualquer status, ignorando as
+// regras de fluxo (forcarTransicao). Ex.: chamado marcado como "Concluído" sem OS
+// emitida volta para "Em análise" para a equipe corrigir e gerar a OS.
+var GOM_STATUS_OVERRIDE_ADMIN = [
+  'Em análise', 'Aguardando visita', 'Visita agendada', 'Solicitado Orçamento',
+  'Orçamento Realizado', 'OS emitida', 'Atendimento Emergencial', 'Garantia de Obra',
+  'Garantia de Serviço', 'Serviço Realizado', 'Concluído', 'Devolvido para a escola',
+  'A cargo da unidade escolar'
+];
+
+function gomEhAdminGom_() {
+  var p = String((window.GomAuth && window.GomAuth.perfil) || (window.usuarioAtualGom && window.usuarioAtualGom.perfil) || '')
+    .trim().toUpperCase().replace(/[\s-]+/g, '_');
+  if (p === 'ADMINISTRADOR_GOM') p = 'ADMIN_GOM';
+  return p === 'ADMIN_GOM';
+}
+
+function gomConfigurarOverrideAdmin_(chamado) {
+  var box = document.getElementById('mdlAdminForcarBox');
+  var sel = document.getElementById('mdlAdminForcarStatus');
+  var obs = document.getElementById('mdlAdminForcarObs');
+  if (!box || !sel) return;
+  if (!gomEhAdminGom_()) { box.style.display = 'none'; return; }
+  var atual = normalizarSituacaoSistema(chamado.situacao || chamado.status);
+  sel.innerHTML = GOM_STATUS_OVERRIDE_ADMIN.map(function (s) {
+    var marca = (s === atual) ? ' selected' : '';
+    return '<option value="' + escapeHtml(s) + '"' + marca + '>' + escapeHtml(s) + (s === atual ? ' (atual)' : '') + '</option>';
+  }).join('');
+  if (obs) obs.value = '';
+  box.style.display = '';
+}
+
+function gomForcarStatusAdmin_(botao) {
+  if (!gomEhAdminGom_()) return;
+  var sel = document.getElementById('mdlAdminForcarStatus');
+  var status = sel ? sel.value : '';
+  if (!status) return;
+  var chamado = (window.listaChamadosGlobal || []).find(function (x) { return String(x.id) === String(idChamadoAberto); }) || {};
+  var atual = normalizarSituacaoSistema(chamado.situacao || chamado.status);
+  if (normalizarSituacaoSistema(status) === atual) { alert('O chamado já está neste status.'); return; }
+  var obs = (document.getElementById('mdlAdminForcarObs') || {}).value || '';
+  if (!confirm('Forçar o status do chamado #' + idChamadoAberto + ' para "' + status + '"?\n\nIsso IGNORA as regras de fluxo. Recomendado justificar no campo de motivo.')) return;
+  var payload = {
+    id: idChamadoAberto,
+    situacao: status,
+    observacoes: obs || ('[AJUSTE ADMIN] Status forçado para "' + status + '" pelo Administrador GOM.'),
+    forcarTransicao: true
+  };
+  var btn = botao;
+  if (typeof gomSetButtonLoading === 'function') gomSetButtonLoading(btn, 'Forçando...');
+  else if (btn) btn.disabled = true;
+  google.script.run
+    .withSuccessHandler(function () {
+      var modal = bootstrap.Modal.getInstance(document.getElementById('modalAnalise'));
+      if (modal) modal.hide();
+      refreshChamados(function () { if (typeof renderizarTela === 'function') renderizarTela(); });
+    })
+    .withFailureHandler(function (err) {
+      if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(btn);
+      else if (btn) btn.disabled = false;
+      if (typeof gomMostrarErroAcao === 'function') gomMostrarErroAcao(err, 'Não foi possível forçar o status.');
+      else alert((err && err.message) || err);
+    })
+    .atualizarChamadoWorkflow(payload);
+}
+window.gomForcarStatusAdmin_ = gomForcarStatusAdmin_;
 
 async function salvarStatusDoModal(botao) {
   const select = document.getElementById('mdlSelectStatus');
