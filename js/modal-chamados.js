@@ -589,12 +589,18 @@ function gomForcarStatusAdmin_(botao) {
   var chamado = (window.listaChamadosGlobal || []).find(function (x) { return String(x.id) === String(idChamadoAberto); }) || {};
   var atual = normalizarSituacaoSistema(chamado.situacao || chamado.status);
   if (normalizarSituacaoSistema(status) === atual) { alert('O chamado já está neste status.'); return; }
-  var obs = (document.getElementById('mdlAdminForcarObs') || {}).value || '';
-  if (!confirm('Forçar o status do chamado #' + idChamadoAberto + ' para "' + status + '"?\n\nIsso IGNORA as regras de fluxo. Recomendado justificar no campo de motivo.')) return;
+  var obsEl = document.getElementById('mdlAdminForcarObs');
+  var obs = String((obsEl && obsEl.value) || '').trim();
+  if (!obs) {
+    alert('Informe o MOTIVO do ajuste antes de forçar o status. A justificativa é obrigatória e fica registrada na timeline do chamado.');
+    if (obsEl) obsEl.focus();
+    return;
+  }
+  if (!confirm('Forçar o status do chamado #' + idChamadoAberto + ' para "' + status + '"?\n\nIsso IGNORA as regras de fluxo.')) return;
   var payload = {
     id: idChamadoAberto,
     situacao: status,
-    observacoes: obs || ('[AJUSTE ADMIN] Status forçado para "' + status + '" pelo Administrador GOM.'),
+    observacoes: '[AJUSTE ADMIN] ' + obs,
     forcarTransicao: true
   };
   var btn = botao;
