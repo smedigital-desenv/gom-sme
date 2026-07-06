@@ -113,9 +113,11 @@
       (A && A.sistema && A.sistema.papel) ||
       (A && A.perfil && A.perfil.tipo) || ''
     ).trim().toLowerCase().replace(/[\s-]+/g, '_');
-    if (papel === 'admin_gom' || papel === 'secretaria' || papel === 'empresa' || papel === 'escola') {
-      return papel.toUpperCase();
-    }
+    // O central pode nomear o papel de admin como 'admin' ou 'admin_gom'.
+    if (papel.indexOf('admin') === 0) return 'ADMIN_GOM';
+    if (papel === 'secretaria') return 'SECRETARIA';
+    if (papel === 'empresa') return 'EMPRESA';
+    if (papel === 'escola') return 'ESCOLA';
     // Heurística por telas liberadas (última linha de defesa, caso o papel venha vazio).
     if ((A && A.restritoEscola) || (_can('escola') && !_can('empresa') && !_can('dashboard'))) return 'ESCOLA';
     if (_can('empresa') && !_can('dashboard') && !_can('escola')) return 'EMPRESA';
