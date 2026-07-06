@@ -106,11 +106,17 @@
   /* ── Mapeamento AcessoSME -> perfil/estruturas herdadas do GOM ─────────────── */
   function _perfilGom(A) {
     if (A && A.perfil && A.perfil.is_super_admin) return 'ADMIN_GOM';
-    var tipo = String((A && A.perfil && A.perfil.tipo) || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
-    if (tipo === 'admin_gom' || tipo === 'secretaria' || tipo === 'empresa' || tipo === 'escola') {
-      return tipo.toUpperCase();
+    // O papel do usuário NESTE sistema é o autoritativo: vem de sistema.papel
+    // (a RPC minhas_permissoes() devolve sistemas:[{ slug, papel, telas }]).
+    // perfil.tipo é o tipo global do usuário, usado só como reforço.
+    var papel = String(
+      (A && A.sistema && A.sistema.papel) ||
+      (A && A.perfil && A.perfil.tipo) || ''
+    ).trim().toLowerCase().replace(/[\s-]+/g, '_');
+    if (papel === 'admin_gom' || papel === 'secretaria' || papel === 'empresa' || papel === 'escola') {
+      return papel.toUpperCase();
     }
-    // Heurística por telas liberadas (robusta, independe do vocabulário de 'tipo').
+    // Heurística por telas liberadas (última linha de defesa, caso o papel venha vazio).
     if ((A && A.restritoEscola) || (_can('escola') && !_can('empresa') && !_can('dashboard'))) return 'ESCOLA';
     if (_can('empresa') && !_can('dashboard') && !_can('escola')) return 'EMPRESA';
     if (_can('configuracoes') || _can('equipes')) return 'ADMIN_GOM';
