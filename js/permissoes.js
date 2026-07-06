@@ -81,6 +81,10 @@ function normalizarPaginaPermissao_(pageName) {
 }
 
 function carregarUsuarioPermissoes(callback) {
+  // Nos modos de tela de acesso (login/definir PIN) não iniciamos o app por
+  // baixo do overlay — o boot ocorre depois que o usuário entra.
+  if (window.__GOM_ACESSO_MODO === 'GATE' || window.__GOM_ACESSO_MODO === 'SETUP') return;
+
   // Fonte de verdade = CONTROLE DE ACESSO CENTRAL (window.AcessoSME).
   // A ponte js/acesso-central.js aguarda "AcessoSME.pronto", monta GomAuth +
   // usuarioAtualGom a partir do central e libera a interface. Aqui apenas
