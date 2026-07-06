@@ -203,9 +203,21 @@ window.abrirMobileMais = abrirMobileMais;
 window.fecharMobileMais = fecharMobileMais;
 
 function loadPage(pageName, inicial=false) {
-  if (typeof podeAcessarPagina === 'function' && !podeAcessarPagina(pageName)) {
-    if (typeof renderAcessoNegado === 'function') renderAcessoNegado(pageName);
-    return;
+  // Controle de acesso CENTRAL: o roteador só abre a página se o central
+  // liberar a tela (AcessoSME.can(tela,'ver')). Aplica o alias de rota antes
+  // (ex.: memorial -> historico). Fallback: podeAcessarPagina() (que também
+  // consulta o central) enquanto o módulo do central ainda não respondeu.
+  var telaAlvo = (window.GOM_ROTAS_ALIAS && GOM_ROTAS_ALIAS[pageName]) || pageName;
+  if (telaAlvo && telaAlvo !== 'mais') {
+    if (window.AcessoSME && typeof window.AcessoSME.can === 'function') {
+      if (!window.AcessoSME.can(telaAlvo, 'ver')) {
+        if (typeof renderAcessoNegado === 'function') renderAcessoNegado(pageName);
+        return;
+      }
+    } else if (typeof podeAcessarPagina === 'function' && !podeAcessarPagina(pageName)) {
+      if (typeof renderAcessoNegado === 'function') renderAcessoNegado(pageName);
+      return;
+    }
   }
   if (!inicial && window.telaAtual === 'configuracoes' && pageName !== 'configuracoes') {
     if (typeof confirmarSaidaConfiguracoesSeNecessario === 'function' && !confirmarSaidaConfiguracoesSeNecessario()) return;

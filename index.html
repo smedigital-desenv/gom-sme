@@ -50,16 +50,16 @@
     </div>
 
     <nav class="nav-actions nav-actions-primary gom-top-actions" aria-label="Menu principal">
-      <button id="btn-secretaria" class="btn-nav gom-top-secretaria active" data-page="dashboard" onclick="loadSecretariaHome()">
+      <button id="btn-secretaria" class="btn-nav gom-top-secretaria active" data-page="dashboard" data-tela="dashboard" onclick="loadSecretariaHome()">
         <i class="bi bi-layout-sidebar-inset"></i><span>Secretaria</span>
       </button>
-      <button id="btn-saldo" class="btn-nav gom-top-saldo gom-permissao-oculto" onclick="window.location.href='saldo.html'" title="Dashboard de saldo do contrato (somente Administrador GOM)">
+      <button id="btn-saldo" class="btn-nav gom-top-saldo gom-permissao-oculto" data-tela="saldo" onclick="window.location.href='saldo.html'" title="Dashboard de saldo do contrato (somente Administrador GOM)">
         <i class="bi bi-cash-stack"></i><span>Saldo</span>
       </button>
-      <button id="btn-empresa" class="btn-nav gom-top-empresa" data-page="empresa" onclick="loadPage('empresa')">
+      <button id="btn-empresa" class="btn-nav gom-top-empresa" data-page="empresa" data-tela="empresa" onclick="loadPage('empresa')">
         <i class="bi bi-building-check"></i><span>Empresa</span>
       </button>
-      <button id="btn-escola" class="btn-nav gom-top-escola" data-page="escola" onclick="loadPage('escola')">
+      <button id="btn-escola" class="btn-nav gom-top-escola" data-page="escola" data-tela="escola" onclick="loadPage('escola')">
         <i class="bi bi-building"></i><span>Minha Escola</span>
       </button>
     </nav>
@@ -1043,9 +1043,22 @@
 
   <!-- Ponte Supabase (carrega antes dos scripts da app) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- CONTROLE DE ACESSO CENTRAL (SME) — login (SSO) + permissões de tela.
+       Carrega ANTES dos scripts do app. Usa caminho ABSOLUTO (/central/...),
+       que funciona servido em /gom-sme/teste/. O central usa o seu próprio
+       cliente Supabase (window.ACESSO_SB); o GOM mantém window.SB só p/ DADOS. -->
+  <script>window.ACESSO_SISTEMA = 'gom';</script>
+  <script>window.ACESSO_LOGIN = '/central/login.html';</script>
+  <script src="/central/config.js"></script>
+  <script src="/central/acesso-sme.js"></script>
+  <script src="js/acesso-central.js"></script>
+
   <script src="js/producao.js"></script>
   <script src="js/config.js"></script>
-  <script src="js/login.js"></script>
+  <!-- js/login.js APOSENTADO: autenticação agora é do central (SSO). -->
+  <!-- <script src="js/login.js"></script> -->
+
   <script src="js/supabase/mapeadores.js"></script>
   <script src="js/supabase/anexos.js"></script>
   <script src="js/supabase/dados.js"></script>

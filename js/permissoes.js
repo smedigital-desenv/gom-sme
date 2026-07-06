@@ -81,48 +81,32 @@ function normalizarPaginaPermissao_(pageName) {
 }
 
 function carregarUsuarioPermissoes(callback) {
-  if (window.GomAuth && window.GomAuth.perfil) {
-    window.usuarioAtualGom = perfilPeloGomAuth_();
+  // Fonte de verdade = CONTROLE DE ACESSO CENTRAL (window.AcessoSME).
+  // A ponte js/acesso-central.js aguarda "AcessoSME.pronto", monta GomAuth +
+  // usuarioAtualGom a partir do central e libera a interface. Aqui apenas
+  // encadeamos o boot do app (aplicar permissões visuais + callback).
+  var finalizar = function (usuario) {
+    if (usuario) window.usuarioAtualGom = usuario;
     window.permissoesCarregadas = true;
     aplicarPermissoesInterface();
     _corrigirRotaAtualSeNaoPermitida();
     if (typeof callback === 'function') callback(window.usuarioAtualGom);
+  };
+
+  if (typeof window.gomAcessoCentralPronto === 'function') {
+    window.gomAcessoCentralPronto()
+      .then(finalizar)
+      .catch(function (err) {
+        // Sem central não concedemos acesso (segurança). A própria ponte já
+        // exibe a tela de erro/redireciona para o login central.
+        if (window.gomWarn) window.gomWarn('[GOM ACESSO] Central indisponível:', err);
+        else console.warn('[GOM ACESSO] Central indisponível:', err);
+      });
     return;
   }
 
-  if (!window.google || !google.script || !google.script.run) {
-    window.usuarioAtualGom = perfilFallbackPermissoes_();
-    window.permissoesCarregadas = true;
-    aplicarPermissoesInterface();
-    if (typeof callback === 'function') callback(window.usuarioAtualGom);
-    return;
-  }
-
-  google.script.run
-    .withSuccessHandler(function(res) {
-      var payload = parseJsonPermissoes_(res);
-      if (window.GomAuth && window.GomAuth.perfil) {
-        window.usuarioAtualGom = perfilPeloGomAuth_();
-      } else if (!payload || payload.ok === false) {
-        window.usuarioAtualGom = perfilFallbackPermissoes_();
-      } else {
-        window.usuarioAtualGom = normalizarUsuarioPermissoes_(payload.usuario || payload);
-      }
-      window.permissoesCarregadas = true;
-      aplicarPermissoesInterface();
-      _corrigirRotaAtualSeNaoPermitida();
-      if (typeof callback === 'function') callback(window.usuarioAtualGom);
-    })
-    .withFailureHandler(function(err) {
-      if (window.gomError) window.gomError('[GOM PERMISSÕES] Erro ao carregar usuário:', err);
-      else console.error('[GOM PERMISSÕES] Erro ao carregar usuário:', err);
-      window.usuarioAtualGom = (window.GomAuth && window.GomAuth.perfil) ? perfilPeloGomAuth_() : perfilFallbackPermissoes_();
-      window.permissoesCarregadas = true;
-      aplicarPermissoesInterface();
-      _corrigirRotaAtualSeNaoPermitida();
-      if (typeof callback === 'function') callback(window.usuarioAtualGom);
-    })
-    .gomObterUsuarioAtualV1Json();
+  // Fallback improvável (ponte ausente): usa o que houver em usuarioAtualGom.
+  finalizar(getUsuarioGom());
 }
 
 function parseJsonPermissoes_(res) {
@@ -163,29 +147,35 @@ function perfilPeloGomAuth_() {
 }
 
 function perfilFallbackPermissoes_() {
-  // Fallback usado apenas quando o login ainda não está ativo/validado.
+  // Fallback SEGURO: enquanto o CENTRAL não confirma o acesso, ninguém é
+  // liberado (restrito, sem telas). Nada de ADMIN aberto — a autorização é
+  // sempre do central (window.AcessoSME).
   return {
     ok: true,
-    perfil: 'ADMIN_GOM',
-    perfilLabel: 'Administrador GOM',
-    modo: 'ABERTO',
-    restrito: false,
+    perfil: '',
+    perfilLabel: '',
+    modo: 'CENTRAL',
+    restrito: true,
     email: '',
-    telas: (window.TELAS_WEB || GOM_PERFIS_ACESSO.ADMIN_GOM || []).slice(),
+    telas: [],
     paginaInicial: 'dashboard',
     unidades: [],
-    acoes: { configurar: true }
+    acoes: { configurar: false }
   };
 }
 
 function getUsuarioGom() {
-  if (window.GomAuth && window.GomAuth.perfil) return perfilPeloGomAuth_();
   return window.usuarioAtualGom || perfilFallbackPermissoes_();
 }
 
 function podeAcessarPagina(pageName) {
   var page = normalizarPaginaPermissao_(pageName);
   if (!page || page === 'mais') return true;
+  // Fonte de verdade: o CENTRAL. Consulta direta a AcessoSME.can(tela,'ver').
+  if (window.AcessoSME && typeof window.AcessoSME.can === 'function') {
+    return !!window.AcessoSME.can(page, 'ver');
+  }
+  // Fallback (central ainda não respondeu): usa as telas já resolvidas.
   var usuario = getUsuarioGom();
   if (!usuario.restrito) return true;
   return Array.isArray(usuario.telas) && usuario.telas.indexOf(page) >= 0;
@@ -237,9 +227,14 @@ function aplicarPermissoesInterface() {
   var topEmpresa = document.getElementById('btn-empresa');
   if (topEmpresa) topEmpresa.classList.toggle('gom-permissao-oculto', restrito && telas.indexOf('empresa') < 0);
 
-  // Botão Saldo (Dashboard de saldo do contrato): só Administrador GOM, por ora.
+  // Botão Saldo (Dashboard de saldo do contrato): liberado pelo CENTRAL (tela 'saldo').
   var topSaldo = document.getElementById('btn-saldo');
-  if (topSaldo) topSaldo.classList.toggle('gom-permissao-oculto', perfil !== 'ADMIN_GOM');
+  if (topSaldo) {
+    var podeSaldo = (window.AcessoSME && typeof window.AcessoSME.can === 'function')
+      ? window.AcessoSME.can('saldo', 'ver')
+      : (telas.indexOf('saldo') >= 0);
+    topSaldo.classList.toggle('gom-permissao-oculto', !podeSaldo);
+  }
 
   document.querySelectorAll('.nav-more, .mobile-more-panel').forEach(function(box) {
     var visiveis = box.querySelectorAll('[data-page]:not(.gom-permissao-oculto)').length;
