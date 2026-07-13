@@ -242,6 +242,46 @@
     _bannerSomenteLeitura();
     _bloquearEscritasSB();
     _bloquearEscritasSB_retry(0);
+    _esconderAcoesSomenteLeitura();
+  }
+
+  // Esconde os botões de AÇÃO mais óbvios (salvar/aprovar/novo/excluir…) no modo
+  // visualizador. É complementar ao bloqueio de dados (que já impede gravações);
+  // aqui é só UX. Preserva navegação, busca, fechar, sair e exportar/imprimir.
+  function _esconderAcoesSomenteLeitura() {
+    var VERBOS = /(^|\s)(salvar|salva|aprovar|aprova|reprovar|recusar|rejeitar|excluir|remover|apagar|deletar|cadastrar|adicionar|incluir|novo|nova|editar|alterar|atualizar|enviar|confirmar|definir|for[çc]ar|lan[çc]ar|registrar|criar|finalizar|concluir|reabrir|encaminhar|dar baixa|mover|vincular|desvincular|responder|comentar|anexar)(\s|$|:|\.|\!|…)/i;
+    function ehNav(el) {
+      if (!el) return true;
+      if (el.hasAttribute('data-page') || el.hasAttribute('data-tela')) return true;
+      if (el.id === 'gomBtnLogoutNav') return true;
+      if (el.getAttribute('data-bs-dismiss')) return true; // fechar modal
+      if (el.classList && (el.classList.contains('btn-close') || el.classList.contains('nav-link'))) return true;
+      try {
+        if (el.closest('.nav-header, .mobile-topbar, .mobile-bottom-nav, .gom-secretaria-sidebar, .gom-escola-sidebar, .mobile-more-panel, .mobile-more-backdrop, .modal-header, #gomRoBanner')) return true;
+      } catch (e) {}
+      return false;
+    }
+    function varrer() {
+      try {
+        document.querySelectorAll('button, a.btn, [role="button"], input[type="submit"], input[type="button"]').forEach(function (el) {
+          if (el.__gomRoChecked) return;
+          el.__gomRoChecked = true;
+          if (ehNav(el)) return;
+          var txt = (el.textContent || el.value || '').replace(/\s+/g, ' ').trim().toLowerCase();
+          if (!txt) return;
+          if (VERBOS.test(txt)) { el.style.display = 'none'; el.setAttribute('aria-hidden', 'true'); }
+        });
+      } catch (e) {}
+    }
+    varrer();
+    // conteúdo é renderizado dinamicamente (loadPage, modais): reprocessa.
+    try {
+      var mo = new MutationObserver(function () {
+        if (window.__gomRoMoT) return;
+        window.__gomRoMoT = setTimeout(function () { window.__gomRoMoT = null; varrer(); }, 120);
+      });
+      mo.observe(document.body, { childList: true, subtree: true });
+    } catch (e) {}
   }
 
   // window.SB é criado pelo js/config.js, que carrega depois desta ponte;
