@@ -1044,23 +1044,22 @@
   <!-- Ponte Supabase (carrega antes dos scripts da app) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- ACESSO HÍBRIDO (SME) — carrega ANTES dos scripts do app.
-       js/gom-acesso.js decide o caminho de login e, no modo CENTRAL, injeta
-       /central/config.js + /central/acesso-sme.js + js/acesso-central.js
-       (caminho ABSOLUTO /central/..., funciona em /gom-sme/teste/):
-         • Secretaria/Escola/Admin -> Controle de Acesso CENTRAL (SSO Google);
-         • Empresa -> código (PIN) local do GOM, como antes (não usa o central).
-       O central usa o seu cliente (window.ACESSO_SB); o GOM mantém window.SB
-       só para DADOS. -->
+  <!-- CONTROLE DE ACESSO CENTRAL (SME) — login (SSO) + permissões de tela.
+       Carrega ANTES dos scripts do app. O GOM é 100% central: sem sessão, o
+       acesso-sme.js redireciona ao login do central. TODOS entram pelo central —
+       Secretaria/Escola/Admin (Google) e Empresa (e-mail + senha). O central usa
+       o seu cliente (window.ACESSO_SB); o GOM mantém window.SB só para DADOS. -->
   <script>window.ACESSO_SISTEMA = 'gom';</script>
   <script>window.ACESSO_LOGIN = '/central/login.html';</script>
-  <script src="js/gom-acesso.js"></script>
+  <script src="/central/config.js"></script>
+  <script src="/central/acesso-sme.js"></script>
+  <script src="js/acesso-central.js"></script>
 
   <script src="js/producao.js"></script>
   <script src="js/config.js"></script>
-  <!-- js/login.js APOSENTADO: substituído por js/gom-acesso.js (acima), que
-       roteia Secretaria/Escola/Admin -> central (SSO) e Empresa -> PIN local. -->
+  <!-- js/login.js e js/gom-acesso.js APOSENTADOS: autenticação 100% pelo central. -->
   <!-- <script src="js/login.js"></script> -->
+  <!-- <script src="js/gom-acesso.js"></script> -->
 
   <script src="js/supabase/mapeadores.js"></script>
   <script src="js/supabase/anexos.js"></script>
