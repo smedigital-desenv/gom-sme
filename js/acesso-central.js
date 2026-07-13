@@ -26,7 +26,8 @@
     ADMIN_GOM: 'Administrador GOM',
     SECRETARIA: 'Secretaria',
     EMPRESA: 'Empresa',
-    ESCOLA: 'Escola'
+    ESCOLA: 'Escola',
+    VISUALIZADOR: 'Visualizador'
   };
 
   var PAGINA_INICIAL = {
@@ -147,7 +148,14 @@
    * Retorna o usuarioAtualGom para encadear com o boot do app (state.js). */
   window.gomAcessoCentralAplicar = function () {
     var A = _A();
-    var perfil = _perfilGom(A);
+    // Visualizador (só-leitura): flag global is_viewer OU papel 'visualizador'
+    // no sistema. Vê TODAS as telas como ADMIN, mas o app entra em modo
+    // somente-leitura (nenhuma gravação passa).
+    var ehVisualizador = !!(A && (
+      (A.perfil && A.perfil.is_viewer) ||
+      (A.sistema && String(A.sistema.papel || '').toLowerCase() === 'visualizador')
+    ));
+    var perfil = ehVisualizador ? 'ADMIN_GOM' : _perfilGom(A);
     var telas = _telasLiberadas();
     var email = (A && A.perfil && A.perfil.email) || '';
     var nome = (A && A.perfil && A.perfil.nome) || '';
@@ -158,6 +166,7 @@
     window.GomAuth.perfil = perfil;
     window.GomAuth.email = email;
     window.GomAuth.escola = escola;
+    window.GomAuth.somenteLeitura = ehVisualizador;
     window.GomAuth.session = (A && A.perfil) ? { user: { email: email } } : null;
     window.GomAuth.podeVerTela = function (t) { return _can(t, 'ver'); };
     window.GomAuth.paginaInicial = function () { return inicial; };
@@ -165,8 +174,8 @@
     window.usuarioAtualGom = {
       ok: true,
       perfil: perfil,
-      perfilLabel: LABELS[perfil] || perfil,
-      modo: 'CENTRAL',
+      perfilLabel: ehVisualizador ? 'Visualizador' : (LABELS[perfil] || perfil),
+      modo: ehVisualizador ? 'SOMENTE LEITURA' : 'CENTRAL',
       restrito: true,
       email: email,
       nome: nome,
@@ -174,13 +183,15 @@
       paginaInicial: inicial,
       unidades: [],
       restritoEscola: !!(A && A.restritoEscola),
-      acoes: { configurar: _can('configuracoes', 'ver') }
+      somenteLeitura: ehVisualizador,
+      acoes: { configurar: !ehVisualizador && _can('configuracoes', 'ver') }
     };
     window.permissoesCarregadas = true;
 
     _marcarTelasNoDom();
-    _atualizarBadge(perfil, email);
+    _atualizarBadge(ehVisualizador ? 'VISUALIZADOR' : perfil, email);
     _criarBotaoLogout();
+    if (ehVisualizador) _ativarSomenteLeitura();
     _mostrarApp();
 
     return window.usuarioAtualGom;
@@ -220,6 +231,98 @@
     try { document.documentElement.classList.remove('gom-auth-gate'); } catch (e) {}
     try { if (document.body) document.body.classList.remove('gom-auth-gate'); } catch (e) {}
     _removerOverlay();
+  }
+
+  /* ── Modo SOMENTE LEITURA (visualizador) ──────────────────────────────────
+   * Vê tudo, mas nenhuma gravação passa. Bloqueia no cliente de DADOS do GOM
+   * (window.SB): insert/update/delete/upsert e uploads de Storage viram no-op
+   * com aviso, sem quebrar a navegação nem as leituras (.select). */
+  function _ativarSomenteLeitura() {
+    try { if (document.body) document.body.classList.add('gom-somente-leitura'); } catch (e) {}
+    _bannerSomenteLeitura();
+    _bloquearEscritasSB();
+    _bloquearEscritasSB_retry(0);
+  }
+
+  // window.SB é criado pelo js/config.js, que carrega depois desta ponte;
+  // tentamos algumas vezes até ele existir.
+  function _bloquearEscritasSB_retry(n) {
+    if (window.SB && window.SB.__gomRO) return;
+    if (n > 20) return;
+    setTimeout(function () { _bloquearEscritasSB(); _bloquearEscritasSB_retry(n + 1); }, 150);
+  }
+
+  function _bloquearEscritasSB() {
+    var SB = window.SB;
+    if (!SB || SB.__gomRO) return;
+    SB.__gomRO = true;
+    try {
+      var origFrom = SB.from.bind(SB);
+      SB.from = function (t) {
+        var qb = origFrom(t);
+        ['insert', 'update', 'delete', 'upsert'].forEach(function (m) {
+          if (qb && typeof qb[m] === 'function') qb[m] = function () { return _roStub(); };
+        });
+        return qb;
+      };
+    } catch (e) {}
+    try {
+      if (SB.storage && SB.storage.from) {
+        var origSFrom = SB.storage.from.bind(SB.storage);
+        SB.storage.from = function (b) {
+          var s = origSFrom(b);
+          ['upload', 'update', 'remove', 'move', 'copy', 'createSignedUploadUrl'].forEach(function (m) {
+            if (s && typeof s[m] === 'function') s[m] = function () { _toastRO(); return Promise.resolve({ data: null, error: { message: 'Somente leitura' } }); };
+          });
+          return s;
+        };
+      }
+    } catch (e) {}
+  }
+
+  // "Thenable" encadeável que resolve com erro — para .insert().select().single() etc.
+  function _roStub() {
+    _toastRO();
+    var p = new Proxy(function () {}, {
+      get: function (_t, prop) {
+        if (prop === 'then') return function (res) { return Promise.resolve({ data: null, error: { message: 'Somente leitura', code: 'GOM_RO' } }).then(res); };
+        if (prop === 'catch' || prop === 'finally') return function () { return p; };
+        return function () { return p; };
+      },
+      apply: function () { return p; }
+    });
+    return p;
+  }
+
+  var _roToastAte = 0;
+  function _toastRO() {
+    try {
+      var agora = Date.now();
+      if (agora < _roToastAte) return;      // throttle
+      _roToastAte = agora + 1800;
+    } catch (e) {}
+    var msg = 'Modo somente leitura: alterações desabilitadas.';
+    try {
+      if (typeof window.gomToast === 'function') return window.gomToast(msg);
+      if (typeof window.mostrarToast === 'function') return window.mostrarToast(msg);
+    } catch (e) {}
+    var b = document.getElementById('gomRoBanner');
+    if (b) { b.classList.add('gom-ro-flash'); setTimeout(function () { b.classList.remove('gom-ro-flash'); }, 500); }
+  }
+
+  function _bannerSomenteLeitura() {
+    if (document.getElementById('gomRoBanner')) return;
+    var b = document.createElement('div');
+    b.id = 'gomRoBanner';
+    b.innerHTML = '<i class="bi bi-eye"></i>&nbsp; Modo somente leitura — você pode visualizar, mas não alterar informações.';
+    b.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:2147483000;background:#0e7490;color:#fff;'
+      + 'font:600 13px system-ui,Segoe UI,sans-serif;padding:8px 14px;text-align:center;box-shadow:0 -2px 12px rgba(0,0,0,.18);transition:background .2s;';
+    (document.body || document.documentElement).appendChild(b);
+    if (!document.getElementById('gomRoStyle')) {
+      var st = document.createElement('style'); st.id = 'gomRoStyle';
+      st.textContent = '.gom-ro-flash{background:#b45309 !important}';
+      document.head.appendChild(st);
+    }
   }
 
   function _criarBotaoLogout() {
