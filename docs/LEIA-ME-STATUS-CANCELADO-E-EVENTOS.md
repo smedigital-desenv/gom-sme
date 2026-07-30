@@ -24,6 +24,11 @@ cadastrado o evento **"Tempestade 24/07"**. O selo aparece no cabeçalho do moda
 do chamado, nos cartões (triagem/fila/dashboard) e nas linhas do Memorial, com
 estilo harmônico ao restante do sistema.
 
+**Quem pode marcar:** apenas o perfil **Secretaria** (o **Administrador GOM**
+mantém acesso total, como nas demais ações). Os outros perfis (ex.: Empresa)
+continuam **vendo o selo**, mas o seletor "Evento associado" não aparece para
+eles e qualquer tentativa de gravação é bloqueada.
+
 ### Cadastrar novos eventos
 
 Basta acrescentar um objeto à lista `EVENTOS_ESPECIAIS` em

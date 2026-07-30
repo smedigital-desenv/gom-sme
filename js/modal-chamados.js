@@ -550,6 +550,23 @@ function preencherSelectStatusModal(chamado) {
 }
 
 // ── Marcação de eventos especiais (ex.: tempestade) ──────────────────────────
+// Perfil normalizado do usuário GOM atual (SECRETARIA, ADMIN_GOM, EMPRESA...).
+function gomPerfilGomAtual_() {
+  var p = String((window.GomAuth && window.GomAuth.perfil) || (window.usuarioAtualGom && window.usuarioAtualGom.perfil) || '')
+    .trim().toUpperCase().replace(/[\s-]+/g, '_');
+  if (p === 'ADMINISTRADOR_GOM') p = 'ADMIN_GOM';
+  if (p === 'GOM') p = 'SECRETARIA';
+  return p;
+}
+
+// A marcação de evento só pode ser definida/alterada pela Secretaria.
+// O Administrador GOM mantém acesso total, como nas demais ações do sistema.
+function gomPodeEditarEvento_() {
+  var p = gomPerfilGomAtual_();
+  return p === 'SECRETARIA' || p === 'ADMIN_GOM';
+}
+window.gomPodeEditarEvento_ = gomPodeEditarEvento_;
+
 // Renderiza o selo do evento associado ao chamado (retorna '' se não houver).
 function gomRenderBadgeEvento_(idEvento) {
   var ev = (typeof window.gomEventoPorId === 'function') ? window.gomEventoPorId(idEvento) : null;
@@ -569,7 +586,9 @@ function gomPreencherSeletorEvento_(chamado) {
   if (badge) badge.innerHTML = gomRenderBadgeEvento_(atual);
   var select = document.getElementById('mdlSelectEvento');
   var col = document.getElementById('mdlEventoCol');
-  if (col) col.style.display = eventos.length ? '' : 'none';
+  // Só a Secretaria (e o Admin GOM) pode definir o evento — os demais perfis
+  // continuam vendo o selo, mas sem o seletor.
+  if (col) col.style.display = (eventos.length && gomPodeEditarEvento_()) ? '' : 'none';
   if (!select) return;
   var opcoes = ['<option value="">— Sem evento —</option>'];
   for (var i = 0; i < eventos.length; i++) {
@@ -765,7 +784,7 @@ async function salvarStatusDoModal(botao) {
   const selEvento = document.getElementById('mdlSelectEvento');
   const eventoAtual = selEvento ? String(selEvento.value || '').trim() : '';
   const eventoOriginal = String(chamadoAtual.evento || '').trim();
-  const eventoMudou = !!selEvento && eventoAtual !== eventoOriginal;
+  const eventoMudou = !!selEvento && gomPodeEditarEvento_() && eventoAtual !== eventoOriginal;
   if (eventoMudou) payload.evento = eventoAtual;
 
   let anexosAtualizacao = [];
@@ -825,7 +844,7 @@ async function salvarApenasObservacao(botao) {
   const selEventoObs = document.getElementById('mdlSelectEvento');
   const eventoAtualObs = selEventoObs ? String(selEventoObs.value || '').trim() : '';
   const eventoOriginalObs = String(chamadoAtual.evento || '').trim();
-  const eventoMudouObs = !!selEventoObs && eventoAtualObs !== eventoOriginalObs;
+  const eventoMudouObs = !!selEventoObs && gomPodeEditarEvento_() && eventoAtualObs !== eventoOriginalObs;
 
   let anexosAtualizacao = [];
   try {
