@@ -491,8 +491,14 @@ function getStatusPermitidosModal(chamado) {
   const contexto = (telaAtual === 'empresa') ? 'empresa' : (telaAtual === 'fila' ? 'fila' : (telaAtual === 'triagem' ? 'triagem' : 'modal'));
   if (isFluxoAprovacaoModal_(chamado)) return [];
 
+  // Remove "Cancelado" das opções quando o perfil não pode cancelar (só Secretaria).
+  const filtrarCancelado = function (lista) {
+    if (typeof gomPodeCancelarChamado_ === 'function' && gomPodeCancelarChamado_()) return lista;
+    return (lista || []).filter(function (s) { return normalizarSituacaoSistema(s) !== 'Cancelado'; });
+  };
+
   if (typeof gomProximosStatusFluxo === 'function') {
-    return gomProximosStatusFluxo(st, contexto);
+    return filtrarCancelado(gomProximosStatusFluxo(st, contexto));
   }
 
   // Fallback local, para evitar lista completa caso algum script carregue fora de ordem.
@@ -507,7 +513,7 @@ function getStatusPermitidosModal(chamado) {
     'Garantia de Serviço': ['Serviço Realizado'],
     'Serviço Realizado': ['Concluído', 'Garantia de Serviço']
   };
-  return mapa[st] || [];
+  return filtrarCancelado(mapa[st] || []);
 }
 
 function preencherSelectStatusModal(chamado) {
@@ -566,6 +572,13 @@ function gomPodeEditarEvento_() {
   return p === 'SECRETARIA' || p === 'ADMIN_GOM';
 }
 window.gomPodeEditarEvento_ = gomPodeEditarEvento_;
+
+// O cancelamento de chamado também é exclusivo da Secretaria (e do Admin GOM).
+function gomPodeCancelarChamado_() {
+  var p = gomPerfilGomAtual_();
+  return p === 'SECRETARIA' || p === 'ADMIN_GOM';
+}
+window.gomPodeCancelarChamado_ = gomPodeCancelarChamado_;
 
 // Renderiza o selo do evento associado ao chamado (retorna '' se não houver).
 function gomRenderBadgeEvento_(idEvento) {
@@ -757,6 +770,11 @@ async function salvarStatusDoModal(botao) {
   // "Cancelado": o MOTIVO do cancelamento é obrigatório — fica registrado na
   // timeline do chamado. Depois o chamado segue para o Memorial (status terminal).
   if (statusMudou && normalizarSituacaoSistema(status) === 'Cancelado') {
+    if (!gomPodeCancelarChamado_()) {
+      if (typeof gomMostrarErroAcao === 'function') gomMostrarErroAcao(new Error('Sem permissão'), 'Somente a Secretaria pode cancelar chamados.');
+      else alert('Somente a Secretaria pode cancelar chamados.');
+      return;
+    }
     if (!String(obs || '').trim()) {
       alert('Para cancelar o chamado, informe o MOTIVO do cancelamento no campo "Nova observação". A justificativa é obrigatória e fica registrada na timeline do chamado.');
       const inputObsCancel = document.getElementById('mdlNovaObservacao');

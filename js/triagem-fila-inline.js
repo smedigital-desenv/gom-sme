@@ -60,15 +60,22 @@
 
   function gomStatusPermitidos_(item, contexto) {
     var st = gomNormalizar_(item && (item.situacao || item.status));
+    // Cancelamento é exclusivo da Secretaria (e do Admin GOM).
+    var filtrarCancelado = function (lista) {
+      if (typeof window.gomPodeCancelarChamado_ === 'function' && !window.gomPodeCancelarChamado_()) {
+        return (lista || []).filter(function (s) { return gomNormalizar_(s) !== 'Cancelado'; });
+      }
+      return lista || [];
+    };
     if (typeof window.gomProximosStatusFluxo === 'function') {
       var prox = window.gomProximosStatusFluxo(st, contexto || 'triagem') || [];
-      if (prox.length) return prox;
+      if (prox.length) return filtrarCancelado(prox);
     }
     if (contexto === 'triagem' || st === 'Em análise') {
-      return ['Visita agendada', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Garantia de Obra', 'Devolvido para a escola'];
+      return filtrarCancelado(['Visita agendada', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Garantia de Obra', 'Devolvido para a escola']);
     }
     if (contexto === 'fila' || st === 'Aguardando visita' || st === 'Visita agendada') {
-      return ['Visita agendada', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Garantia de Obra', 'Devolvido para a escola'];
+      return filtrarCancelado(['Visita agendada', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Garantia de Obra', 'Devolvido para a escola']);
     }
     return [];
   }
@@ -563,6 +570,18 @@
         payload.dataAgendamentoVisita = dataSelecionadaLinha;
         payload.dataAgendamento = dataSelecionadaLinha;
         payload.dataVisita = dataSelecionadaLinha;
+      }
+
+      // Cancelamento: restrito à Secretaria e com MOTIVO obrigatório na observação.
+      if (gomNormalizar_(alteracao.situacao) === 'Cancelado') {
+        if (typeof window.gomPodeCancelarChamado_ === 'function' && !window.gomPodeCancelarChamado_()) {
+          alert('Somente a Secretaria pode cancelar chamados.');
+          return;
+        }
+        if (!String(alteracao.observacoes || '').trim()) {
+          alert('Para cancelar o chamado #' + id + ', informe o MOTIVO do cancelamento na observação da linha. A justificativa é obrigatória.');
+          return;
+        }
       }
 
       if (alteracao.situacao) payload.situacao = alteracao.situacao;

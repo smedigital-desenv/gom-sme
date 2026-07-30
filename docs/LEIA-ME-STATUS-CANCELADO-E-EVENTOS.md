@@ -7,9 +7,12 @@ Duas funcionalidades novas:
 - Novo status terminal **Cancelado**, disponível como encaminhamento a partir de
   *Em análise*, *Aguardando visita*, *Visita agendada* e *Visita Técnica*
   (o Administrador GOM também pode forçá-lo por override em qualquer chamado).
+- **Quem pode cancelar:** apenas o perfil **Secretaria** (o **Administrador GOM**
+  mantém acesso total). Para os demais perfis a opção "Cancelado" não aparece no
+  seletor de status e a gravação é bloqueada.
 - Ao passar o chamado para **Cancelado**, o **motivo do cancelamento é
-  obrigatório** — ele é digitado no campo "Nova observação" e fica registrado na
-  timeline do chamado (ação `Chamado cancelado`).
+  obrigatório** — ele é digitado no campo "Nova observação" (ou na observação da
+  linha, na triagem/fila) e fica registrado na timeline (ação `Chamado cancelado`).
 - Chamados cancelados **saem das filas ativas** e são **encaminhados para o
   Memorial** (tela Histórico/Memorial), como os demais status finais.
 - Cor do status: `#be123c` (vermelho-rosé), ícone `bi-x-octagon-fill`.

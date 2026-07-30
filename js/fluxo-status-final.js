@@ -105,15 +105,25 @@
     return txt(tela) || 'modal';
   }
 
+  // Cancelamento é exclusivo da Secretaria (e do Admin GOM).
+  function podeCancelar() {
+    if (typeof window.gomPodeCancelarChamado_ === 'function') return window.gomPodeCancelarChamado_();
+    var perfil = perfilAtual();
+    return perfil === 'SECRETARIA' || perfil === 'GOM' || perfil === 'ADMIN_GOM';
+  }
+
   function getStatusPermitidos(chamado) {
     chamado = chamado || {};
     var st = norm(chamado.situacao || chamado.status);
     if (!perfilPodeAlterar(st)) return []; // gate por perfil: nenhuma transição disponível
     var ctx = contextoAtual();
-    if (ctx === 'empresa') return proximos(st, 'empresa');
-    if (ctx === 'fila') return proximos(st, 'fila');
-    if (ctx === 'triagem') return proximos(st, 'triagem');
-    return proximos(st, 'modal');
+    var lista;
+    if (ctx === 'empresa') lista = proximos(st, 'empresa');
+    else if (ctx === 'fila') lista = proximos(st, 'fila');
+    else if (ctx === 'triagem') lista = proximos(st, 'triagem');
+    else lista = proximos(st, 'modal');
+    if (!podeCancelar()) lista = lista.filter(function (s) { return norm(s) !== 'Cancelado'; });
+    return lista;
   }
 
   function preencherSelect(chamado) {
