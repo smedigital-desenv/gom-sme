@@ -473,6 +473,7 @@ function abrirModalAnalise(id) {
   if (typeof atualizarBotaoOrdemServicoModal === 'function') atualizarBotaoOrdemServicoModal(c);
   document.querySelectorAll('.modal-extra-aprovacao').forEach(el => { el.style.display = emAprovacaoModal ? '' : 'none'; });
   if (emAprovacaoModal) atualizarCamposModalAprovacao();
+  gomPreencherSeletorEvento_(c);
   gomConfigurarOverrideAdmin_(c);
 
   new bootstrap.Modal(document.getElementById('modalAnalise')).show();
@@ -496,9 +497,9 @@ function getStatusPermitidosModal(chamado) {
 
   // Fallback local, para evitar lista completa caso algum script carregue fora de ordem.
   const mapa = {
-    'Em análise': ['Visita agendada', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Garantia de Obra', 'Devolvido para a escola'],
-    'Aguardando visita': ['Visita agendada', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Garantia de Obra', 'Devolvido para a escola'],
-    'Visita agendada': ['Atendimento Emergencial', 'Solicitado Orçamento', 'Garantia de Obra', 'Devolvido para a escola'],
+    'Em análise': ['Visita agendada', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Garantia de Obra', 'Devolvido para a escola', 'Cancelado'],
+    'Aguardando visita': ['Visita agendada', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Garantia de Obra', 'Devolvido para a escola', 'Cancelado'],
+    'Visita agendada': ['Atendimento Emergencial', 'Solicitado Orçamento', 'Garantia de Obra', 'Devolvido para a escola', 'Cancelado'],
     'Solicitado Orçamento': ['Orçamento Realizado'],
     'OS emitida': ['Serviço Realizado'],
     'Atendimento Emergencial': ['Serviço Realizado'],
@@ -548,6 +549,39 @@ function preencherSelectStatusModal(chamado) {
   select.value = aguardandoVisitaNaFila ? '' : atual;
 }
 
+// ── Marcação de eventos especiais (ex.: tempestade) ──────────────────────────
+// Renderiza o selo do evento associado ao chamado (retorna '' se não houver).
+function gomRenderBadgeEvento_(idEvento) {
+  var ev = (typeof window.gomEventoPorId === 'function') ? window.gomEventoPorId(idEvento) : null;
+  if (!ev) return '';
+  var cor = ev.cor || '#0284c7';
+  var icone = ev.icone || 'bi-tag-fill';
+  return '<span class="evento-marca" style="--evento-cor: ' + escapeHtml(cor) + ';" title="' + escapeHtml(ev.descricao || ev.nome) + '">'
+    + '<i class="bi ' + escapeHtml(icone) + '"></i>' + escapeHtml(ev.nome) + '</span>';
+}
+window.gomRenderBadgeEvento_ = gomRenderBadgeEvento_;
+
+// Preenche o seletor de evento do modal e o selo do cabeçalho a partir do chamado.
+function gomPreencherSeletorEvento_(chamado) {
+  var eventos = window.EVENTOS_ESPECIAIS || [];
+  var atual = String((chamado && chamado.evento) || '').trim();
+  var badge = document.getElementById('mdlEventoBadge');
+  if (badge) badge.innerHTML = gomRenderBadgeEvento_(atual);
+  var select = document.getElementById('mdlSelectEvento');
+  var col = document.getElementById('mdlEventoCol');
+  if (col) col.style.display = eventos.length ? '' : 'none';
+  if (!select) return;
+  var opcoes = ['<option value="">— Sem evento —</option>'];
+  for (var i = 0; i < eventos.length; i++) {
+    var ev = eventos[i] || {};
+    var sel = String(ev.id) === atual ? ' selected' : '';
+    opcoes.push('<option value="' + escapeHtml(ev.id) + '"' + sel + '>' + escapeHtml(ev.nome || ev.id) + '</option>');
+  }
+  select.innerHTML = opcoes.join('');
+  select.value = atual;
+}
+window.gomPreencherSeletorEvento_ = gomPreencherSeletorEvento_;
+
 // ── Override de status do Administrador GOM ──────────────────────────────────
 // O super admin pode forçar QUALQUER chamado para qualquer status, ignorando as
 // regras de fluxo (forcarTransicao). Ex.: chamado marcado como "Concluído" sem OS
@@ -556,7 +590,7 @@ var GOM_STATUS_OVERRIDE_ADMIN = [
   'Em análise', 'Aguardando visita', 'Visita agendada', 'Solicitado Orçamento',
   'Orçamento Realizado', 'OS emitida', 'Atendimento Emergencial', 'Garantia de Obra',
   'Garantia de Serviço', 'Serviço Realizado', 'Concluído', 'Devolvido para a escola',
-  'A cargo da unidade escolar'
+  'A cargo da unidade escolar', 'Cancelado'
 ];
 
 function gomEhAdminGom_() {
@@ -701,6 +735,18 @@ async function salvarStatusDoModal(botao) {
     return;
   }
 
+  // "Cancelado": o MOTIVO do cancelamento é obrigatório — fica registrado na
+  // timeline do chamado. Depois o chamado segue para o Memorial (status terminal).
+  if (statusMudou && normalizarSituacaoSistema(status) === 'Cancelado') {
+    if (!String(obs || '').trim()) {
+      alert('Para cancelar o chamado, informe o MOTIVO do cancelamento no campo "Nova observação". A justificativa é obrigatória e fica registrada na timeline do chamado.');
+      const inputObsCancel = document.getElementById('mdlNovaObservacao');
+      if (inputObsCancel) inputObsCancel.focus();
+      return;
+    }
+    if (!confirm('Cancelar o chamado #' + idChamadoAberto + '?\n\nO chamado será encerrado e enviado para o Memorial. Esta ação registra o motivo informado na timeline.')) return;
+  }
+
   // Só inclui situacao no payload se realmente mudou — evita transição indesejada
   const payload = { id: idChamadoAberto, observacoes: obs };
   if (statusMudou) payload.situacao = status;
@@ -715,6 +761,13 @@ async function salvarStatusDoModal(botao) {
   const agendamentoMudou = !!(valorAgendAtual && valorAgendAtual !== valorAgendOriginal);
   if (agendamentoMudou) { payload.dataAgendamentoVisita = valorAgendAtual; payload.dataAgendamento = valorAgendAtual; payload.dataVisita = valorAgendAtual; }
 
+  // Marcação de evento especial (ex.: tempestade) — só envia quando muda.
+  const selEvento = document.getElementById('mdlSelectEvento');
+  const eventoAtual = selEvento ? String(selEvento.value || '').trim() : '';
+  const eventoOriginal = String(chamadoAtual.evento || '').trim();
+  const eventoMudou = !!selEvento && eventoAtual !== eventoOriginal;
+  if (eventoMudou) payload.evento = eventoAtual;
+
   let anexosAtualizacao = [];
   try {
     anexosAtualizacao = await coletarAnexosModalAtualizacao_();
@@ -725,7 +778,7 @@ async function salvarStatusDoModal(botao) {
     return;
   }
 
-  if (!obs && !statusMudou && !payload.numeroOs && !payload.dataPrevistaConclusao && !agendamentoMudou && !anexosAtualizacao.length) {
+  if (!obs && !statusMudou && !payload.numeroOs && !payload.dataPrevistaConclusao && !agendamentoMudou && !eventoMudou && !anexosAtualizacao.length) {
     alert('Preencha ao menos a observação, anexe um arquivo ou altere algum campo antes de atualizar.');
     return;
   }
@@ -740,6 +793,7 @@ async function salvarStatusDoModal(botao) {
       if (modal) modal.hide();
       const camposLocais = {};
       if (statusMudou) camposLocais.situacao = status;
+      if (eventoMudou) camposLocais.evento = eventoAtual;
       if (obs) camposLocais.observacoes = (chamadoAtual.observacoes ? chamadoAtual.observacoes + '\n' : '') + obs;
       if (payload.dataAgendamentoVisita) { camposLocais.dataAgendamentoVisita = payload.dataAgendamentoVisita; camposLocais.dataAgendamentoVisitaRaw = payload.dataAgendamentoVisita; camposLocais.dataAgendamento = payload.dataAgendamentoVisita; camposLocais.dataVisita = payload.dataAgendamentoVisita; }
       refreshChamados(null, Object.keys(camposLocais).length ? { id: idChamadoAberto, campos: camposLocais } : null);
@@ -767,6 +821,12 @@ async function salvarApenasObservacao(botao) {
   // Só considera mudança real se o valor é diferente do que já está salvo
   const agendamentoMudouObs = !!(valorAgendObs && valorAgendObs !== valorAgendOriginalObs);
 
+  // Marcação de evento especial (ex.: tempestade) — só envia quando muda.
+  const selEventoObs = document.getElementById('mdlSelectEvento');
+  const eventoAtualObs = selEventoObs ? String(selEventoObs.value || '').trim() : '';
+  const eventoOriginalObs = String(chamadoAtual.evento || '').trim();
+  const eventoMudouObs = !!selEventoObs && eventoAtualObs !== eventoOriginalObs;
+
   let anexosAtualizacao = [];
   try {
     anexosAtualizacao = await coletarAnexosModalAtualizacao_();
@@ -776,7 +836,7 @@ async function salvarApenasObservacao(botao) {
     return;
   }
 
-  if (!obs && !agendamentoMudouObs && !anexosAtualizacao.length) {
+  if (!obs && !agendamentoMudouObs && !eventoMudouObs && !anexosAtualizacao.length) {
     alert('Preencha a observação, anexe um arquivo ou altere a data de agendamento da visita antes de salvar.');
     return;
   }
@@ -784,6 +844,7 @@ async function salvarApenasObservacao(botao) {
   const payload = { id: idChamadoAberto };
   if (obs) payload.observacoes = obs;
   if (agendamentoMudouObs) { payload.dataAgendamentoVisita = valorAgendObs; payload.dataAgendamento = valorAgendObs; payload.dataVisita = valorAgendObs; }
+  if (eventoMudouObs) payload.evento = eventoAtualObs;
   if (anexosAtualizacao.length) payload.anexosAtualizacao = anexosAtualizacao;
 
   if (typeof gomSetButtonLoading === 'function') gomSetButtonLoading(botao, 'Salvando...');
@@ -798,6 +859,7 @@ async function salvarApenasObservacao(botao) {
       limparAnexosModalAtualizacao_();
       const camposLocais = {};
       if (obs) camposLocais.observacoes = (chamadoAtual.observacoes ? chamadoAtual.observacoes + '\n' : '') + obs;
+      if (eventoMudouObs) camposLocais.evento = eventoAtualObs;
       if (agendamentoMudouObs) { camposLocais.dataAgendamentoVisita = valorAgendObs; camposLocais.dataAgendamentoVisitaRaw = valorAgendObs; camposLocais.dataAgendamento = valorAgendObs; camposLocais.dataVisita = valorAgendObs; }
       if (typeof gomAtualizarChamadoLocal === 'function') gomAtualizarChamadoLocal(idChamadoAberto, camposLocais);
       if (tinhaAnexosNovos) sinalizarAtualizacaoAnexosModal_();

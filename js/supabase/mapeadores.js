@@ -78,7 +78,8 @@ window.GomMap = (function () {
     'Aguardando visita': '#14b8a6', 'Visita agendada': '#00e5ff', 'Em atendimento': '#00e5ff', 'Atendimento Emergencial': '#ec4899',
     'OS emitida': '#22d3ee', 'Serviço Realizado': '#10b981', 'Garantia de Obra': '#d97706', 'Garantia de Serviço': '#a855f7',
     'Visita Técnica': '#14b8a6', 'Devolvido para a escola': '#64748b', 'Concluído': '#39FF14',
-    'Encaminhado para outra gerência ou Unidade escolar.': '#6366f1', 'A cargo da unidade escolar': '#84cc16', 'Duplicado': '#475569', 'Unificado': '#475569'
+    'Encaminhado para outra gerência ou Unidade escolar.': '#6366f1', 'A cargo da unidade escolar': '#84cc16', 'Duplicado': '#475569', 'Unificado': '#475569',
+    'Cancelado': '#be123c'
   };
   const TODOS = Object.keys(CORES).concat(['Serviço Realizado']).filter((v, i, a) => a.indexOf(v) === i);
   const ALIASES = {
@@ -92,23 +93,24 @@ window.GomMap = (function () {
     'devolvido escola': 'Devolvido para a escola', 'devolvido para escola': 'Devolvido para a escola'
   };
   const REGRAS = {
-    'Em análise': { tela: 'triagem', proximos: ['Visita agendada', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Garantia de Obra', 'Devolvido para a escola'] },
-    'Aguardando visita': { tela: 'fila', filaVisita: true, proximos: ['Visita agendada', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Garantia de Obra', 'Devolvido para a escola'] },
+    'Em análise': { tela: 'triagem', proximos: ['Visita agendada', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Garantia de Obra', 'Devolvido para a escola', 'Cancelado'] },
+    'Aguardando visita': { tela: 'fila', filaVisita: true, proximos: ['Visita agendada', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Garantia de Obra', 'Devolvido para a escola', 'Cancelado'] },
     'Solicitado Orçamento': { tela: 'empresa', exigeValorOrcamento: true, exigeObservacao: true, anexoPermitido: 'orcamento', bloqueiaEquipe: true, proximos: ['Orçamento Realizado'] },
     'Orçamento Realizado': { tela: 'aprovacao', exigeAprovacao: true, proximos: ['OS emitida', 'Solicitado Orçamento', 'A cargo da unidade escolar', 'Devolvido para a escola'] },
     'OS emitida': { tela: 'empresa', exigeEquipeDia: true, exigeObservacao: true, anexoPermitido: 'servico', proximos: ['Serviço Realizado'] },
     'Atendimento Emergencial': { tela: 'empresa', exigeEquipeDia: true, exigeObservacao: true, anexoPermitido: 'servico', proximos: ['Serviço Realizado'] },
     'Garantia de Obra': { tela: 'empresa', exigeEquipeDia: true, exigeObservacao: true, anexoPermitido: 'servico', proximos: ['Serviço Realizado'] },
     'Garantia de Serviço': { tela: 'empresa', exigeEquipeDia: true, exigeObservacao: true, anexoPermitido: 'servico', proximos: ['Serviço Realizado'] },
-    'Visita agendada': { tela: 'fila', visitaAgendada: true, proximos: ['Atendimento Emergencial', 'Solicitado Orçamento', 'Garantia de Obra', 'Devolvido para a escola'] },
+    'Visita agendada': { tela: 'fila', visitaAgendada: true, proximos: ['Atendimento Emergencial', 'Solicitado Orçamento', 'Garantia de Obra', 'Devolvido para a escola', 'Cancelado'] },
     'Serviço Realizado': { tela: 'aprovacao', exigeValidacaoServico: true, proximos: ['Concluído', 'Garantia de Serviço'] },
-    'Visita Técnica': { tela: 'fila', legado: true, proximos: ['Devolvido para a escola', 'Atendimento Emergencial', 'Solicitado Orçamento'] },
+    'Visita Técnica': { tela: 'fila', legado: true, proximos: ['Devolvido para a escola', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Cancelado'] },
     'Devolvido para a escola': { tela: 'memorial', finalizado: true, proximos: [] },
     'Concluído': { tela: 'memorial', finalizado: true, proximos: [] },
     'Encaminhado para outra gerência ou Unidade escolar.': { tela: 'memorial', finalizado: true, proximos: [] },
     'A cargo da unidade escolar': { tela: 'memorial', finalizado: true, proximos: [] },
     'Duplicado': { tela: 'memorial', finalizado: true, proximos: [] },
-    'Unificado': { tela: 'memorial', finalizado: true, proximos: [] }
+    'Unificado': { tela: 'memorial', finalizado: true, proximos: [] },
+    'Cancelado': { tela: 'memorial', finalizado: true, proximos: [] }
   };
   function _norm(s) { return String(s || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
   function normalizarStatus(status) {
@@ -155,6 +157,7 @@ window.GomMap = (function () {
       endereco: (escola && escola.endereco) || row.endereco || '',
       detalhamento: row.detalhamento || '',
       classificacao: row.classificacao || '',
+      evento: row.evento || '',
       resolvido: row.resolvido === true ? 'Sim' : (row.resolvido === false ? '' : (row.resolvido || '')),
       visitaTecnica: '', emissaoOrcamento: '', ordemServico: '',
       dataConclusao: fmtDataHora(row.data_conclusao), responsavel: row.responsavel || '',

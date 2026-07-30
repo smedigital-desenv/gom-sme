@@ -152,7 +152,7 @@
       </div>
       <div class="modal-body p-4 bg-light">
         <div class="row">
-          <div class="col-md-9"><div class="modal-label">Unidade</div><div class="modal-data fs-5" id="mdlUnidade"></div></div>
+          <div class="col-md-9"><div class="modal-label">Unidade</div><div class="modal-data fs-5" id="mdlUnidade"></div><div id="mdlEventoBadge" class="mt-1"></div></div>
           <div class="col-md-3 text-end"><div class="modal-label">ID</div><div class="modal-data"><span class="badge bg-secondary fs-6" id="mdlId"></span></div></div>
         </div>
         <div class="row">
@@ -191,6 +191,7 @@
         <div id="mdlWorkflowBox" class="row g-3 align-items-end">
           <div class="col-md-5"><label class="modal-label text-primary" id="mdlStatusLabel">Alterar situação</label><select class="form-select fw-bold" id="mdlSelectStatus"></select></div>
           <div class="col-md-7"><label class="modal-label text-primary" id="mdlObsLabel">Nova observação</label><input class="form-control" id="mdlNovaObservacao" placeholder="Registrar observação do trâmite..."></div>
+          <div class="col-md-6" id="mdlEventoCol"><label class="modal-label text-primary"><i class="bi bi-tag me-1"></i>Evento associado</label><select class="form-select" id="mdlSelectEvento"></select><small class="text-muted d-block mt-1">Sinalize se o chamado decorre de um evento específico (ex.: tempestade).</small></div>
           <div class="col-md-6 modal-extra-aprovacao"><label class="modal-label text-primary" id="mdlNumeroOsLabel">Nº da OS</label><input class="form-control" id="mdlNumeroOs" placeholder="Obrigatório ao aprovar orçamento"></div>
           <div class="col-md-6 modal-extra-aprovacao"><label class="modal-label text-primary">Previsão de conclusão</label><input class="form-control gom-date-br-input" type="date" id="mdlDataPrevistaConclusao" onchange="gomNormalizarDataBrInput(this)"></div>
           <div class="col-md-6 modal-extra-fila" style="display:none;"><label class="modal-label text-primary"><i class="bi bi-calendar-check me-1"></i>Agendamento da visita</label><input class="form-control gom-date-br-input" type="date" id="mdlDataAgendamentoVisita" onchange="gomNormalizarDataBrInput(this)"></div>

@@ -5,7 +5,7 @@
       --os: #22d3ee; --emergencial: #ec4899; --griffo: #ff3131; 
       --orcamento-realizado: #fb923c; --servico-realizado: #22c55e;
       --analise: #FFD300; --garantia: #d97706; --garantia-servico: #a855f7; --duplicado: #475569; 
-      --visita: #14b8a6; --unidade: #84cc16;
+      --visita: #14b8a6; --unidade: #84cc16; --cancelado: #be123c; --evento-tempestade: #0284c7;
       --obras: #0f766e; --obra-aguardando: #f59e0b; --obra-projeto: #6366f1;
       --obra-licitacao: #0ea5e9; --obra-execucao: #14b8a6; --obra-concluida: #22c55e;
       --obra-suspensa: #ef4444; --obra-arquivada: #64748b;
@@ -225,7 +225,24 @@
     .st-garantia { --card-accent: var(--garantia); } .st-garantia-servico { --card-accent: var(--garantia-servico); } .st-duplicado { --card-accent: var(--duplicado); }
     .st-visita { --card-accent: var(--visita); } .st-unidade { --card-accent: var(--unidade); }
     .st-orcamento-realizado { --card-accent: var(--orcamento-realizado); } .st-servico-realizado { --card-accent: var(--servico-realizado); }
+    .st-cancelado { --card-accent: var(--cancelado); }
     .st-default { --card-accent: var(--primary); }
+
+    /* Marcação de evento especial (ex.: tempestade) — selo discreto e harmônico. */
+    .card-evento-row { margin: 2px 0 6px; }
+    .evento-marca {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 999px;
+      font-size: .70rem; font-weight: 800; letter-spacing: .02em; line-height: 1;
+      color: var(--evento-cor, #0284c7);
+      background: #eef6fc; /* fallback */
+      background: color-mix(in srgb, var(--evento-cor, #0284c7) 12%, #ffffff);
+      border: 1px solid rgba(2, 132, 199, .35); /* fallback */
+      border: 1px solid color-mix(in srgb, var(--evento-cor, #0284c7) 35%, transparent);
+      white-space: nowrap; max-width: 100%;
+    }
+    .evento-marca i { font-size: .85rem; }
+    .memorial-unidade .evento-marca { margin: 4px 0; }
 
 
     .card-anexo-icon {

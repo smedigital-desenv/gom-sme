@@ -170,6 +170,7 @@ function renderCardChamado(item) {
   const iconeAnexo = temAnexo(item) ? '<span class="card-anexo-icon" title="Chamado com anexo"><i class="bi bi-paperclip"></i></span>' : '';
   const miniaturasAnexos = typeof renderMiniaturasAnexosChamado === 'function' ? renderMiniaturasAnexosChamado(item, 4) : '';
   const labelSituacao = telaAtual === 'historico' ? 'Status final' : 'Situação atual';
+  const marcaEvento = (typeof gomRenderBadgeEvento_ === 'function' && item.evento) ? `<div class="card-evento-row">${gomRenderBadgeEvento_(item.evento)}</div>` : '';
 
   return `
     <div class="card-admin ${classe}" style="--card-accent: ${corStatus};" onclick="abrirModalAnalise('${idSeguro}')">
@@ -177,6 +178,7 @@ function renderCardChamado(item) {
         <span class="card-kind"><span class="card-dot"></span>${tipo}</span>
         <span class="card-id">#${escapeHtml(item.id || '-')}${iconeAnexo}</span>
       </div>
+      ${marcaEvento}
       <div class="card-title-wrap">
         <span class="card-icon"><i class="bi bi-building"></i></span>
         <div>
@@ -215,6 +217,7 @@ function renderCardFila(item, index) {
   const posicao = String(index + 1).padStart(2, '0');
   const iconeAnexo = temAnexo(item) ? ' · Anexo' : '';
   const miniaturasAnexos = typeof renderMiniaturasAnexosChamado === 'function' ? renderMiniaturasAnexosChamado(item, 4) : '';
+  const marcaEvento = (typeof gomRenderBadgeEvento_ === 'function' && item.evento) ? `<div class="card-evento-row">${gomRenderBadgeEvento_(item.evento)}</div>` : '';
 
   return `
     <div class="card-admin fila-card ${classe}" style="--card-accent: ${corStatus};" onclick="abrirModalAnalise('${idSeguro}')">
@@ -222,6 +225,7 @@ function renderCardFila(item, index) {
         <span class="fila-rank-badge" title="Posição atual na fila">${posicao}</span>
         ${avisoEntrada}
       </div>
+      ${marcaEvento}
       <div class="card-title-wrap">
         <span class="card-icon"><i class="bi bi-building"></i></span>
         <div>
@@ -385,6 +389,7 @@ function renderLinhaMemorial(item) {
       '<div class="memorial-unidade" data-label="Unidade / chamado">',
         '<div class="memorial-idline"><span class="memorial-id">#' + id + '</span><span class="memorial-tipo">' + tipo + '</span></div>',
         '<strong>' + unidade + '</strong>',
+        ((typeof gomRenderBadgeEvento_ === 'function' && item.evento) ? gomRenderBadgeEvento_(item.evento) : ''),
         '<p>' + detalhe + '</p>',
       '</div>',
       '<div class="memorial-status" data-label="Status / OS">',

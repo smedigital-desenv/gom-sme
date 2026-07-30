@@ -655,6 +655,11 @@ window.GomDados = (function () {
     if (['Solicitado Orçamento', 'Atendimento Emergencial', 'OS emitida', 'Aguardando visita', 'Visita agendada', 'Garantia de Obra', 'Garantia de Serviço'].includes(stNovo) && mudou) u.data_hora_encaminhamento = _nowISO();
     if (stNovo === 'OS emitida' && mudou) { let n = String(atual.numero_os || '').trim(); if (!n) n = await _gerarNumeroOsAutomatico(); if (!n) n = String(id) + '/' + new Date().getFullYear(); u.numero_os = n; }
     if (stNovo === 'Devolvido para a escola') u.data_conclusao_os = _nowISO();
+    // Cancelado: status terminal — segue direto para o Memorial. Marca a data de
+    // encerramento e o MOTIVO é registrado nas observações/timeline.
+    if (stNovo === 'Cancelado' && mudou) u.data_conclusao_os = _nowISO();
+    // Marcação de evento especial (ex.: tempestade). '' limpa a marcação.
+    if (p.evento !== undefined) u.evento = String(p.evento || '').trim() || null;
     const _anexosAtual = p.anexosAtualizacao || p.anexos || [];
     if (Array.isArray(_anexosAtual) && _anexosAtual.length) {
       const _esc = (atual.escola && atual.escola.nome) || atual.unidade_escolar || '';
@@ -668,7 +673,8 @@ window.GomDados = (function () {
       try { await _enfileirarEmailDevolucao_(atual, p.observacoes); } catch (e) {}
     }
     if (p.dataAgendamentoVisita) await _atendimento({ solicitacao_id: id, status: stNovo, numero_os: atual.numero_os || '', equipe: p.equipe || atual.equipe_responsavel || '', observacoes_dia: p.observacoes || '', data_atendimento: _date(p.dataAgendamentoVisita), tipo_registro: 'Agendamento de visita' });
-    await _log({ solicitacao_id: id, acao: 'Chamado atualizado', status_anterior: mudou ? stAnt : '', status_novo: mudou ? stNovo : stAnt, observacao: p.observacoes || '', valor_orcamento: _num(p.valorOrcamento), equipe: p.equipe || '' });
+    const _acaoLog = (stNovo === 'Cancelado' && mudou) ? 'Chamado cancelado' : 'Chamado atualizado';
+    await _log({ solicitacao_id: id, acao: _acaoLog, status_anterior: mudou ? stAnt : '', status_novo: mudou ? stNovo : stAnt, observacao: p.observacoes || '', valor_orcamento: _num(p.valorOrcamento), equipe: p.equipe || '' });
     return { ok: true, id, status: stNovo };
   }
 

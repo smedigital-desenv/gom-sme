@@ -71,9 +71,9 @@
   function proximos(status, contexto) {
     var st = norm(status);
     var mapa = {
-      'Em análise': ['Visita agendada', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Garantia de Obra', 'Devolvido para a escola'],
-      'Aguardando visita': ['Visita agendada', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Garantia de Obra', 'Devolvido para a escola'],
-      'Visita agendada': ['Atendimento Emergencial', 'Solicitado Orçamento', 'Garantia de Obra', 'Devolvido para a escola'],
+      'Em análise': ['Visita agendada', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Aguardando visita', 'Garantia de Obra', 'Devolvido para a escola', 'Cancelado'],
+      'Aguardando visita': ['Visita agendada', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Garantia de Obra', 'Devolvido para a escola', 'Cancelado'],
+      'Visita agendada': ['Atendimento Emergencial', 'Solicitado Orçamento', 'Garantia de Obra', 'Devolvido para a escola', 'Cancelado'],
       'Solicitado Orçamento': ['Orçamento Realizado'],
       'Orçamento Realizado': ['OS emitida', 'Solicitado Orçamento', 'A cargo da unidade escolar', 'Devolvido para a escola'],
       'OS emitida': ['Serviço Realizado'],
@@ -81,13 +81,14 @@
       'Garantia de Obra': ['Serviço Realizado'],
       'Garantia de Serviço': ['Serviço Realizado'],
       'Serviço Realizado': ['Concluído', 'Garantia de Serviço'],
-      'Visita Técnica': ['Devolvido para a escola', 'Atendimento Emergencial', 'Solicitado Orçamento'],
+      'Visita Técnica': ['Devolvido para a escola', 'Atendimento Emergencial', 'Solicitado Orçamento', 'Cancelado'],
       'Devolvido para a escola': [],
       'Concluído': [],
       'Encaminhado para outra gerência ou Unidade escolar.': [],
       'A cargo da unidade escolar': [],
       'Duplicado': [],
-      'Unificado': []
+      'Unificado': [],
+      'Cancelado': []
     };
     var lista = (mapa[st] || []).slice();
     if (contexto === 'empresa') {

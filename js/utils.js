@@ -58,7 +58,8 @@ function getClasseStatus(st) {
     'Encaminhado para outra gerência ou Unidade escolar.': 'st-encaminhado',
     'A cargo da unidade escolar': 'st-unidade',
     'Duplicado': 'st-duplicado',
-    'Unificado': 'st-duplicado'
+    'Unificado': 'st-duplicado',
+    'Cancelado': 'st-cancelado'
   };
   return mapaClasses[status] || 'st-default';
 }
@@ -88,6 +89,7 @@ function getKpiIcon(key) {
     'A cargo da unidade escolar': 'bi-building-fill-gear',
     'Duplicado': 'bi-copy',
     'Unificado': 'bi-collection',
+    'Cancelado': 'bi-x-octagon-fill',
     'Todas as obras': 'bi-buildings-fill',
     'Aguardando': 'bi-hourglass-split',
     'Em projeto': 'bi-pencil-square',

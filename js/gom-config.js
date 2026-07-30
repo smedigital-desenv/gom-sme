@@ -116,7 +116,7 @@ var STATUS_EMPRESA_DIARIO = window.STATUS_EMPRESA_DIARIO = ['OS emitida', 'Atend
 var STATUS_EMPRESA_ORCAMENTO = window.STATUS_EMPRESA_ORCAMENTO = ['Solicitado Orçamento'];
 var STATUS_EMPRESA_GERENCIAL = window.STATUS_EMPRESA_GERENCIAL = ['OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'];
 var STATUS_CAMPO = window.STATUS_CAMPO = ['Aguardando visita', 'Visita agendada', 'OS emitida', 'Atendimento Emergencial', 'Garantia de Obra', 'Garantia de Serviço'];
-var STATUS_MEMORIAL = window.STATUS_MEMORIAL = ['Concluído', 'Encaminhado para outra gerência ou Unidade escolar.', 'A cargo da unidade escolar', 'Duplicado', 'Unificado', 'Devolvido para a escola'];
+var STATUS_MEMORIAL = window.STATUS_MEMORIAL = ['Concluído', 'Encaminhado para outra gerência ou Unidade escolar.', 'A cargo da unidade escolar', 'Duplicado', 'Unificado', 'Devolvido para a escola', 'Cancelado'];
 
 var STATUS_TODOS = window.STATUS_TODOS = [
   'Em análise',
@@ -134,7 +134,8 @@ var STATUS_TODOS = window.STATUS_TODOS = [
   'Encaminhado para outra gerência ou Unidade escolar.',
   'A cargo da unidade escolar',
   'Duplicado',
-  'Unificado'
+  'Unificado',
+  'Cancelado'
 ];
 
 var configKPIs = window.configKPIs = [
@@ -153,7 +154,8 @@ var configKPIs = window.configKPIs = [
   { key: 'Encaminhado para outra gerência ou Unidade escolar.', title: 'Encaminhado', cor: 'var(--encaminhado)' },
   { key: 'A cargo da unidade escolar', title: 'Cargo unidade', cor: 'var(--unidade)' },
   { key: 'Duplicado', title: 'Duplicado', cor: 'var(--duplicado)' },
-  { key: 'Unificado', title: 'Unificado', cor: 'var(--duplicado)' }
+  { key: 'Unificado', title: 'Unificado', cor: 'var(--duplicado)' },
+  { key: 'Cancelado', title: 'Cancelado', cor: 'var(--cancelado)' }
 ];
 
 var configObrasKPIs = window.configObrasKPIs = [
@@ -184,7 +186,36 @@ var CORES_STATUS = window.CORES_STATUS = {
   'Encaminhado para outra gerência ou Unidade escolar.': '#6366f1',
   'A cargo da unidade escolar': '#84cc16',
   'Duplicado': '#475569',
-  'Unificado': '#475569'
+  'Unificado': '#475569',
+  'Cancelado': '#be123c'
+};
+
+// =====================================================
+// Eventos especiais (marcação de origem do chamado)
+// Permite sinalizar chamados decorrentes de um evento específico
+// (ex.: tempestade). Para cadastrar um novo evento, basta acrescentar
+// um objeto a esta lista — a marcação passa a aparecer no modal do
+// chamado e nos cartões automaticamente.
+// =====================================================
+var EVENTOS_ESPECIAIS = window.EVENTOS_ESPECIAIS = Array.isArray(window.EVENTOS_ESPECIAIS) ? window.EVENTOS_ESPECIAIS : [
+  {
+    id: 'tempestade-2026-07-24',
+    nome: 'Tempestade 24/07',
+    descricao: 'Chamado decorrente da tempestade de 24/07/2026.',
+    cor: '#0284c7',
+    icone: 'bi-cloud-lightning-rain-fill'
+  }
+];
+
+// Retorna o objeto do evento pelo id (ou null).
+window.gomEventoPorId = window.gomEventoPorId || function (id) {
+  var chave = String(id == null ? '' : id).trim();
+  if (!chave) return null;
+  var lista = window.EVENTOS_ESPECIAIS || [];
+  for (var i = 0; i < lista.length; i++) {
+    if (lista[i] && String(lista[i].id) === chave) return lista[i];
+  }
+  return null;
 };
 
 var STATUS_OBRAS = window.STATUS_OBRAS = ['Aguardando','Em projeto','Em licitação','Em execução','Suspensa','Concluída','Arquivada'];
