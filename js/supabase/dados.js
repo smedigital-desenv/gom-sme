@@ -673,7 +673,9 @@ window.GomDados = (function () {
     // na mesma ação em que é validado e encaminhado ao Memorial.
     let _osEmergencialAberta = '';
     if (stNovo === 'Concluído' && mudou && !String(atual.numero_os || '').trim()) {
-      if (await _passouPorEmergencial(id)) {
+      // p.abrirOs = true: o aprovador clicou explicitamente em "Abrir OS e enviar
+      // ao Memorial". Caso contrário, abre só se o chamado passou por emergência.
+      if (p.abrirOs === true || await _passouPorEmergencial(id)) {
         let n = await _gerarNumeroOsAutomatico();
         if (!n) n = String(id) + '/' + new Date().getFullYear();
         u.numero_os = n;

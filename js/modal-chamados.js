@@ -362,6 +362,7 @@ function montarTimelineLocalModal_(chamado) {
 }
 
 function carregarTimelineChamadoModal_(id) {
+  window.gomTimelineChamadoAtual_ = null; // zera cache do chamado anterior
   var chamado = (window.listaChamadosGlobal || []).find(function(x) { return String(x.id) === String(id); }) || {};
   var locais = montarTimelineLocalModal_(chamado);
   renderTimelineChamadoModal_(locais, true);
@@ -377,6 +378,12 @@ function carregarTimelineChamadoModal_(id) {
       var eventos = payload && payload.ok && Array.isArray(payload.timeline) ? payload.timeline : locais;
       if (!eventos.length) eventos = locais;
       renderTimelineChamadoModal_(eventos, false);
+      // Cacheia a timeline do chamado aberto e reavalia o botão "Abrir OS" —
+      // ele só vale para chamados que passaram por Atendimento Emergencial.
+      window.gomTimelineChamadoAtual_ = { id: id, eventos: eventos };
+      if (String(idChamadoAberto) === String(id) && typeof gomAtualizarBotaoAbrirOsMemorial_ === 'function') {
+        gomAtualizarBotaoAbrirOsMemorial_(chamado);
+      }
     })
     .withFailureHandler(function(err) {
       console.warn('[GOM TIMELINE] Falha ao carregar timeline:', err);
@@ -474,10 +481,85 @@ function abrirModalAnalise(id) {
   document.querySelectorAll('.modal-extra-aprovacao').forEach(el => { el.style.display = emAprovacaoModal ? '' : 'none'; });
   if (emAprovacaoModal) atualizarCamposModalAprovacao();
   gomPreencherSeletorEvento_(c);
+  gomAtualizarBotaoAbrirOsMemorial_(c);
   gomConfigurarOverrideAdmin_(c);
 
   new bootstrap.Modal(document.getElementById('modalAnalise')).show();
 }
+
+// Mostra o botão "Abrir OS e enviar ao Memorial" na validação final de um
+// chamado em "Serviço Realizado" que ainda não tem OS (caso do Atendimento
+// Emergencial, cujo serviço é feito antes de qualquer OS). Um clique gera o
+// número da OS e encaminha ao Memorial na mesma ação.
+// Detecta, pela timeline já carregada, se o chamado passou por "Atendimento
+// Emergencial". Retorna null quando a timeline ainda não chegou (indefinido).
+function gomChamadoPassouEmergencial_(chamado) {
+  const cache = window.gomTimelineChamadoAtual_;
+  if (!cache || String(cache.id) !== String(chamado.id) || !Array.isArray(cache.eventos)) return null;
+  return cache.eventos.some(function (e) {
+    const alvo = normalizarTextoBase([e && e.statusNovo, e && e.status_novo, e && e.statusAnterior, e && e.titulo, e && e.acao].join(' '));
+    return alvo.indexOf('atendimento emergencial') >= 0 || alvo.indexOf('emergencial') >= 0;
+  });
+}
+
+function gomAtualizarBotaoAbrirOsMemorial_(chamado) {
+  const btn = document.getElementById('mdlBtnAbrirOsMemorial');
+  if (!btn) return;
+  const st = normalizarSituacaoSistema(chamado.situacao || chamado.status);
+  const semOs = !String(chamado.numeroOs || '').trim();
+  const podeAlterar = (typeof window.gomPerfilPodeAlterarStatus !== 'function') || window.gomPerfilPodeAlterarStatus(chamado);
+  const base = st === 'Serviço Realizado' && semOs && podeAlterar
+    && telaAtual !== 'historico' && telaAtual !== 'campo';
+  // Só mostra para chamados emergenciais. Enquanto a timeline não chega
+  // (retorno null), exibe de forma otimista e refina quando ela carregar.
+  const emergencial = gomChamadoPassouEmergencial_(chamado);
+  const visivel = base && (emergencial === null ? true : emergencial === true);
+  btn.style.display = visivel ? '' : 'none';
+}
+
+// Abre a OS (gera o número) e envia o chamado ao Memorial em uma única ação.
+async function gomAbrirOsEnviarMemorial_(botao) {
+  const chamado = (window.listaChamadosGlobal || []).find(function (x) { return String(x.id) === String(idChamadoAberto); }) || {};
+  if (typeof window.gomPerfilPodeAlterarStatus === 'function' && !window.gomPerfilPodeAlterarStatus(chamado)) {
+    alert('Seu perfil não pode validar este chamado neste estágio.');
+    return;
+  }
+  if (!confirm('Abrir a OS do chamado #' + idChamadoAberto + ' e enviar ao Memorial?\n\nO número da OS será gerado automaticamente e o chamado será concluído.')) return;
+
+  const obsEl = document.getElementById('mdlNovaObservacao');
+  const obs = obsEl ? String(obsEl.value || '').trim() : '';
+  const payload = { id: idChamadoAberto, situacao: 'Concluído', abrirOs: true };
+  if (obs) payload.observacoes = obs;
+
+  let anexosAtualizacao = [];
+  try {
+    anexosAtualizacao = await coletarAnexosModalAtualizacao_();
+    if (anexosAtualizacao.length) payload.anexosAtualizacao = anexosAtualizacao;
+  } catch (erroAnexo) {
+    if (typeof gomMostrarErroAcao === 'function') gomMostrarErroAcao(erroAnexo, 'Não foi possível preparar os anexos.');
+    else alert((erroAnexo && erroAnexo.message) || erroAnexo);
+    return;
+  }
+
+  if (typeof gomSetButtonLoading === 'function') gomSetButtonLoading(botao, 'Abrindo OS...');
+  else if (botao) botao.disabled = true;
+
+  google.script.run
+    .withSuccessHandler(function () {
+      limparAnexosModalAtualizacao_();
+      const modal = bootstrap.Modal.getInstance(document.getElementById('modalAnalise'));
+      if (modal) modal.hide();
+      refreshChamados(function () { if (typeof renderizarTela === 'function') renderizarTela(); });
+    })
+    .withFailureHandler(function (err) {
+      if (typeof gomResetButtonLoading === 'function') gomResetButtonLoading(botao);
+      else if (botao) botao.disabled = false;
+      if (typeof gomMostrarErroAcao === 'function') gomMostrarErroAcao(err, 'Não foi possível abrir a OS e concluir o chamado.');
+      else alert((err && err.message) || err);
+    })
+    .atualizarChamadoWorkflow(payload);
+}
+window.gomAbrirOsEnviarMemorial_ = gomAbrirOsEnviarMemorial_;
 
 function getStatusPermitidosModal(chamado) {
   const st = normalizarSituacaoSistema(chamado.situacao || chamado.status);

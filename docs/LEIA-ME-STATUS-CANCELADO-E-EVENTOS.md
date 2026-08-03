@@ -79,15 +79,18 @@ Enquanto a coluna não existir, o selo simplesmente não é gravado — o status
 ## 3. Atendimento Emergencial — abrir OS na conclusão
 
 No atendimento emergencial o serviço é executado antes de qualquer OS, então o
-chamado chega à validação final **sem número de OS**. Agora, na **aprovação
-final** (Serviço Realizado → *Validar e enviar para Memorial*):
+chamado chega à validação final **sem número de OS**. Na **aprovação final**
+(status *Serviço Realizado*) há agora um **botão dedicado**:
 
-- se o chamado **passou por "Atendimento Emergencial"** e está **sem OS**, o
-  sistema **abre a OS** (gera o número automaticamente, na mesma numeração das
-  demais) **e encaminha para o Memorial na mesma ação**;
-- a abertura fica registrada na timeline (ação *"Emergencial concluído — OS
-  aberta e enviada ao Memorial"*).
+- **"Abrir OS e enviar ao Memorial"** — botão amarelo que aparece no modal do
+  chamado quando ele está em *Serviço Realizado*, **sem OS** e **passou por
+  Atendimento Emergencial**. Um clique **gera o número da OS** (mesma numeração
+  das demais) **e encaminha o chamado ao Memorial na mesma ação**.
+- A abertura fica registrada na timeline (*"Emergencial concluído — OS aberta e
+  enviada ao Memorial"*).
+- O botão só aparece para quem pode validar o chamado (Secretaria / Admin GOM) e
+  fica oculto nas telas de Histórico/Campo.
 
-Fluxos normais (que emitem a OS antes do serviço) e garantias seguem inalterados
-— a abertura automática na conclusão vale **apenas** para o emergencial sem OS.
-Não exige alteração de banco.
+Além do botão, ao concluir um emergencial pela opção "Validar e enviar para
+Memorial" a OS também é aberta automaticamente. Fluxos normais (que emitem a OS
+antes do serviço) e garantias seguem inalterados. Não exige alteração de banco.
