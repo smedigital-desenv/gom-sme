@@ -1,6 +1,6 @@
-# Status "Cancelado" e marcação de eventos
+# Status "Cancelado", marcação de eventos e fluxos correlatos
 
-Duas funcionalidades novas:
+Funcionalidades:
 
 ## 1. Status "Cancelado"
 
@@ -67,3 +67,27 @@ CREATE INDEX IF NOT EXISTS idx_solicitacoes_evento
 
 Enquanto a coluna não existir, o selo simplesmente não é gravado — o status
 "Cancelado" funciona independentemente dessa migração.
+
+### Filtro de busca por evento
+
+- No **Memorial** há um novo filtro **"Todos os eventos"**, ao lado dos filtros
+  de mês/status/tipo — permite listar só os chamados de um evento (ex.: só a
+  Tempestade 24/07).
+- O **nome do evento** também entra na **busca por texto** (campo de pesquisa)
+  em todas as telas de chamados — basta digitar, por exemplo, "tempestade".
+
+## 3. Atendimento Emergencial — abrir OS na conclusão
+
+No atendimento emergencial o serviço é executado antes de qualquer OS, então o
+chamado chega à validação final **sem número de OS**. Agora, na **aprovação
+final** (Serviço Realizado → *Validar e enviar para Memorial*):
+
+- se o chamado **passou por "Atendimento Emergencial"** e está **sem OS**, o
+  sistema **abre a OS** (gera o número automaticamente, na mesma numeração das
+  demais) **e encaminha para o Memorial na mesma ação**;
+- a abertura fica registrada na timeline (ação *"Emergencial concluído — OS
+  aberta e enviada ao Memorial"*).
+
+Fluxos normais (que emitem a OS antes do serviço) e garantias seguem inalterados
+— a abertura automática na conclusão vale **apenas** para o emergencial sem OS.
+Não exige alteração de banco.

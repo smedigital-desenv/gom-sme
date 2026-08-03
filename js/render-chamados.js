@@ -23,7 +23,7 @@ function renderizarTela() {
   const modoEmpresaAtual = window.empresaModoAtual || 'diario';
   const termo = (telaAtual === 'empresa' && (modoEmpresaAtual === 'gerencial' || modoEmpresaAtual === 'equipes')) ? '' : termoPesquisa();
   let listaRender = listaTela.filter(item => {
-    const texto = normalizarTextoBase(`${item.id} ${item.unidade} ${item.detalhamento} ${item.situacao} ${item.status} ${item.observacoes} ${item.valorOrcamento} ${item.equipe} ${item.numeroOs} ${item.tipo}`);
+    const texto = normalizarTextoBase(`${item.id} ${item.unidade} ${item.detalhamento} ${item.situacao} ${item.status} ${item.observacoes} ${item.valorOrcamento} ${item.equipe} ${item.numeroOs} ${item.tipo} ${gomNomeEvento_(item.evento)}`);
     if (!texto.includes(termo)) return false;
     if (!statusFiltroClicado) return true;
     if (statusFiltroClicado === 'Entrada hoje') return ehMesmoDia(parseDataOrdenacao(item), new Date());
@@ -287,6 +287,7 @@ function aplicarFiltrosMemorial(lista) {
   const mes = document.getElementById('memorialMes') ? document.getElementById('memorialMes').value : '';
   const status = document.getElementById('memorialStatus') ? document.getElementById('memorialStatus').value : '';
   const tipo = document.getElementById('memorialTipo') ? document.getElementById('memorialTipo').value : '';
+  const evento = document.getElementById('memorialEvento') ? document.getElementById('memorialEvento').value : '';
 
   return (lista || []).filter(function(item) {
     const st = normalizarSituacaoSistema(item.situacao || item.status);
@@ -294,6 +295,8 @@ function aplicarFiltrosMemorial(lista) {
     if (status && st !== status) return false;
 
     if (tipo && String(item.tipo || '') !== tipo) return false;
+
+    if (evento && String(item.evento || '') !== evento) return false;
 
     if (mes) {
       const dt = getDataFechamentoMemorial(item) || getDataAberturaMemorial(item);
@@ -304,10 +307,18 @@ function aplicarFiltrosMemorial(lista) {
     const texto = normalizarTextoBase([
       item.id, item.unidade, item.detalhamento, item.situacao, item.status,
       item.numeroOs, item.tipo, item.equipe, item.valorOrcamento, item.observacoes,
-      item.dataHora, item.data, item.dataHoraUltimaAcao, item.dataConclusaoOs, item.dataConclusao
+      item.dataHora, item.data, item.dataHoraUltimaAcao, item.dataConclusaoOs, item.dataConclusao,
+      gomNomeEvento_(item.evento)
     ].join(' '));
     return texto.includes(termo);
   });
+}
+
+// Resolve o id de um evento para o seu nome legível (ou '' se não houver).
+function gomNomeEvento_(idEvento) {
+  if (!idEvento) return '';
+  const ev = (typeof window.gomEventoPorId === 'function') ? window.gomEventoPorId(idEvento) : null;
+  return ev ? (ev.nome || ev.id || '') : String(idEvento);
 }
 
 function popularFiltrosMemorial(lista) {
@@ -318,6 +329,11 @@ function popularFiltrosMemorial(lista) {
   preencherSelectMemorial_('memorialTipo', coletarValoresMemorial(lista, function(item) {
     return String(item.tipo || '').trim();
   }), 'Todos os tipos');
+
+  // Filtro por evento: valor = id do evento, rótulo = nome legível.
+  preencherSelectMemorial_('memorialEvento', coletarValoresMemorial(lista, function(item) {
+    return String(item.evento || '').trim();
+  }), 'Todos os eventos', gomNomeEvento_);
 
   preencherSelectMemorial_('memorialMes', coletarMesesMemorial(lista), 'Todos os meses', formatarMesLabelMemorial);
 }

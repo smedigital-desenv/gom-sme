@@ -89,6 +89,20 @@ window.GomDados = (function () {
     if (r.error) _err('Atualizar chamado', r.error);
     return true;
   }
+  // Detecta se o chamado passou por "Atendimento Emergencial" em algum momento
+  // (consulta o histórico). Usado para abrir a OS na conclusão do emergencial.
+  async function _passouPorEmergencial(id) {
+    try {
+      const r = await window.SB
+        .from('log_acoes')
+        .select('id')
+        .eq('solicitacao_id', id)
+        .eq('status_novo', 'Atendimento Emergencial')
+        .limit(1);
+      if (r.error) return false;
+      return (r.data || []).length > 0;
+    } catch (e) { return false; }
+  }
   async function _log(entry) {
     try { await window.SB.from('log_acoes').insert(Object.assign({ usuario: '' }, entry)); } catch (e) { window.gomWarn && window.gomWarn('[GOM] log:', e.message); }
   }
@@ -654,6 +668,20 @@ window.GomDados = (function () {
     if (['Aguardando visita', 'Visita agendada', 'Em atendimento'].includes(stNovo) && !atual.data_hora_entrada_fila) u.data_hora_entrada_fila = _nowISO();
     if (['Solicitado Orçamento', 'Atendimento Emergencial', 'OS emitida', 'Aguardando visita', 'Visita agendada', 'Garantia de Obra', 'Garantia de Serviço'].includes(stNovo) && mudou) u.data_hora_encaminhamento = _nowISO();
     if (stNovo === 'OS emitida' && mudou) { let n = String(atual.numero_os || '').trim(); if (!n) n = await _gerarNumeroOsAutomatico(); if (!n) n = String(id) + '/' + new Date().getFullYear(); u.numero_os = n; }
+    // Atendimento Emergencial: na aprovação final (Serviço Realizado → Concluído),
+    // se o chamado não tem OS e passou por emergência, a OS é ABERTA (número gerado)
+    // na mesma ação em que é validado e encaminhado ao Memorial.
+    let _osEmergencialAberta = '';
+    if (stNovo === 'Concluído' && mudou && !String(atual.numero_os || '').trim()) {
+      if (await _passouPorEmergencial(id)) {
+        let n = await _gerarNumeroOsAutomatico();
+        if (!n) n = String(id) + '/' + new Date().getFullYear();
+        u.numero_os = n;
+        u.data_hora_encaminhamento = u.data_hora_encaminhamento || _nowISO();
+        u.data_conclusao_os = _nowISO();
+        _osEmergencialAberta = n;
+      }
+    }
     if (stNovo === 'Devolvido para a escola') u.data_conclusao_os = _nowISO();
     // Cancelado: status terminal — segue direto para o Memorial. Marca a data de
     // encerramento e o MOTIVO é registrado nas observações/timeline.
@@ -673,9 +701,13 @@ window.GomDados = (function () {
       try { await _enfileirarEmailDevolucao_(atual, p.observacoes); } catch (e) {}
     }
     if (p.dataAgendamentoVisita) await _atendimento({ solicitacao_id: id, status: stNovo, numero_os: atual.numero_os || '', equipe: p.equipe || atual.equipe_responsavel || '', observacoes_dia: p.observacoes || '', data_atendimento: _date(p.dataAgendamentoVisita), tipo_registro: 'Agendamento de visita' });
-    const _acaoLog = (stNovo === 'Cancelado' && mudou) ? 'Chamado cancelado' : 'Chamado atualizado';
-    await _log({ solicitacao_id: id, acao: _acaoLog, status_anterior: mudou ? stAnt : '', status_novo: mudou ? stNovo : stAnt, observacao: p.observacoes || '', valor_orcamento: _num(p.valorOrcamento), equipe: p.equipe || '' });
-    return { ok: true, id, status: stNovo };
+    let _acaoLog = (stNovo === 'Cancelado' && mudou) ? 'Chamado cancelado' : 'Chamado atualizado';
+    if (_osEmergencialAberta) _acaoLog = 'Emergencial concluído — OS aberta e enviada ao Memorial';
+    const _obsLog = _osEmergencialAberta
+      ? ('OS ' + _osEmergencialAberta + ' aberta na conclusão do atendimento emergencial. ' + (p.observacoes || '')).trim()
+      : (p.observacoes || '');
+    await _log({ solicitacao_id: id, acao: _acaoLog, status_anterior: mudou ? stAnt : '', status_novo: mudou ? stNovo : stAnt, observacao: _obsLog, valor_orcamento: _num(p.valorOrcamento), equipe: p.equipe || '' });
+    return { ok: true, id, status: stNovo, numeroOs: u.numero_os || atual.numero_os || '' };
   }
 
   async function criarSolicitacao(p) {
