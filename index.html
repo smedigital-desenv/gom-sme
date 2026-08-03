@@ -164,6 +164,10 @@
           <div class="col-md-4" id="mdlValorOrcamentoCol" style="display:none;"><div class="modal-label"><i class="bi bi-cash-coin me-1"></i>Valor do orçamento</div><div class="modal-data fw-bold text-success" id="mdlValorOrcamento"></div></div>
           <div class="col-md-4" id="mdlPrevisaoCol" style="display:none;"><div class="modal-label"><i class="bi bi-calendar-check me-1"></i>Previsão de conclusão</div><div class="modal-data fw-bold" id="mdlPrevisaoConclusao"></div></div>
         </div>
+        <div id="mdlOsAcoesBox" class="mdl-os-acoes" style="display:none;">
+          <div class="mdl-os-acoes-info"><i class="bi bi-file-earmark-check"></i><div><strong>Ordem de Serviço</strong><span id="mdlOsAcoesNumero">—</span></div></div>
+          <button type="button" id="mdlBtnBaixarOS" class="btn btn-success fw-bold px-3" onclick="baixarOrdemServicoChamadoModal(this)" title="Gera a Ordem de Serviço preenchida com os dados do chamado"><i class="bi bi-file-earmark-word me-1"></i>Baixar OS</button>
+        </div>
         <div class="modal-label">Detalhamento</div>
         <div class="bg-white p-3 border rounded mb-3" id="mdlDetalhe" style="min-height:80px; white-space:pre-line;"></div>
         <div id="mdlAnexosBox"></div>
@@ -195,6 +199,18 @@
           <div class="col-md-6 modal-extra-aprovacao"><label class="modal-label text-primary" id="mdlNumeroOsLabel">Nº da OS</label><input class="form-control" id="mdlNumeroOs" placeholder="Obrigatório ao aprovar orçamento"></div>
           <div class="col-md-6 modal-extra-aprovacao"><label class="modal-label text-primary">Previsão de conclusão</label><input class="form-control gom-date-br-input" type="date" id="mdlDataPrevistaConclusao" onchange="gomNormalizarDataBrInput(this)"></div>
           <div class="col-md-6 modal-extra-fila" style="display:none;"><label class="modal-label text-primary"><i class="bi bi-calendar-check me-1"></i>Agendamento da visita</label><input class="form-control gom-date-br-input" type="date" id="mdlDataAgendamentoVisita" onchange="gomNormalizarDataBrInput(this)"></div>
+          <div class="col-12" id="mdlAbrirOsBox" style="display:none;">
+            <div class="mdl-abrir-os-box">
+              <div class="mdl-abrir-os-info">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <div>
+                  <strong>Atendimento emergencial sem OS</strong>
+                  <span>Gera o número da OS, baixa o documento automaticamente e envia o chamado ao Memorial — tudo em um clique.</span>
+                </div>
+              </div>
+              <button type="button" id="mdlBtnAbrirOsMemorial" class="btn btn-warning fw-bold px-3" onclick="gomAbrirOsEnviarMemorial_(this)" title="Gera o número da OS, baixa o documento e encaminha o chamado ao Memorial na mesma ação"><i class="bi bi-file-earmark-plus me-1"></i>Abrir OS e enviar ao Memorial</button>
+            </div>
+          </div>
           <div class="col-12" id="mdlOsLegadoBox" style="display:none;">
             <div class="bg-warning-subtle border border-warning rounded p-3">
               <label class="modal-label text-dark" for="mdlNumeroOsLegado"><i class="bi bi-pencil-square me-1"></i>Regularizar número da OS antiga</label>
@@ -212,9 +228,7 @@
               <small>Opcional: envie fotos, PDFs ou documentos para complementar esta atualização. Limite: até 5 arquivos de 8 MB cada.</small>
             </div>
           </div>
-          <div class="col-12 text-end d-flex justify-content-end gap-2 flex-wrap">
-            <button id="mdlBtnBaixarOS" class="btn btn-success fw-bold px-3" style="display:none;" onclick="baixarOrdemServicoChamadoModal(this)" title="Gera a Ordem de Serviço preenchida com os dados do chamado"><i class="bi bi-file-earmark-word me-1"></i>Baixar OS</button>
-            <button id="mdlBtnAbrirOsMemorial" class="btn btn-warning fw-bold px-3" style="display:none;" onclick="gomAbrirOsEnviarMemorial_(this)" title="Abre a Ordem de Serviço (gera o número) e encaminha o chamado ao Memorial na mesma ação"><i class="bi bi-file-earmark-plus me-1"></i>Abrir OS e enviar ao Memorial</button>
+          <div class="col-12 modal-acoes-principais text-end d-flex justify-content-end gap-2 flex-wrap">
             <button id="mdlBtnSalvarObs" class="btn btn-outline-primary fw-bold px-3" onclick="salvarApenasObservacao(this)" title="Salva observação e/ou anexos SEM alterar o status do chamado (apenas atualiza)"><i class="bi bi-arrow-repeat me-1"></i>Atualizar chamado</button>
             <button id="mdlBtnAtualizar" class="btn btn-primary fw-bold px-4" onclick="salvarStatusDoModal(this)">ATUALIZAR STATUS</button>
           </div>

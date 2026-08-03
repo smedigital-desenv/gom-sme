@@ -76,21 +76,44 @@ Enquanto a coluna não existir, o selo simplesmente não é gravado — o status
 - O **nome do evento** também entra na **busca por texto** (campo de pesquisa)
   em todas as telas de chamados — basta digitar, por exemplo, "tempestade".
 
-## 3. Atendimento Emergencial — abrir OS na conclusão
+## 3. Atendimento Emergencial — abrir, baixar OS e enviar ao Memorial
 
 No atendimento emergencial o serviço é executado antes de qualquer OS, então o
-chamado chega à validação final **sem número de OS**. Na **aprovação final**
-(status *Serviço Realizado*) há agora um **botão dedicado**:
+chamado chega à validação final **sem número de OS**. Existe um **botão amarelo
+dedicado** em dois lugares, sempre separado visualmente das demais ações (nunca
+espremido junto de outros botões):
 
-- **"Abrir OS e enviar ao Memorial"** — botão amarelo que aparece no modal do
-  chamado quando ele está em *Serviço Realizado*, **sem OS** e **passou por
-  Atendimento Emergencial**. Um clique **gera o número da OS** (mesma numeração
-  das demais) **e encaminha o chamado ao Memorial na mesma ação**.
-- A abertura fica registrada na timeline (*"Emergencial concluído — OS aberta e
-  enviada ao Memorial"*).
-- O botão só aparece para quem pode validar o chamado (Secretaria / Admin GOM) e
-  fica oculto nas telas de Histórico/Campo.
+- **Tela Aprovação** (validação de *Serviço Realizado*): logo abaixo do botão
+  verde **"Registrar validação"**, separado por uma linha divisória com "ou" —
+  aparece só quando o chamado ainda não tem número de OS.
+- **Modal do chamado**: numa caixa destacada em amarelo, junto das demais caixas
+  de situação especial (ex.: regularização de OS legada).
 
-Além do botão, ao concluir um emergencial pela opção "Validar e enviar para
-Memorial" a OS também é aberta automaticamente. Fluxos normais (que emitem a OS
-antes do serviço) e garantias seguem inalterados. Não exige alteração de banco.
+Um clique em **"Abrir OS e enviar ao Memorial"**:
+1. **Gera o número da OS** (mesma numeração das demais);
+2. **Baixa o documento da OS automaticamente** (.docx), sem precisar de um
+   segundo clique;
+3. **Encaminha o chamado ao Memorial** na mesma ação.
+
+A abertura fica registrada na timeline (*"Emergencial concluído — OS aberta e
+enviada ao Memorial"*). O botão só aparece para quem pode validar o chamado
+(Secretaria / Admin GOM).
+
+Além dele, ao concluir um emergencial pela opção "Validar e enviar para
+Memorial" a OS também é aberta automaticamente (sem o download automático,
+apenas o número). Fluxos normais (que emitem a OS antes do serviço) e garantias
+seguem inalterados.
+
+### Baixar a OS depois — no Memorial
+
+Para chamados que já foram concluídos por essa funcionalidade (ou por qualquer
+outro fluxo com OS), o documento pode ser baixado a qualquer momento, sem
+precisar reabrir o modal:
+
+- **Botão "Baixar OS" na própria linha do Memorial** — aparece para todo
+  chamado com número de OS.
+- **Barra verde no topo do modal do chamado** ("Ordem de Serviço · Nº ..."),
+  visível em qualquer tela (inclusive Histórico/Memorial e Campo) — antes o
+  botão de baixar ficava escondido nessas telas.
+
+Nada disso exige alteração de banco.

@@ -503,8 +503,8 @@ function gomChamadoPassouEmergencial_(chamado) {
 }
 
 function gomAtualizarBotaoAbrirOsMemorial_(chamado) {
-  const btn = document.getElementById('mdlBtnAbrirOsMemorial');
-  if (!btn) return;
+  const box = document.getElementById('mdlAbrirOsBox');
+  if (!box) return;
   const st = normalizarSituacaoSistema(chamado.situacao || chamado.status);
   const semOs = !String(chamado.numeroOs || '').trim();
   const podeAlterar = (typeof window.gomPerfilPodeAlterarStatus !== 'function') || window.gomPerfilPodeAlterarStatus(chamado);
@@ -514,41 +514,54 @@ function gomAtualizarBotaoAbrirOsMemorial_(chamado) {
   // (retorno null), exibe de forma otimista e refina quando ela carregar.
   const emergencial = gomChamadoPassouEmergencial_(chamado);
   const visivel = base && (emergencial === null ? true : emergencial === true);
-  btn.style.display = visivel ? '' : 'none';
+  box.style.display = visivel ? '' : 'none';
 }
 
-// Abre a OS (gera o número) e envia o chamado ao Memorial em uma única ação.
-async function gomAbrirOsEnviarMemorial_(botao) {
-  const chamado = (window.listaChamadosGlobal || []).find(function (x) { return String(x.id) === String(idChamadoAberto); }) || {};
+// Núcleo reutilizável: abre a OS (gera o número) e envia o chamado ao Memorial
+// em uma única ação. Usado tanto pelo modal do chamado quanto pelo card de
+// validação inline da tela Aprovação — por isso recebe o id explicitamente.
+async function gomAbrirOsEnviarMemorialCore_(id, obs, botao) {
+  const chamado = (window.listaChamadosGlobal || []).find(function (x) { return String(x.id) === String(id); }) || {};
   if (typeof window.gomPerfilPodeAlterarStatus === 'function' && !window.gomPerfilPodeAlterarStatus(chamado)) {
     alert('Seu perfil não pode validar este chamado neste estágio.');
     return;
   }
-  if (!confirm('Abrir a OS do chamado #' + idChamadoAberto + ' e enviar ao Memorial?\n\nO número da OS será gerado automaticamente e o chamado será concluído.')) return;
+  if (!confirm('Abrir a OS do chamado #' + id + ' e enviar ao Memorial?\n\nO número da OS será gerado automaticamente e o chamado será concluído.')) return;
 
-  const obsEl = document.getElementById('mdlNovaObservacao');
-  const obs = obsEl ? String(obsEl.value || '').trim() : '';
-  const payload = { id: idChamadoAberto, situacao: 'Concluído', abrirOs: true };
+  const payload = { id: id, situacao: 'Concluído', abrirOs: true };
   if (obs) payload.observacoes = obs;
 
-  let anexosAtualizacao = [];
-  try {
-    anexosAtualizacao = await coletarAnexosModalAtualizacao_();
-    if (anexosAtualizacao.length) payload.anexosAtualizacao = anexosAtualizacao;
-  } catch (erroAnexo) {
-    if (typeof gomMostrarErroAcao === 'function') gomMostrarErroAcao(erroAnexo, 'Não foi possível preparar os anexos.');
-    else alert((erroAnexo && erroAnexo.message) || erroAnexo);
-    return;
+  // Anexos acumulados no modal só existem se este for o chamado aberto nele.
+  const modalAberto = String(idChamadoAberto) === String(id);
+  if (modalAberto) {
+    try {
+      const anexosAtualizacao = await coletarAnexosModalAtualizacao_();
+      if (anexosAtualizacao.length) payload.anexosAtualizacao = anexosAtualizacao;
+    } catch (erroAnexo) {
+      if (typeof gomMostrarErroAcao === 'function') gomMostrarErroAcao(erroAnexo, 'Não foi possível preparar os anexos.');
+      else alert((erroAnexo && erroAnexo.message) || erroAnexo);
+      return;
+    }
   }
 
   if (typeof gomSetButtonLoading === 'function') gomSetButtonLoading(botao, 'Abrindo OS...');
   else if (botao) botao.disabled = true;
 
   google.script.run
-    .withSuccessHandler(function () {
-      limparAnexosModalAtualizacao_();
-      const modal = bootstrap.Modal.getInstance(document.getElementById('modalAnalise'));
-      if (modal) modal.hide();
+    .withSuccessHandler(async function (resposta) {
+      if (modalAberto) {
+        limparAnexosModalAtualizacao_();
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalAnalise'));
+        if (modal) modal.hide();
+      } else if (typeof gomMostrarSucessoBotao === 'function') {
+        gomMostrarSucessoBotao(botao, 'OS aberta!');
+      }
+      // Baixa o documento da OS assim que o número é gerado — "abrir" já entrega
+      // o arquivo pronto, sem precisar de um segundo clique.
+      const numeroGerado = resposta && resposta.numeroOs;
+      if (numeroGerado && typeof window.gomBaixarOsChamadoObjeto_ === 'function') {
+        try { await window.gomBaixarOsChamadoObjeto_(Object.assign({}, chamado, { numeroOs: numeroGerado }), null); } catch (e) {}
+      }
       refreshChamados(function () { if (typeof renderizarTela === 'function') renderizarTela(); });
     })
     .withFailureHandler(function (err) {
@@ -558,6 +571,14 @@ async function gomAbrirOsEnviarMemorial_(botao) {
       else alert((err && err.message) || err);
     })
     .atualizarChamadoWorkflow(payload);
+}
+window.gomAbrirOsEnviarMemorialCore_ = gomAbrirOsEnviarMemorialCore_;
+
+// Wrapper usado pelo botão do modal do chamado (lê a observação digitada ali).
+function gomAbrirOsEnviarMemorial_(botao) {
+  const obsEl = document.getElementById('mdlNovaObservacao');
+  const obs = obsEl ? String(obsEl.value || '').trim() : '';
+  return gomAbrirOsEnviarMemorialCore_(idChamadoAberto, obs, botao);
 }
 window.gomAbrirOsEnviarMemorial_ = gomAbrirOsEnviarMemorial_;
 

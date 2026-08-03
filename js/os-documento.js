@@ -70,9 +70,15 @@
   }
 
   function atualizarBotaoOrdemServicoModal(chamado) {
-    var btn = document.getElementById('mdlBtnBaixarOS');
-    if (!btn) return;
-    btn.style.display = podeBaixarOSChamado_(chamado) ? '' : 'none';
+    var box = document.getElementById('mdlOsAcoesBox');
+    if (!box) return;
+    var visivel = podeBaixarOSChamado_(chamado);
+    box.style.display = visivel ? '' : 'none';
+    if (visivel) {
+      var numeroEl = document.getElementById('mdlOsAcoesNumero');
+      var numero = texto(chamado.numeroOs || chamado.numero_os || chamado.auxiliar);
+      if (numeroEl) numeroEl.textContent = numero ? ('Nº ' + numero) : 'Número ainda não gerado';
+    }
   }
 
   function parseNumero(valor) {
@@ -329,9 +335,11 @@
     }, 1500);
   }
 
-  async function baixarOrdemServicoChamadoModal(botao) {
-    var chamado = obterChamadoAberto_();
-    if (!chamado) { alert('Não foi possível identificar o chamado aberto.'); return; }
+  // Núcleo reutilizável: gera e baixa o .docx da OS de um chamado já resolvido
+  // (objeto completo), usado tanto a partir do modal quanto de uma linha de
+  // lista (ex.: Memorial), sem depender do modal estar aberto.
+  async function baixarOrdemServicoChamado_(chamado, botao) {
+    if (!chamado) { alert('Não foi possível identificar o chamado.'); return; }
     if (!podeBaixarOSChamado_(chamado)) { alert('A Ordem de Serviço só pode ser gerada para chamados com OS emitida e por perfis autorizados.'); return; }
     var numeroOs = texto(chamado.numeroOs || chamado.numero_os || chamado.auxiliar);
     if (!numeroOs) { alert('Informe o número da OS antes de gerar o documento.'); return; }
@@ -352,6 +360,23 @@
     }
   }
 
+  function baixarOrdemServicoChamadoModal(botao) {
+    return baixarOrdemServicoChamado_(obterChamadoAberto_(), botao);
+  }
+
+  // Baixa a OS de um chamado pelo ID, sem exigir o modal aberto — usado pelo
+  // botão "Baixar OS" direto na linha do Memorial.
+  function baixarOrdemServicoChamadoPorId_(id, botao) {
+    var chamado = (window.listaChamadosGlobal || []).find(function (x) { return String(x && x.id) === String(id); }) || null;
+    return baixarOrdemServicoChamado_(chamado, botao);
+  }
+
   window.atualizarBotaoOrdemServicoModal = atualizarBotaoOrdemServicoModal;
   window.baixarOrdemServicoChamadoModal = baixarOrdemServicoChamadoModal;
+  window.baixarOrdemServicoChamadoPorId_ = baixarOrdemServicoChamadoPorId_;
+  window.podeBaixarOSChamado_ = podeBaixarOSChamado_;
+  // Aceita um objeto de chamado já resolvido (ex.: recém-atualizado, ainda não
+  // refletido em listaChamadosGlobal) — usado pelo atalho "Abrir OS e enviar
+  // ao Memorial", que baixa o documento assim que o número é gerado.
+  window.gomBaixarOsChamadoObjeto_ = baixarOrdemServicoChamado_;
 })();

@@ -424,6 +424,9 @@ function renderLinhaMemorial(item) {
       '<div class="memorial-acoes" data-label="Ações">',
         '<button class="btn btn-light border btn-sm fw-bold" onclick="abrirModalAnalise(\'' + idJs + '\')"><i class="bi bi-clock-history me-1"></i>Ver prontuário</button>',
         '<button class="btn btn-primary btn-sm fw-bold" onclick="imprimirProntuarioMemorial(\'' + idJs + '\')"><i class="bi bi-printer me-1"></i>Imprimir</button>',
+        (typeof window.podeBaixarOSChamado_ === 'function' && window.podeBaixarOSChamado_(item))
+          ? '<button class="btn btn-success btn-sm fw-bold" onclick="baixarOrdemServicoChamadoPorId_(\'' + idJs + '\', this)" title="Baixa a Ordem de Serviço deste chamado"><i class="bi bi-file-earmark-word me-1"></i>Baixar OS</button>'
+          : '',
       '</div>',
     '</div>'
   ].join('');
@@ -888,9 +891,20 @@ function renderLinhaAprovacaoServico(item) {
   const obsEmpresa = escapeHtml(item.observacoes || 'Sem observações registradas.');
   const dataAcao = escapeHtml(item.dataHoraUltimaAcao || item.dataHora || item.data || '-');
   const equipe = escapeHtml(item.equipe || item.equipeDia || item.equipeResponsavel || 'Equipe não informada');
+  const semNumeroOs = !String(item.numeroOs || item.numero_os || '').trim();
   const numeroOs = escapeHtml(item.numeroOs || item.numero_os || 'Sem número');
   const formId = 'formValidacaoServico_' + id;
   const anexos = renderAnexosGrupo('Anexos do serviço realizado', item.anexosServico || item.anexos);
+  // Atendimento Emergencial executa o serviço antes de qualquer OS, então chega
+  // aqui sem número. Atalho para gerar a OS e concluir (Memorial) em um clique,
+  // separado visualmente da validação normal (evita botões espremidos).
+  const botaoAbrirOs = semNumeroOs ? [
+    '<div class="aprovacao-abrir-os">',
+      '<span class="aprovacao-abrir-os-linha"><span>ou</span></span>',
+      '<button type="button" class="btn btn-warning btn-sm fw-bold aprovacao-abrir-os-btn" onclick="gomAbrirOsEnviarMemorialInline_(\'' + idJs + '\', this)" title="Gera o número da OS, baixa o documento e encaminha o chamado ao Memorial na mesma ação"><i class="bi bi-file-earmark-plus me-1"></i>Abrir OS e enviar ao Memorial</button>',
+      '<small class="aprovacao-abrir-os-help">Sem número de OS (emergencial) — gera a OS, baixa o documento e conclui em uma única ação.</small>',
+    '</div>'
+  ].join('') : '';
 
   return [
     '<div class="aprovacao-row" style="--card-accent: var(--servico-realizado, #10b981);">',
@@ -915,22 +929,25 @@ function renderLinhaAprovacaoServico(item) {
         anexos || '<div class="aprovacao-anexo-vazio"><i class="bi bi-paperclip"></i> Nenhum anexo de serviço informado.</div>',
       '</div>',
 
-      '<form id="' + formId + '" class="aprovacao-decisao" data-label="Parecer e decisão" onsubmit="salvarValidacaoServicoFront(event,\'' + idJs + '\')">',
-        '<label class="empresa-field-label">Parecer interno</label>',
-        '<textarea class="form-control form-control-sm" name="observacoes" rows="3" placeholder="Validação da execução, motivo de garantia ou devolução..."></textarea>',
-        '<div class="aprovacao-form-grid mt-2">',
-          '<div>',
-            '<label class="empresa-field-label">Decisão</label>',
-            '<select class="form-select form-select-sm fw-bold" name="situacao" required>',
-              '<option value="">Selecione...</option>',
-              '<option value="Concluído">Validar e enviar para Memorial</option>',
-              '<option value="Garantia de Serviço">Garantia de Serviço</option>',
-            '</select>',
+      '<div class="aprovacao-decisao-col" data-label="Parecer e decisão">',
+        '<form id="' + formId + '" class="aprovacao-decisao" onsubmit="salvarValidacaoServicoFront(event,\'' + idJs + '\')">',
+          '<label class="empresa-field-label">Parecer interno</label>',
+          '<textarea class="form-control form-control-sm" name="observacoes" rows="3" placeholder="Validação da execução, motivo de garantia ou devolução..."></textarea>',
+          '<div class="aprovacao-form-grid mt-2">',
+            '<div>',
+              '<label class="empresa-field-label">Decisão</label>',
+              '<select class="form-select form-select-sm fw-bold" name="situacao" required>',
+                '<option value="">Selecione...</option>',
+                '<option value="Concluído">Validar e enviar para Memorial</option>',
+                '<option value="Garantia de Serviço">Garantia de Serviço</option>',
+              '</select>',
+            '</div>',
           '</div>',
-        '</div>',
-        '<div class="aprovacao-decisao-help">Validar envia o chamado ao Memorial. Garantia de Serviço devolve à Empresa para correção, sem novo orçamento.</div>',
-        '<button class="btn btn-success btn-sm fw-bold aprovacao-submit"><i class="bi bi-check2-square me-1"></i>Registrar validação</button>',
-      '</form>',
+          '<div class="aprovacao-decisao-help">Validar envia o chamado ao Memorial. Garantia de Serviço devolve à Empresa para correção, sem novo orçamento.</div>',
+          '<button class="btn btn-success btn-sm fw-bold aprovacao-submit"><i class="bi bi-check2-square me-1"></i>Registrar validação</button>',
+        '</form>',
+        botaoAbrirOs,
+      '</div>',
     '</div>'
   ].join('');
 }
@@ -961,6 +978,18 @@ function salvarValidacaoServicoFront(e, id) {
     })
     .atualizarChamadoWorkflow(payload);
 }
+
+// Atalho do card de Aprovação (Serviço Realizado sem OS): lê o parecer já
+// digitado no formulário da linha e delega ao mesmo núcleo usado pelo modal.
+function gomAbrirOsEnviarMemorialInline_(id, botao) {
+  const form = botao ? botao.closest('.aprovacao-row').querySelector('.aprovacao-decisao') : null;
+  const obsField = form ? form.querySelector('[name="observacoes"]') : null;
+  const obs = obsField ? String(obsField.value || '').trim() : '';
+  if (typeof window.gomAbrirOsEnviarMemorialCore_ === 'function') {
+    window.gomAbrirOsEnviarMemorialCore_(id, obs, botao);
+  }
+}
+window.gomAbrirOsEnviarMemorialInline_ = gomAbrirOsEnviarMemorialInline_;
 
 function renderLinhaAprovacaoOrcamento(item) {
   const idOriginal = String(item.id || '');
