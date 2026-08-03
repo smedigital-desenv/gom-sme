@@ -896,13 +896,14 @@ function renderLinhaAprovacaoServico(item) {
   const formId = 'formValidacaoServico_' + id;
   const anexos = renderAnexosGrupo('Anexos do serviço realizado', item.anexosServico || item.anexos);
   // Atendimento Emergencial executa o serviço antes de qualquer OS, então chega
-  // aqui sem número. Atalho para gerar a OS e concluir (Memorial) em um clique,
-  // separado visualmente da validação normal (evita botões espremidos).
+  // aqui sem número. Atalho para gerar e baixar a OS sem concluir — o chamado
+  // só vai ao Memorial quando "Registrar validação" for usado em seguida.
+  // Fica separado visualmente da validação normal (evita botões espremidos).
   const botaoAbrirOs = semNumeroOs ? [
     '<div class="aprovacao-abrir-os">',
       '<span class="aprovacao-abrir-os-linha"><span>ou</span></span>',
-      '<button type="button" class="btn btn-warning btn-sm fw-bold aprovacao-abrir-os-btn" onclick="gomAbrirOsEnviarMemorialInline_(\'' + idJs + '\', this)" title="Gera o número da OS, baixa o documento e encaminha o chamado ao Memorial na mesma ação"><i class="bi bi-file-earmark-plus me-1"></i>Abrir OS e enviar ao Memorial</button>',
-      '<small class="aprovacao-abrir-os-help">Sem número de OS (emergencial) — gera a OS, baixa o documento e conclui em uma única ação.</small>',
+      '<button type="button" class="btn btn-warning btn-sm fw-bold aprovacao-abrir-os-btn" onclick="gomAbrirOsChamadoInline_(\'' + idJs + '\', this)" title="Gera o número da OS e baixa o documento, sem concluir o chamado"><i class="bi bi-file-earmark-plus me-1"></i>Abrir OS e baixar documento</button>',
+      '<small class="aprovacao-abrir-os-help">Sem número de OS (emergencial) — gera a OS e baixa o documento, sem enviar ao Memorial.</small>',
     '</div>'
   ].join('') : '';
 
@@ -979,17 +980,14 @@ function salvarValidacaoServicoFront(e, id) {
     .atualizarChamadoWorkflow(payload);
 }
 
-// Atalho do card de Aprovação (Serviço Realizado sem OS): lê o parecer já
-// digitado no formulário da linha e delega ao mesmo núcleo usado pelo modal.
-function gomAbrirOsEnviarMemorialInline_(id, botao) {
-  const form = botao ? botao.closest('.aprovacao-row').querySelector('.aprovacao-decisao') : null;
-  const obsField = form ? form.querySelector('[name="observacoes"]') : null;
-  const obs = obsField ? String(obsField.value || '').trim() : '';
-  if (typeof window.gomAbrirOsEnviarMemorialCore_ === 'function') {
-    window.gomAbrirOsEnviarMemorialCore_(id, obs, botao);
+// Atalho do card de Aprovação (Serviço Realizado sem OS): gera e baixa a OS
+// SEM concluir o chamado — delega ao mesmo núcleo usado pelo modal.
+function gomAbrirOsChamadoInline_(id, botao) {
+  if (typeof window.gomAbrirOsChamadoCore_ === 'function') {
+    window.gomAbrirOsChamadoCore_(id, botao);
   }
 }
-window.gomAbrirOsEnviarMemorialInline_ = gomAbrirOsEnviarMemorialInline_;
+window.gomAbrirOsChamadoInline_ = gomAbrirOsChamadoInline_;
 
 function renderLinhaAprovacaoOrcamento(item) {
   const idOriginal = String(item.id || '');

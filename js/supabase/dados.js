@@ -668,14 +668,23 @@ window.GomDados = (function () {
     if (['Aguardando visita', 'Visita agendada', 'Em atendimento'].includes(stNovo) && !atual.data_hora_entrada_fila) u.data_hora_entrada_fila = _nowISO();
     if (['Solicitado Orçamento', 'Atendimento Emergencial', 'OS emitida', 'Aguardando visita', 'Visita agendada', 'Garantia de Obra', 'Garantia de Serviço'].includes(stNovo) && mudou) u.data_hora_encaminhamento = _nowISO();
     if (stNovo === 'OS emitida' && mudou) { let n = String(atual.numero_os || '').trim(); if (!n) n = await _gerarNumeroOsAutomatico(); if (!n) n = String(id) + '/' + new Date().getFullYear(); u.numero_os = n; }
-    // Atendimento Emergencial: na aprovação final (Serviço Realizado → Concluído),
-    // se o chamado não tem OS e passou por emergência, a OS é ABERTA (número gerado)
-    // na mesma ação em que é validado e encaminhado ao Memorial.
+    // Abertura MANUAL da OS (botão "Abrir OS e baixar documento"), sem alterar
+    // o status do chamado — ele só vai ao Memorial quando a validação normal
+    // ("Registrar validação" → Validar e enviar para Memorial) for registrada.
+    let _osAbertaManual = '';
+    if (p.abrirOs === true && !mudou && !String(atual.numero_os || '').trim()) {
+      let n = await _gerarNumeroOsAutomatico();
+      if (!n) n = String(id) + '/' + new Date().getFullYear();
+      u.numero_os = n;
+      _osAbertaManual = n;
+    }
+    // Atendimento Emergencial: na aprovação final (Serviço Realizado → Concluído)
+    // via decisão normal, se o chamado não tem OS e passou por emergência, a OS
+    // é ABERTA (número gerado) na mesma ação em que é validado e encaminhado ao
+    // Memorial — sem exigir o botão dedicado acima.
     let _osEmergencialAberta = '';
-    if (stNovo === 'Concluído' && mudou && !String(atual.numero_os || '').trim()) {
-      // p.abrirOs = true: o aprovador clicou explicitamente em "Abrir OS e enviar
-      // ao Memorial". Caso contrário, abre só se o chamado passou por emergência.
-      if (p.abrirOs === true || await _passouPorEmergencial(id)) {
+    if (!_osAbertaManual && stNovo === 'Concluído' && mudou && !String(atual.numero_os || '').trim()) {
+      if (await _passouPorEmergencial(id)) {
         let n = await _gerarNumeroOsAutomatico();
         if (!n) n = String(id) + '/' + new Date().getFullYear();
         u.numero_os = n;
@@ -704,10 +713,11 @@ window.GomDados = (function () {
     }
     if (p.dataAgendamentoVisita) await _atendimento({ solicitacao_id: id, status: stNovo, numero_os: atual.numero_os || '', equipe: p.equipe || atual.equipe_responsavel || '', observacoes_dia: p.observacoes || '', data_atendimento: _date(p.dataAgendamentoVisita), tipo_registro: 'Agendamento de visita' });
     let _acaoLog = (stNovo === 'Cancelado' && mudou) ? 'Chamado cancelado' : 'Chamado atualizado';
-    if (_osEmergencialAberta) _acaoLog = 'Emergencial concluído — OS aberta e enviada ao Memorial';
-    const _obsLog = _osEmergencialAberta
-      ? ('OS ' + _osEmergencialAberta + ' aberta na conclusão do atendimento emergencial. ' + (p.observacoes || '')).trim()
-      : (p.observacoes || '');
+    if (_osAbertaManual) _acaoLog = 'OS aberta manualmente (Atendimento Emergencial)';
+    else if (_osEmergencialAberta) _acaoLog = 'Emergencial concluído — OS aberta e enviada ao Memorial';
+    let _obsLog = p.observacoes || '';
+    if (_osAbertaManual) _obsLog = ('OS ' + _osAbertaManual + ' aberta manualmente para o Atendimento Emergencial, sem concluir o chamado. ' + _obsLog).trim();
+    else if (_osEmergencialAberta) _obsLog = ('OS ' + _osEmergencialAberta + ' aberta na conclusão do atendimento emergencial. ' + _obsLog).trim();
     await _log({ solicitacao_id: id, acao: _acaoLog, status_anterior: mudou ? stAnt : '', status_novo: mudou ? stNovo : stAnt, observacao: _obsLog, valor_orcamento: _num(p.valorOrcamento), equipe: p.equipe || '' });
     return { ok: true, id, status: stNovo, numeroOs: u.numero_os || atual.numero_os || '' };
   }

@@ -76,7 +76,7 @@ Enquanto a coluna não existir, o selo simplesmente não é gravado — o status
 - O **nome do evento** também entra na **busca por texto** (campo de pesquisa)
   em todas as telas de chamados — basta digitar, por exemplo, "tempestade".
 
-## 3. Atendimento Emergencial — abrir, baixar OS e enviar ao Memorial
+## 3. Atendimento Emergencial — abrir e baixar a OS (sem concluir)
 
 No atendimento emergencial o serviço é executado antes de qualquer OS, então o
 chamado chega à validação final **sem número de OS**. Existe um **botão amarelo
@@ -89,19 +89,23 @@ espremido junto de outros botões):
 - **Modal do chamado**: numa caixa destacada em amarelo, junto das demais caixas
   de situação especial (ex.: regularização de OS legada).
 
-Um clique em **"Abrir OS e enviar ao Memorial"**:
+Um clique em **"Abrir OS e baixar documento"**:
 1. **Gera o número da OS** (mesma numeração das demais);
 2. **Baixa o documento da OS automaticamente** (.docx), sem precisar de um
-   segundo clique;
-3. **Encaminha o chamado ao Memorial** na mesma ação.
+   segundo clique.
 
-A abertura fica registrada na timeline (*"Emergencial concluído — OS aberta e
-enviada ao Memorial"*). O botão só aparece para quem pode validar o chamado
-(Secretaria / Admin GOM).
+Importante: esse botão **não envia o chamado ao Memorial** — ele continua em
+*Serviço Realizado*, agora já com número de OS. O envio ao Memorial só acontece
+quando a validação normal for registrada em seguida (botão verde "Registrar
+validação" → decisão "Validar e enviar para Memorial"). A abertura fica
+registrada na timeline (*"OS aberta manualmente (Atendimento Emergencial)"*). O
+botão só aparece para quem pode validar o chamado (Secretaria / Admin GOM).
 
-Além dele, ao concluir um emergencial pela opção "Validar e enviar para
-Memorial" a OS também é aberta automaticamente (sem o download automático,
-apenas o número). Fluxos normais (que emitem a OS antes do serviço) e garantias
+Separadamente, se a Secretaria optar por validar e enviar ao Memorial sem usar
+esse botão (ou seja, decidir direto "Validar e enviar para Memorial" num
+chamado emergencial ainda sem OS), o sistema também abre a OS automaticamente
+nessa mesma ação — só que sem o download automático (é possível baixar depois,
+veja abaixo). Fluxos normais (que emitem a OS antes do serviço) e garantias
 seguem inalterados.
 
 ### Baixar a OS depois — no Memorial

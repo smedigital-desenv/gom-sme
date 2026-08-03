@@ -205,10 +205,10 @@
                 <i class="bi bi-exclamation-triangle-fill"></i>
                 <div>
                   <strong>Atendimento emergencial sem OS</strong>
-                  <span>Gera o número da OS, baixa o documento automaticamente e envia o chamado ao Memorial — tudo em um clique.</span>
+                  <span>Gera o número da OS e baixa o documento automaticamente. O chamado NÃO é enviado ao Memorial — continua em Serviço Realizado até a validação.</span>
                 </div>
               </div>
-              <button type="button" id="mdlBtnAbrirOsMemorial" class="btn btn-warning fw-bold px-3" onclick="gomAbrirOsEnviarMemorial_(this)" title="Gera o número da OS, baixa o documento e encaminha o chamado ao Memorial na mesma ação"><i class="bi bi-file-earmark-plus me-1"></i>Abrir OS e enviar ao Memorial</button>
+              <button type="button" id="mdlBtnAbrirOs" class="btn btn-warning fw-bold px-3" onclick="gomAbrirOsChamado_(this)" title="Gera o número da OS e baixa o documento, sem concluir o chamado"><i class="bi bi-file-earmark-plus me-1"></i>Abrir OS e baixar documento</button>
             </div>
           </div>
           <div class="col-12" id="mdlOsLegadoBox" style="display:none;">
@@ -233,7 +233,7 @@
             <button id="mdlBtnAtualizar" class="btn btn-primary fw-bold px-4" onclick="salvarStatusDoModal(this)">ATUALIZAR STATUS</button>
           </div>
         </div>
-        <div id="mdlAdminForcarBox" style="display:none;" class="mb-2">
+        <div id="mdlAdminForcarBox" style="display:none;" class="mt-4 mb-2">
           <div class="bg-danger-subtle border border-danger rounded p-3">
             <label class="modal-label text-danger"><i class="bi bi-shield-lock me-1"></i>Forçar status (Administrador GOM)</label>
             <div class="row g-2 align-items-end">
