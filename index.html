@@ -199,6 +199,27 @@
           <div class="col-md-6 modal-extra-aprovacao"><label class="modal-label text-primary" id="mdlNumeroOsLabel">Nº da OS</label><input class="form-control" id="mdlNumeroOs" placeholder="Obrigatório ao aprovar orçamento"></div>
           <div class="col-md-6 modal-extra-aprovacao"><label class="modal-label text-primary">Previsão de conclusão</label><input class="form-control gom-date-br-input" type="date" id="mdlDataPrevistaConclusao" onchange="gomNormalizarDataBrInput(this)"></div>
           <div class="col-md-6 modal-extra-fila" style="display:none;"><label class="modal-label text-primary"><i class="bi bi-calendar-check me-1"></i>Agendamento da visita</label><input class="form-control gom-date-br-input" type="date" id="mdlDataAgendamentoVisita" onchange="gomNormalizarDataBrInput(this)"></div>
+          <div class="col-12" id="mdlAtendimentoEmergencialBox" style="display:none;">
+            <div class="mdl-abrir-os-box">
+              <div class="mdl-abrir-os-info">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <div>
+                  <strong>Atendimento Emergencial</strong>
+                  <span>Sem etapa de orçamento formal — registre o valor do atendimento e anexe o orçamento/nota, se houver.</span>
+                </div>
+              </div>
+              <div class="mdl-abrir-os-acao">
+                <div class="mdl-abrir-os-valor">
+                  <label for="mdlValorAtendimentoEmergencial"><i class="bi bi-cash-coin me-1"></i>Valor do atendimento (OS)</label>
+                  <input type="text" class="form-control form-control-sm" id="mdlValorAtendimentoEmergencial" placeholder="R$ 0,00" inputmode="numeric" oninput="gomMoedaMascara(this)">
+                </div>
+                <div class="mdl-abrir-os-valor">
+                  <label for="mdlAnexoOrcamentoEmergencial"><i class="bi bi-paperclip me-1"></i>Anexo do orçamento</label>
+                  <input type="file" class="form-control form-control-sm" id="mdlAnexoOrcamentoEmergencial" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx">
+                </div>
+              </div>
+            </div>
+          </div>
           <div class="col-12" id="mdlAbrirOsBox" style="display:none;">
             <div class="mdl-abrir-os-box">
               <div class="mdl-abrir-os-info">

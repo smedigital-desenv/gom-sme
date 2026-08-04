@@ -123,6 +123,24 @@ nessa mesma ação — só que sem o download automático (é possível baixar d
 veja abaixo). Fluxos normais (que emitem a OS antes do serviço) e garantias
 seguem inalterados.
 
+### Valor do atendimento e anexo do orçamento (enquanto ainda é emergencial)
+
+Além do campo acima (na validação final), existe um campo equivalente **mais
+cedo no fluxo**: enquanto o chamado está **atualmente** com status
+*Atendimento Emergencial* (antes de virar "Serviço Realizado"), o modal do
+chamado mostra uma caixa amarela com:
+
+- **"Valor do atendimento (OS)"** — mesma máscara de moeda;
+- **"Anexo do orçamento"** — upload dedicado (categoria própria "orcamento",
+  igual à usada no fluxo normal de Solicitado Orçamento), separado do campo
+  genérico "Adicionar anexos ao chamado".
+
+Só aparece para quem pode alterar o chamado nesse estágio (Empresa / Admin
+GOM) e some das telas de Histórico e Campo. Ambos os campos são opcionais e
+o valor digitado aqui reaparece pré-preenchido no campo "Valor da OS" mais
+adiante, quando o chamado chegar em Serviço Realizado (mesma coluna
+`valor_orcamento` reaproveitada).
+
 ### Baixar a OS depois — no Memorial
 
 Para chamados que já foram concluídos por essa funcionalidade (ou por qualquer

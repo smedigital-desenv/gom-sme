@@ -407,6 +407,7 @@ function atualizarModalChamadoAbertoAposRefresh_() {
   if (obs) obs.innerText = atualizado.observacoes || 'Sem observações';
   if (typeof atualizarBotaoOrdemServicoModal === 'function') atualizarBotaoOrdemServicoModal(atualizado);
   if (typeof gomAtualizarBotaoAbrirOsMemorial_ === 'function') gomAtualizarBotaoAbrirOsMemorial_(atualizado);
+  if (typeof gomAtualizarBoxAtendimentoEmergencial_ === 'function') gomAtualizarBoxAtendimentoEmergencial_(atualizado);
   var numeroOsEl = document.getElementById('mdlNumeroOs');
   if (numeroOsEl) numeroOsEl.value = atualizado.numeroOs || '';
   carregarTimelineChamadoModal_(idChamadoAberto);
@@ -443,6 +444,14 @@ function abrirModalAnalise(id) {
   const inputObs = document.getElementById('mdlNovaObservacao');
   if (inputObs) inputObs.value = '';
   limparAnexosModalAtualizacao_();
+  // Limpa os campos de valor/anexo de OS antes de repreenchê-los abaixo — evita
+  // vazar rascunho digitado num chamado anterior para o chamado recém-aberto.
+  ['mdlValorOsEmergencial', 'mdlValorAtendimentoEmergencial'].forEach(function (elId) {
+    var el = document.getElementById(elId);
+    if (el) el.value = '';
+  });
+  var anexoOrcEmergEl = document.getElementById('mdlAnexoOrcamentoEmergencial');
+  if (anexoOrcEmergEl) anexoOrcEmergEl.value = '';
   const numeroOs = document.getElementById('mdlNumeroOs');
   if (numeroOs) numeroOs.value = c.numeroOs || '';
   // Valor do orçamento e previsão de conclusão — cada um só aparece quando há dado.
@@ -486,6 +495,7 @@ function abrirModalAnalise(id) {
   if (emAprovacaoModal) atualizarCamposModalAprovacao();
   gomPreencherSeletorEvento_(c);
   gomAtualizarBotaoAbrirOsMemorial_(c);
+  gomAtualizarBoxAtendimentoEmergencial_(c);
   gomConfigurarOverrideAdmin_(c);
 
   new bootstrap.Modal(document.getElementById('modalAnalise')).show();
@@ -524,6 +534,28 @@ function gomAtualizarBotaoAbrirOsMemorial_(chamado) {
     valorEl.value = (typeof gomMoedaFormatar === 'function') ? (gomMoedaFormatar(chamado.valorOrcamento) || '') : (chamado.valorOrcamento || '');
   }
 }
+
+// Caixa de "Valor do atendimento (OS)" + "Anexo do orçamento", visível apenas
+// enquanto o chamado está EM "Atendimento Emergencial" — etapa que não passa
+// pelo fluxo formal de orçamento, então não há onde registrar esses dados.
+function gomAtualizarBoxAtendimentoEmergencial_(chamado) {
+  const box = document.getElementById('mdlAtendimentoEmergencialBox');
+  if (!box) return;
+  const st = normalizarSituacaoSistema(chamado.situacao || chamado.status);
+  const podeAlterar = (typeof window.gomPerfilPodeAlterarStatus !== 'function') || window.gomPerfilPodeAlterarStatus(chamado);
+  const visivel = st === 'Atendimento Emergencial' && podeAlterar
+    && telaAtual !== 'historico' && telaAtual !== 'campo';
+  box.style.display = visivel ? '' : 'none';
+  const valorEl = document.getElementById('mdlValorAtendimentoEmergencial');
+  if (valorEl && visivel && !valorEl.value) {
+    valorEl.value = (typeof gomMoedaFormatar === 'function') ? (gomMoedaFormatar(chamado.valorOrcamento) || '') : (chamado.valorOrcamento || '');
+  }
+  if (!visivel) {
+    const anexoEl = document.getElementById('mdlAnexoOrcamentoEmergencial');
+    if (anexoEl) anexoEl.value = '';
+  }
+}
+window.gomAtualizarBoxAtendimentoEmergencial_ = gomAtualizarBoxAtendimentoEmergencial_;
 
 // Núcleo reutilizável: apenas ABRE a OS (gera o número) e baixa o documento —
 // NÃO altera o status do chamado nem o envia ao Memorial. Ele continua em
@@ -899,6 +931,26 @@ async function salvarStatusDoModal(botao) {
   if (statusAtual === 'Serviço Realizado' && valorOsEmergencial && String(valorOsEmergencial.value || '').trim()) {
     payload.valorOrcamento = valorOsEmergencial.value.trim();
   }
+  // Valor do atendimento + anexo do orçamento, enquanto o chamado ainda está
+  // EM "Atendimento Emergencial" (etapa sem fluxo formal de orçamento).
+  const valorAtendimentoEmergencial = document.getElementById('mdlValorAtendimentoEmergencial');
+  if (statusAtual === 'Atendimento Emergencial' && valorAtendimentoEmergencial && String(valorAtendimentoEmergencial.value || '').trim()) {
+    payload.valorOrcamento = valorAtendimentoEmergencial.value.trim();
+  }
+  let anexosOrcamentoEmergencial = [];
+  if (statusAtual === 'Atendimento Emergencial') {
+    const anexoOrcEmergEl = document.getElementById('mdlAnexoOrcamentoEmergencial');
+    if (anexoOrcEmergEl && anexoOrcEmergEl.files && anexoOrcEmergEl.files.length) {
+      try {
+        anexosOrcamentoEmergencial = await arquivosInputParaBase64(anexoOrcEmergEl);
+        if (anexosOrcamentoEmergencial.length) payload.anexosOrcamento = anexosOrcamentoEmergencial;
+      } catch (erroAnexoOrc) {
+        if (typeof gomMostrarErroAcao === 'function') gomMostrarErroAcao(erroAnexoOrc, 'Não foi possível preparar o anexo do orçamento.');
+        else alert((erroAnexoOrc && erroAnexoOrc.message) || erroAnexoOrc);
+        return;
+      }
+    }
+  }
   // Número de OS novo não é digitado manualmente. Para legado sem número, use o bloco específico de regularização.
   if (dataPrev && dataPrev.value) payload.dataPrevistaConclusao = gomModalDataParaISO_(dataPrev.value);
 
@@ -927,7 +979,7 @@ async function salvarStatusDoModal(botao) {
     return;
   }
 
-  if (!obs && !statusMudou && !payload.numeroOs && !payload.dataPrevistaConclusao && !agendamentoMudou && !eventoMudou && !anexosAtualizacao.length) {
+  if (!obs && !statusMudou && !payload.numeroOs && !payload.dataPrevistaConclusao && !agendamentoMudou && !eventoMudou && !anexosAtualizacao.length && !payload.valorOrcamento && !anexosOrcamentoEmergencial.length) {
     alert('Preencha ao menos a observação, anexe um arquivo ou altere algum campo antes de atualizar.');
     return;
   }
@@ -938,11 +990,14 @@ async function salvarStatusDoModal(botao) {
   google.script.run
     .withSuccessHandler(function() {
       limparAnexosModalAtualizacao_();
+      const anexoOrcEmergElOk = document.getElementById('mdlAnexoOrcamentoEmergencial');
+      if (anexoOrcEmergElOk) anexoOrcEmergElOk.value = '';
       const modal = bootstrap.Modal.getInstance(document.getElementById('modalAnalise'));
       if (modal) modal.hide();
       const camposLocais = {};
       if (statusMudou) camposLocais.situacao = status;
       if (eventoMudou) camposLocais.evento = eventoAtual;
+      if (payload.valorOrcamento) camposLocais.valorOrcamento = payload.valorOrcamento;
       if (obs) camposLocais.observacoes = (chamadoAtual.observacoes ? chamadoAtual.observacoes + '\n' : '') + obs;
       if (payload.dataAgendamentoVisita) { camposLocais.dataAgendamentoVisita = payload.dataAgendamentoVisita; camposLocais.dataAgendamentoVisitaRaw = payload.dataAgendamentoVisita; camposLocais.dataAgendamento = payload.dataAgendamentoVisita; camposLocais.dataVisita = payload.dataAgendamentoVisita; }
       refreshChamados(null, Object.keys(camposLocais).length ? { id: idChamadoAberto, campos: camposLocais } : null);

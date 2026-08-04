@@ -704,6 +704,11 @@ window.GomDados = (function () {
       const _esc = (atual.escola && atual.escola.nome) || atual.unidade_escolar || '';
       await window.GomAnexos.upload(id, 'solicitacao', _anexosAtual, _esc);
     }
+    // Anexo do orçamento do Atendimento Emergencial (etapa sem fluxo formal de
+    // orçamento) — categoria própria 'orcamento', igual ao fluxo normal.
+    if (Array.isArray(p.anexosOrcamento) && p.anexosOrcamento.length) {
+      await window.GomAnexos.upload(id, 'orcamento', p.anexosOrcamento);
+    }
 
     await _update(id, u);
     // Devolvido para a escola: envia e-mail à escola com o MOTIVO da devolução.
