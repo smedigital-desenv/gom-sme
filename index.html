@@ -208,7 +208,13 @@
                   <span>Gera o número da OS e baixa o documento automaticamente. O chamado NÃO é enviado ao Memorial — continua em Serviço Realizado até a validação.</span>
                 </div>
               </div>
-              <button type="button" id="mdlBtnAbrirOs" class="btn btn-warning fw-bold px-3" onclick="gomAbrirOsChamado_(this)" title="Gera o número da OS e baixa o documento, sem concluir o chamado"><i class="bi bi-file-earmark-plus me-1"></i>Abrir OS e baixar documento</button>
+              <div class="mdl-abrir-os-acao">
+                <div class="mdl-abrir-os-valor">
+                  <label for="mdlValorOsEmergencial"><i class="bi bi-cash-coin me-1"></i>Valor da OS</label>
+                  <input type="text" class="form-control form-control-sm" id="mdlValorOsEmergencial" placeholder="R$ 0,00" inputmode="numeric" oninput="gomMoedaMascara(this)">
+                </div>
+                <button type="button" id="mdlBtnAbrirOs" class="btn btn-warning fw-bold px-3" onclick="gomAbrirOsChamado_(this)" title="Gera o número da OS e baixa o documento, sem concluir o chamado"><i class="bi bi-file-earmark-plus me-1"></i>Abrir OS e baixar documento</button>
+              </div>
             </div>
           </div>
           <div class="col-12" id="mdlOsLegadoBox" style="display:none;">

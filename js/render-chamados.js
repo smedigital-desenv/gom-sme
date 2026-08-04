@@ -932,6 +932,10 @@ function renderLinhaAprovacaoServico(item) {
 
       '<div class="aprovacao-decisao-col" data-label="Parecer e decisão">',
         '<form id="' + formId + '" class="aprovacao-decisao" onsubmit="salvarValidacaoServicoFront(event,\'' + idJs + '\')">',
+          (semNumeroOs ? [
+            '<label class="empresa-field-label"><i class="bi bi-cash-coin me-1"></i>Valor da OS (Atendimento Emergencial)</label>',
+            '<input type="text" class="form-control form-control-sm mb-2" name="valorOrcamento" value="' + escapeHtml((typeof gomMoedaFormatar === 'function' ? gomMoedaFormatar(item.valorOrcamento) : '') || '') + '" placeholder="R$ 0,00" inputmode="numeric" oninput="gomMoedaMascara(this)">',
+          ].join('') : ''),
           '<label class="empresa-field-label">Parecer interno</label>',
           '<textarea class="form-control form-control-sm" name="observacoes" rows="3" placeholder="Validação da execução, motivo de garantia ou devolução..."></textarea>',
           '<div class="aprovacao-form-grid mt-2">',
@@ -981,10 +985,14 @@ function salvarValidacaoServicoFront(e, id) {
 }
 
 // Atalho do card de Aprovação (Serviço Realizado sem OS): gera e baixa a OS
-// SEM concluir o chamado — delega ao mesmo núcleo usado pelo modal.
+// SEM concluir o chamado — delega ao mesmo núcleo usado pelo modal, levando
+// junto o "Valor da OS" já digitado no formulário da linha (se houver).
 function gomAbrirOsChamadoInline_(id, botao) {
+  const form = botao ? botao.closest('.aprovacao-row').querySelector('.aprovacao-decisao') : null;
+  const valorField = form ? form.querySelector('[name="valorOrcamento"]') : null;
+  const valorOs = valorField ? String(valorField.value || '').trim() : '';
   if (typeof window.gomAbrirOsChamadoCore_ === 'function') {
-    window.gomAbrirOsChamadoCore_(id, botao);
+    window.gomAbrirOsChamadoCore_(id, botao, valorOs);
   }
 }
 window.gomAbrirOsChamadoInline_ = gomAbrirOsChamadoInline_;

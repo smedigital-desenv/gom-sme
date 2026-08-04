@@ -519,6 +519,10 @@ function gomAtualizarBotaoAbrirOsMemorial_(chamado) {
   const emergencial = gomChamadoPassouEmergencial_(chamado);
   const visivel = base && (emergencial === null ? true : emergencial === true);
   box.style.display = visivel ? '' : 'none';
+  const valorEl = document.getElementById('mdlValorOsEmergencial');
+  if (valorEl && visivel && !valorEl.value) {
+    valorEl.value = (typeof gomMoedaFormatar === 'function') ? (gomMoedaFormatar(chamado.valorOrcamento) || '') : (chamado.valorOrcamento || '');
+  }
 }
 
 // Núcleo reutilizável: apenas ABRE a OS (gera o número) e baixa o documento —
@@ -526,8 +530,10 @@ function gomAtualizarBotaoAbrirOsMemorial_(chamado) {
 // "Serviço Realizado" até que a validação normal ("Registrar validação" →
 // Validar e enviar para Memorial) seja registrada separadamente. Usado tanto
 // pelo modal do chamado quanto pelo card de validação inline da tela
-// Aprovação — por isso recebe o id explicitamente.
-async function gomAbrirOsChamadoCore_(id, botao) {
+// Aprovação — por isso recebe o id explicitamente. valorOs (opcional): valor
+// digitado no campo "Valor da OS" do Atendimento Emergencial, incorporado à
+// OS gerada.
+async function gomAbrirOsChamadoCore_(id, botao, valorOs) {
   const chamado = (window.listaChamadosGlobal || []).find(function (x) { return String(x.id) === String(id); }) || {};
   if (typeof window.gomPerfilPodeAlterarStatus === 'function' && !window.gomPerfilPodeAlterarStatus(chamado)) {
     alert('Seu perfil não pode validar este chamado neste estágio.');
@@ -536,6 +542,7 @@ async function gomAbrirOsChamadoCore_(id, botao) {
   if (!confirm('Abrir a OS do chamado #' + id + '?\n\nO número será gerado e o documento baixado automaticamente. O chamado NÃO é enviado ao Memorial — ele continua em Serviço Realizado até você registrar a validação.')) return;
 
   const payload = { id: id, abrirOs: true };
+  if (valorOs) payload.valorOrcamento = valorOs;
 
   if (typeof gomSetButtonLoading === 'function') gomSetButtonLoading(botao, 'Abrindo OS...');
   else if (botao) botao.disabled = true;
@@ -548,7 +555,9 @@ async function gomAbrirOsChamadoCore_(id, botao) {
       // o arquivo pronto, sem precisar de um segundo clique.
       const numeroGerado = resposta && resposta.numeroOs;
       if (numeroGerado && typeof window.gomBaixarOsChamadoObjeto_ === 'function') {
-        try { await window.gomBaixarOsChamadoObjeto_(Object.assign({}, chamado, { numeroOs: numeroGerado }), null); } catch (e) {}
+        const chamadoParaDocx = Object.assign({}, chamado, { numeroOs: numeroGerado });
+        if (valorOs) chamadoParaDocx.valorOrcamento = valorOs;
+        try { await window.gomBaixarOsChamadoObjeto_(chamadoParaDocx, null); } catch (e) {}
       }
       // Não fecha o modal nem muda de tela: o chamado segue aberto para que a
       // validação (Concluído / Garantia de Serviço) seja feita em seguida.
@@ -568,9 +577,11 @@ async function gomAbrirOsChamadoCore_(id, botao) {
 }
 window.gomAbrirOsChamadoCore_ = gomAbrirOsChamadoCore_;
 
-// Wrapper usado pelo botão do modal do chamado.
+// Wrapper usado pelo botão do modal do chamado (lê o valor da OS digitado na caixa).
 function gomAbrirOsChamado_(botao) {
-  return gomAbrirOsChamadoCore_(idChamadoAberto, botao);
+  const valorEl = document.getElementById('mdlValorOsEmergencial');
+  const valorOs = valorEl ? String(valorEl.value || '').trim() : '';
+  return gomAbrirOsChamadoCore_(idChamadoAberto, botao, valorOs);
 }
 window.gomAbrirOsChamado_ = gomAbrirOsChamado_;
 
@@ -882,6 +893,12 @@ async function salvarStatusDoModal(botao) {
   // Só inclui situacao no payload se realmente mudou — evita transição indesejada
   const payload = { id: idChamadoAberto, observacoes: obs };
   if (statusMudou) payload.situacao = status;
+  // Valor da OS do Atendimento Emergencial: se o campo estiver visível (chamado
+  // sem OS, ainda em Serviço Realizado) e preenchido, incorpora à OS gerada.
+  const valorOsEmergencial = document.getElementById('mdlValorOsEmergencial');
+  if (statusAtual === 'Serviço Realizado' && valorOsEmergencial && String(valorOsEmergencial.value || '').trim()) {
+    payload.valorOrcamento = valorOsEmergencial.value.trim();
+  }
   // Número de OS novo não é digitado manualmente. Para legado sem número, use o bloco específico de regularização.
   if (dataPrev && dataPrev.value) payload.dataPrevistaConclusao = gomModalDataParaISO_(dataPrev.value);
 

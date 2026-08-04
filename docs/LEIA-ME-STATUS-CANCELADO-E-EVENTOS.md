@@ -101,6 +101,21 @@ validação" → decisão "Validar e enviar para Memorial"). A abertura fica
 registrada na timeline (*"OS aberta manualmente (Atendimento Emergencial)"*). O
 botão só aparece para quem pode validar o chamado (Secretaria / Admin GOM).
 
+### Valor da OS (Atendimento Emergencial)
+
+Como o emergencial não passa pela etapa de orçamento, não existe valor
+registrado até aqui. Por isso, junto do botão "Abrir OS e baixar documento" (na
+tela Aprovação e no modal) há um campo **"Valor da OS"** — mesma máscara de
+moeda usada em Empresa/Orçamentos (`R$ 0,00`, digitação livre). Ele só aparece
+para chamados de Atendimento Emergencial ainda sem OS.
+
+O valor digitado é **incorporado ao gerar a OS** (reaproveita a coluna
+`valor_orcamento`, já existente): entra no documento .docx baixado (valor em
+número + por extenso) e fica salvo no chamado, seja pelo botão dedicado, seja
+pela validação normal ("Registrar validação"). O preenchimento é opcional —
+sem valor, o documento usa o texto padrão "conforme orçamento aprovado por
+esta divisão".
+
 Separadamente, se a Secretaria optar por validar e enviar ao Memorial sem usar
 esse botão (ou seja, decidir direto "Validar e enviar para Memorial" num
 chamado emergencial ainda sem OS), o sistema também abre a OS automaticamente
