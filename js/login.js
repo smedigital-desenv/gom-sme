@@ -496,21 +496,18 @@
     }
 
     try {
-      var r = await window.SB
-        .from('configuracoes')
-        .select('valor')
-        .eq('chave', 'CODIGO_ACESSO_EMPRESA')
-        .maybeSingle();
+      var r = await window.SB.rpc('validar_pin_empresa', {
+        p_pin: pin, p_hml: (String(window.GOM_DB_PREFIX || '') === 'hml_')
+      });
 
-      var pinSalvo = r.data ? String(r.data.valor || '') : '';
-      if (!pinSalvo) {
+      if (r && r.error) {
         _registrarFalhaPin();
         _msg('Não foi possível validar o acesso. Contate a administração.', 'erro');
         if (btn) { btn.disabled = false; btn.textContent = 'Entrar com código'; }
         return;
       }
 
-      if (pin !== pinSalvo) {
+      if (r.data !== true) {
         _registrarFalhaPin();
         _msg(_pinBloqueado() ? 'Muitas tentativas. Aguarde alguns minutos e tente novamente.' : 'Acesso não autorizado.', 'erro');
         if (btn) { btn.disabled = false; btn.textContent = 'Entrar com código'; }
