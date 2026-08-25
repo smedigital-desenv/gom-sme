@@ -55,7 +55,7 @@ git commit -m "Dashboard Controle de Serviços: migra para GitHub Pages com API 
 git push
 ```
 
-A página fica em: `https://smedigital-desenv.github.io/gom-sme/saldo.html`
+A página fica em: `https://smedigital.com.br/gom-sme/saldo.html`
 
 ## Se não carregar
 
